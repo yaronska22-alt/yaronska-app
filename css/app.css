@@ -459,3 +459,10 @@ body.noscroll{overflow:hidden}
 .vchips{display:flex;flex-wrap:wrap;gap:6px}
 .vchip{border:1px solid var(--line-2);border-radius:14px;padding:5px 10px;font-size:12.5px}
 .vchip b{color:var(--y)}
+/* sesión opcional */
+.chip.opt{border-style:dashed}
+.chip.opt small{font-weight:500;opacity:.75}
+.optb{display:inline-block;vertical-align:middle;margin-left:6px;font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border:1px dashed var(--y);color:var(--y);border-radius:4px;padding:3px 7px}
+.optband{border-left-color:var(--y)}
+.optmsg{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.optmsg input{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px;width:100%}
