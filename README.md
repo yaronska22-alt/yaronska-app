@@ -5,7 +5,7 @@ App de clientes de **Yaronska_Fit**: plan dietético, entreno, check-ins, regist
 ## Piezas
 - **GitHub** (`yaronska22-alt/yaronska-app`): código y historial de cambios.
 - **Supabase** (proyecto `yaronska-app`, región eu-west-1 · Irlanda): base de datos, accesos y archivos.
-- **Netlify**: publica la app automáticamente con cada cambio en `main`.
+- **Cloudflare Pages**: publica la app automáticamente con cada cambio en `main` (dominio: app.yaronskafit.com). Cabeceras en `_headers`.
 
 ## Seguridad
 - Cada cliente solo puede leer y escribir sus propios datos (RLS).

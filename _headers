@@ -1,0 +1,13 @@
+# Cabeceras de seguridad (Cloudflare Pages)
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), geolocation=(), microphone=()
+  X-Robots-Tag: noindex, nofollow
+
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/img/*
+  Cache-Control: public, max-age=604800
