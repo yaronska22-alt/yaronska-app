@@ -522,7 +522,7 @@ let RC_BUSY=false;
 function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=true;try{_renderCoach()}finally{RC_BUSY=false}}
 function _renderCoach(){setTimeout(placeCalc);
   const el=document.getElementById('coachView');
-  const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina'],['plan','Plan']];
+  const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina']];
   const c=CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
   <aside class="clist" aria-label="Clientes"><span class="lbl">Tus clientes · ${CL.length}</span>
@@ -538,7 +538,7 @@ function _renderCoach(){setTimeout(placeCalc);
       <div class="field"><label for="wtS">Semanas de esta fase</label><input id="wtS" type="number" min="1" max="52" value="${S.weeksPhase}" onchange="S.weeksPhase=Math.max(S.week,+this.value||1);save();setTimeout(renderCoach)"></div></div>
       <p class="small muted" style="margin:0">Alarga o acorta la fase cambiando «Semanas de esta fase». El cliente lo ve al momento en su Inicio.</p></div>
     <div class="tabs">${T.map(([k,l])=>`<button type="button" class="${coachTab===k?'on':''}" onclick="coachTab='${k}';renderCoach()">${l}</button>`).join('')}</div>
-    ${({ficha:cFicha,dieta:cDieta,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,plan:cPlan})[coachTab]()}`}
+    ${({ficha:cFicha,dieta:cDieta,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,plan:cDieta})[coachTab]()}`}
   </section></div>`;
 }
 // ---- dar de alta un cliente nuevo
@@ -746,7 +746,7 @@ function calcWrap(){let w=document.getElementById('calcWrap');if(!w){w=document.
   w.innerHTML=`<div class="calc-bar"><span class="lbl" style="color:var(--y)">Calculadora · <span id="calcWho"></span></span><button class="btn ghost sm" type="button" onclick="calcFull(false)">✕ Salir de pantalla completa</button></div>`;
   document.body.appendChild(w)}return w}
 function cDieta(){
-  const pl=S.planCalc?`Calculadora · enviado el ${new Date(S.planCalc.fecha+'T12:00').toLocaleDateString('es-ES')}${S.planCalc.R?' · con días sin entreno':''}`:S.planOn?`Plan automático · ${S.kcal} kcal`:'Ninguno todavía';
+  const pl=S.planCalc?`Enviado el ${new Date(S.planCalc.fecha+'T12:00').toLocaleDateString('es-ES')}${S.planCalc.R?' · con días sin entreno':''}`:S.planOn?`Plan antiguo (automático)`:'Ninguno todavía';
   return `<div class="panel"><div class="sec-h"><div><span class="lbl">Plan que ve el cliente en su app</span><b style="display:block;font-size:15px">${esc(pl)}</b></div>
     <div class="row"><button class="btn sm" type="button" onclick="calcSend()">📲 Enviar plan a la app</button><button class="btn ghost sm" type="button" onclick="calcFull(true)">⛶ Pantalla completa</button><button class="btn ghost sm" type="button" onclick="setView('client');go('food')">Ver como el cliente</button></div></div>
     <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p></div>
