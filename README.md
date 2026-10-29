@@ -14,3 +14,11 @@ App de clientes de **Yaronska_Fit**: plan dietético, entreno, check-ins, regist
 
 ## Base de datos
 Las migraciones están en `supabase/migrations/`.
+
+## Estructura
+- `index.html` · `css/app.css` · `js/app.js` (pantallas) · `js/db.js` (conexión con Supabase)
+- `data/plan.json` (planes por kcal y recetas) · `data/rutinas.json` (plantillas de entreno) · `img/recetas/`
+- `tests/flujo-completo.js`: prueba automática de todo el recorrido (entrenador y cliente) con una base de datos simulada.
+
+## Altas de clientes
+Yaron da de alta al cliente (nombre + email) desde el panel. Solo ese email puede crear cuenta; cualquier otro queda bloqueado.
