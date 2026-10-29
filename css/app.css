@@ -373,3 +373,20 @@ body.noscroll{overflow:hidden}
 .ritem.now{border-color:var(--y)}
 .pinbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:8px;padding:10px 12px}
 @media (max-width:600px){.warmed{grid-template-columns:1fr}}
+.warmlist{display:flex;flex-direction:column;gap:8px}
+.warmed{grid-template-columns:1fr 2fr 1.2fr auto;align-items:end}
+.warmed .x{border:0;background:transparent;color:var(--bad);font-size:18px;padding-bottom:8px}
+@media (max-width:600px){.warmed{grid-template-columns:1fr}}
+/* rangos */
+.rk{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--rk);background:color-mix(in srgb,var(--rk) 14%,transparent);border:1px solid color-mix(in srgb,var(--rk) 45%,transparent);border-radius:999px;padding:2px 8px 2px 4px;white-space:nowrap}
+.rk svg{width:13px;height:15px;fill:var(--rk)}
+.rk.big{font-size:0;padding:0;border:0;background:none}.rk.big svg{width:64px;height:74px;filter:drop-shadow(0 0 14px color-mix(in srgb,var(--rk) 50%,transparent))}.rk.big b{display:none}
+.rkhero{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid color-mix(in srgb,var(--rk) 50%,var(--line));border-radius:12px;padding:16px}
+.rkhero>div{flex:1;display:flex;flex-direction:column;gap:4px}.rkhero b{font-family:var(--display);font-weight:900;font-size:24px;text-transform:uppercase;color:var(--rk)}
+.rkbar{height:6px;border-radius:3px;background:var(--line-2);overflow:hidden}.rkbar span{display:block;height:100%}
+.rkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.rkcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:5px}
+.rklist{display:flex;flex-direction:column;gap:6px}
+.rkrow{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px}.rkrow>div{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.rkrow>div b{font-size:14px}
+.rkrow .rk{min-width:92px;justify-content:flex-start}
+.seg2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}

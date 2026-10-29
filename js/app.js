@@ -352,6 +352,7 @@ function vHome(){
     ${lineChart(W.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})}
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
+  ${FICHA.showFat?(()=>{const a=FICHA.wFrom||'',b=FICHA.wTo||'';const F=fatSeries().filter(x=>(!a||x.date>=a)&&(!b||x.date<=b));return F.length?`<section class="wchart" aria-label="Tu % graso"><div class="sec-h"><span class="lbl">Tu evolución · % graso</span></div>${fatBlock(F,{from:a?'Desde '+fdate(F[0].date):'Inicio'})}</section>`:''})():''}
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
     <div class="phase-top"><span class="lbl">${PROG().w} ${Math.min(S.phase,PH().length-1)+1} de ${PH().length}</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
@@ -449,7 +450,8 @@ function suggestion(e){
 }
 function exCard(e,ei,label){
   const h=S.hist[e.n]||[];const last=h[h.length-1];const det=detailed(e);const sg=det?null:suggestion(e);const SS=exSets(e);const nx=S.next[e.n];
-  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small></div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
+  const rk=exRank(e.n);
+  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
     ${det?`<ol class="setplan">${SS.map((x,i)=>`<li><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${esc(x.reps)}${/ s$/.test(x.reps)?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`
       :`<div class="presc"><span>${e.s} series</span><span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
     ${e.aprox?`<div class="aprox"><b>Series de aproximación</b><span>${esc(e.aprox)}</span></div>`:''}
@@ -459,12 +461,15 @@ function exCard(e,ei,label){
     ${SS.map((x,si)=>{const p=last&&(last.sets.find(z=>z.i===si)||(last.sets[si]&&last.sets[si].i===undefined?last.sets[si]:null));return `<span class="sidx">${si+1}${x.t&&SET_S[x.t]?`<small>${SET_S[x.t]}</small>`:''}</span><span class="prev">${p?`${nf(p.kg,1).replace(',0','')} kg × ${p.reps}<br>RIR ${p.rir??'—'}`:'—'}</span><input id="kg-${dayIdx}-${ei}-${si}" inputmode="decimal" placeholder="${nx&&nx.sets&&nx.sets[si]&&nx.sets[si].kg?esc(nx.sets[si].kg):nx&&nx.kg?esc(nx.kg):p?nf(p.kg,1).replace(',0',''):'kg'}" aria-label="Kilos serie ${si+1}"><input id="rp-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="${p?p.reps:'reps'}" aria-label="Repeticiones serie ${si+1}"><input id="ri-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="RIR" aria-label="RIR real serie ${si+1}">`}).join('')}</div>
     ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}</div>`:''}</article>`;
 }
+let trainTab='rutina';
 function vTrain(){
+  if(trainTab==='rangos')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tus <em>rangos</em></h1></div><div class="tabs"><button type="button" onclick="trainTab='rutina';render()">Mi rutina</button><button type="button" class="on" onclick="trainTab='rangos';render()">🏅 Mis rangos</button></div>${vRanks()}`;
   const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
+  <div class="tabs"><button type="button" class="on" onclick="trainTab='rutina';render()">Mi rutina</button><button type="button" onclick="trainTab='rangos';render()">🏅 Mis rangos</button></div>
   <div class="daysel">${R.map((r,i)=>`<button type="button" class="chip ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${esc(r.d.split('·')[0].trim())}</button>`).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}</h2>
-  ${d.warm&&(d.warm.txt||d.warm.url)?`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>Calentamiento</b>${d.warm.txt?`<small style="white-space:pre-line">${esc(d.warm.txt)}</small>`:''}</div>${d.warm.url?`<a class="vid" href="${esc(d.warm.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`:''}
+  ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
 }
@@ -615,11 +620,14 @@ function cPeso(){
     ${R.length?`<div class="kpis"><div class="kpi"><small>Peso inicial · ${fdate(f.date)}</small><b>${nf(f.peso)} kg</b></div><div class="kpi"><small>Peso actual · ${fdate(l.date)}</small><b>${nf(l.peso)} kg</b></div><div class="kpi"><small>${diff<=0?'Peso perdido':'Peso ganado'}</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div><div class="kpi"><small>Media semanal</small><b>${R.length>1?(diff>0?'+':'')+nf(diff/((new Date(l.date)-new Date(f.date))/6048e5||1),2):'—'} kg</b></div></div>
     ${lineChart(R.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Peso en el rango',color:ok?'#7CE38B':'#FFD60A'})}`:'<p class="small muted">No hay pesos en ese rango.</p>'}
   </div>
+  <div class="panel"><div class="sec-h"><span class="lbl">% graso</span><div class="seg2"><span class="small muted">El cliente ve:</span><button type="button" class="chip ${!FICHA.showFat?'on':''}" onclick="FICHA.showFat=false;save();renderCoach()">Solo peso</button><button type="button" class="chip ${FICHA.showFat?'on':''}" onclick="FICHA.showFat=true;save();renderCoach()">Peso y % graso</button></div></div>
+    ${fatBlock(fatSeries().filter(x=>x.date>=from&&x.date<=to),{coach:true,from:'Inicial · '+fdate(from),chart:{w:720,h:220}})}</div>
   <div class="panel"><span class="lbl">Todos los pesos del rango</span><div class="tbl-w"><table><thead><tr><th>Fecha</th><th>Peso</th><th>Cambio vs anterior</th><th>Cambio acumulado</th></tr></thead><tbody>
   ${R.map((w,i)=>{const d=i?w.peso-R[i-1].peso:0,a=w.peso-R[0].peso;return `<tr><td>${new Date(w.date+'T12:00').toLocaleDateString('es-ES')}</td><td>${nf(w.peso)} kg</td><td class="${i?(goodDir(d)?'good':'badc'):''}">${i?(d>0?'+':'')+nf(d):'—'}</td><td class="${i?(goodDir(a)?'good':'badc'):''}">${i?(a>0?'+':'')+nf(a):'—'}</td></tr>`}).reverse().join('')}</tbody></table></div></div>`;
 }
 const e1rm=s=>s.kg*(1+s.reps/30);
-function cEj(){
+function cEj(){return cEj0()+`<div class="panel"><span class="lbl">🏅 Rangos del cliente</span>${vRanks()}</div>`}
+function cEj0(){
   const names=Object.keys(S.hist);if(!names.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no ha registrado entrenos.</p></div>';if(!exSel||!S.hist[exSel])exSel=names[0];const H=S.hist[exSel]||[];
   const best=h=>h.sets.reduce((b,s)=>e1rm(s)>e1rm(b)?s:b,h.sets[0]);
   const M={kg:{l:'Peso (serie top)',f:h=>Math.max(...h.sets.map(s=>s.kg)),u:' kg'},reps:{l:'Repeticiones totales',f:h=>h.sets.reduce((a,s)=>a+s.reps,0),u:' reps',dec:0},rm:{l:'Intensidad · 1RM estimado',f:h=>e1rm(best(h)),u:' kg'},rir:{l:'RIR medio',f:h=>{const r=h.sets.filter(s=>s.rir!=null);return r.length?r.reduce((a,s)=>a+s.rir,0)/r.length:0},u:'',dec:1}};
@@ -666,7 +674,7 @@ function cRutina(){
   <div class="panel"><div class="sec-h"><span class="lbl">Rutina actual del cliente</span><div class="row"><button class="btn ghost sm" type="button" onclick="saveAsTpl()">Guardar como plantilla</button><button class="btn ghost sm" type="button" onclick="setView('client');go('train')">Ver como el cliente</button></div></div>
   <p class="small muted" style="margin:0"><b style="color:var(--fg)">Bloque:</b> pon la misma letra a ejercicios seguidos para hacer superseries, biseries o circuitos. <b style="color:var(--fg)">Series ▾:</b> detalla cada serie (top set, back-off, drop set…).</p>
   ${S.routine.map((d,di)=>{const used=[...new Set(d.ex.map(x=>x.blk).filter(Boolean))];return `<div class="panel" style="background:var(--bg)"><div class="row"><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
-    <div class="warmed"><label class="ef"><small>🔥 Calentamiento del día (lo que tiene que hacer)</small><textarea rows="2" placeholder="5 min bici suave + movilidad de cadera y hombro" onchange="warmEdit(${di},'txt',this.value)">${esc((d.warm||{}).txt||'')}</textarea></label><label class="ef"><small>Vídeo del calentamiento (YouTube)</small><input value="${esc((d.warm||{}).url||'')}" placeholder="https://youtu.be/…" onchange="warmEdit(${di},'url',this.value)"></label></div>
+    <div class="warmlist">${warmsOf(d).map((w,wi)=>`<div class="warmed"><label class="ef"><small>🔥 Calentamiento ${wi+1} · nombre</small><input value="${esc(w.t||'')}" placeholder="Movilidad de hombro" onchange="warmEdit(${di},${wi},'t',this.value)"></label><label class="ef"><small>Qué tiene que hacer</small><textarea rows="2" placeholder="2 vueltas: 10 rotaciones + 10 aperturas con banda" onchange="warmEdit(${di},${wi},'txt',this.value)">${esc(w.txt||'')}</textarea></label><label class="ef"><small>Vídeo (YouTube)</small><input value="${esc(w.url||'')}" placeholder="https://youtu.be/…" onchange="warmEdit(${di},${wi},'url',this.value)"></label><button class="x" type="button" aria-label="Quitar calentamiento" onclick="warmDel(${di},${wi})">×</button></div>`).join('')}<button class="btn ghost sm" type="button" onclick="warmAdd(${di})">+ Añadir calentamiento</button></div>
     ${used.length?`<div class="blkbar">${used.map(l=>{const t=(d.ex.find(x=>x.blk===l)||{}).blkT;return `<label>Bloque ${l} ${sel(t,BLK_T,`blkType(${di},'${l}',this.value)`,'Tipo de bloque '+l)}</label>`}).join('')}</div>`:''}
         ${d.ex.map((e,ei)=>{const k=di+'-'+ei;const op=openSets.has(k);const det=detailed(e);return `<div class="ed-ex ${e.blk?'inblk':''}"><div class="ed-row"><label class="ef nm"><small>Ejercicio</small><input id="en-${k}" value="${esc(e.n)}" onchange="exEdit(${di},${ei},'n',this.value)"></label><label class="ef vu"><small>Vídeo (enlace)</small><input id="ev-${k}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="exEdit(${di},${ei},'v',this.value)"></label><label class="ef"><small>Series</small><input id="es-${k}" value="${e.s}" inputmode="numeric" onchange="exEdit(${di},${ei},'s',this.value)"></label><label class="ef"><small>Reps</small><input id="er-${k}" value="${esc(e.r)}" onchange="exEdit(${di},${ei},'r',this.value)"></label><label class="ef"><small>RIR / RPE</small><input id="ei-${k}" value="${esc(e.rir)}" onchange="exEdit(${di},${ei},'rir',this.value)"></label><label class="ef"><small>Descanso</small><input id="et-${k}" value="${esc(e.rest)}" onchange="exEdit(${di},${ei},'rest',this.value)"></label><label class="ef"><small>Bloque</small>${sel(e.blk,[['','—']].concat(BLK_L.map(l=>[l,l])),`blkEdit(${di},${ei},this.value)`,'Bloque')}</label>
       <div class="acts"><button type="button" class="mini ${det?'on':''}" onclick="togSets('${k}')" aria-expanded="${op}">Series ${op?'▴':'▾'}</button><button type="button" class="mini" onclick="moveEx(${di},${ei},-1)" aria-label="Subir">↑</button><button type="button" class="mini" onclick="moveEx(${di},${ei},1)" aria-label="Bajar">↓</button><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);openSets=new Set();save();renderCoach()">×</button></div><label class="ef ap"><small>Series de aproximación (sin vídeo)</small><input id="ea-${k}" value="${esc(e.aprox||'')}" placeholder="1×10 al 40 % · 1×5 al 60 % · 1×3 al 80 %" onchange="exEdit(${di},${ei},'aprox',this.value)"></label></div>
@@ -852,7 +860,7 @@ function impAdmin(id,c){const p=c.profile||{};const dt=v=>/^\d{4}-\d{2}-\d{2}/.t
   return {client_id:id,estado:['active','paused','ended','trial'].includes(p.subStatus)?p.subStatus:'active',alta:dt(p.subStartDate)||dt(c.createdAt),tipo:p.subType||null,renovacion:dt(p.subRenewalDate),pago:num(p.subPayment),cheatmeals:num(p.subCheatmeals)==null?null:Math.round(+p.subCheatmeals),pausa:dt(p.subPauseDate),baja:dt(p.subEndDate),notas:p.subNotes||null}}
 function impChecks(id,c){return (c.measurements||[]).filter(m=>m.date).map(m=>{const v=x=>x===null||x===undefined||x===''||isNaN(+x)?undefined:+x;
   const sc=[['Energía',m.energia],['Hambre',m.hambre],['Sueño',m.sueno],['Ánimo',m.animo]].filter(x=>x[1]!=null&&x[1]!=='').map(x=>x[0]+' '+x[1]+'/10').join(' · ');
-  const data={peso:v(m.peso),cuello:v(m.cuello),torso:v(m.torso),cintura:v(m.cintura),cadera:v(m.cadera),gluteo:v(m.gluteo),biceps:v(m.brazoD),pierna:v(m.piernaD),fotos:0,r:{},importado:true,nota:[m.notas,sc,m.grasa?('Grasa estimada '+m.grasa+' %'):''].filter(Boolean).join(' — ')};
+  const data={peso:v(m.peso),cuello:v(m.cuello),torso:v(m.torso),cintura:v(m.cintura),cadera:v(m.cadera),gluteo:v(m.gluteo),biceps:v(m.brazoD),pierna:v(m.piernaD),grasa:v(m.grasa),fotos:0,r:{},importado:true,nota:[m.notas,sc,m.grasa?('Grasa estimada '+m.grasa+' %'):''].filter(Boolean).join(' — ')};
   Object.keys(data).forEach(k=>data[k]===undefined&&delete data[k]);return {client_id:id,fecha:String(m.date).slice(0,10),data}})}
 function calcEnsure(){return new Promise(res=>{if(CALC.frame&&CALC.ready)return res();if(!CALC.frame){const f=document.createElement('iframe');f.src='calc/index.html?embed=1';f.title='Calculadora de dietas';f.className='calc-frame';CALC.frame=f;calcWrap().appendChild(f)}CALC.readyCb=res})}
 function calcExportFor(client){return new Promise((res)=>{const t=setTimeout(()=>res(null),15000);CALC.loadedCb=()=>{CALC.exportCb=d=>{clearTimeout(t);res(d)};calcPost({type:'export'})};calcPost({type:'load',client,customFoods:[],tab:'protocol'})})}
@@ -893,4 +901,96 @@ async function delClient(){
 function pinRange(){const W=allWeights();if(!W.length)return;const last=W[W.length-1].date;const a=wFrom||'',b=wTo||'';
   FICHA.wFrom=a&&a>W[0].date?a:'';FICHA.wTo=b&&b<last?b:'';save();toast(FICHA.wFrom||FICHA.wTo?'Listo: el cliente solo ve ese rango':'El rango era todo: el cliente lo ve completo');renderCoach()}
 
-function warmEdit(di,k,v){const d=S.routine[di];d.warm=Object.assign({txt:'',url:''},d.warm||{},{[k]:v.trim()});save()}
+// Calentamientos del día (varios). Compatibilidad con el formato antiguo de uno solo (d.warm)
+function warmsOf(d){if(!d.warms){d.warms=d.warm&&(d.warm.txt||d.warm.url)?[{t:'',txt:d.warm.txt||'',url:d.warm.url||''}]:[]}return d.warms.filter(w=>w&&(w.t||w.txt||w.url||ME&&ME.role==='coach'&&view==='coach'))}
+function warmEdit(di,wi,k,v){const d=S.routine[di];warmsOf(d);d.warms[wi][k]=v.trim();delete d.warm;save()}
+function warmAdd(di){const d=S.routine[di];warmsOf(d);d.warms.push({t:'',txt:'',url:''});delete d.warm;save();renderCoach()}
+function warmDel(di,wi){const d=S.routine[di];warmsOf(d);d.warms.splice(wi,1);delete d.warm;save();renderCoach()}
+
+// ================= % GRASO =================
+// Fórmula de la Marina de EE. UU. (cuello, cintura y altura; cadera en mujeres), la que usa la calculadora de FitGeneration.
+// Si faltan medidas: el % que traía la Calculadora o, si no, Deurenberg (IMC + edad + sexo).
+function bfNavy(sex,h,neck,waist,hip){if(!(h>0&&neck>0&&waist>0))return null;
+  if(sex==='Mujer'){if(!(hip>0))return null;const x=waist+hip-neck;return x>0?495/(1.29579-0.35004*Math.log10(x)+0.22100*Math.log10(h))-450:null}
+  const x=waist-neck;return x>0?495/(1.0324-0.19077*Math.log10(x)+0.15456*Math.log10(h))-450:null}
+function bfDeur(sex,h,kg,age){if(!(h>0&&kg>0&&age>0)||!sex)return null;const imc=kg/((h/100)**2);return 1.2*imc+0.23*age-10.8*(sex==='Mujer'?0:1)-5.4}
+const ageAt=(nac,date)=>nac?Math.floor((new Date(date+'T12:00')-new Date(nac+'T12:00'))/31557600000):null;
+const BF_M={navy:'medidas (cuello, cintura'+'…)',calc:'Calculadora',imc:'IMC + edad'};
+function fatSeries(){const sex=FICHA.sexo,h=+FICHA.altura;
+  return S.checkins.map(c=>{let v=null,m='';const nv=sex?bfNavy(sex,h,+c.cuello,+(c.cintura||c.abdomen),+c.cadera):null;
+    if(nv!=null&&isFinite(nv)){v=nv;m='navy'}else if(c.grasa!=null&&!isNaN(+c.grasa)){v=+c.grasa;m='calc'}else{const d=bfDeur(sex,h,+c.peso,ageAt(FICHA.nac,c.date));if(d!=null){v=d;m='imc'}}
+    return v!=null&&v>2&&v<70?{date:c.date,v:Math.round(v*10)/10,m}:null}).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date))}
+function fatBlock(R,opt){opt=opt||{};if(R.length<1)return opt.coach?`<p class="small muted" style="margin:0">Sin datos de % graso en este rango. Se calcula con cuello + cintura (+ cadera en mujeres) del check-in, más sexo y altura de la Ficha.</p>`:'';
+  const f=R[0],l=R[R.length-1],d=l.v-f.v,ok=d<=0;const ms=[...new Set(R.map(x=>x.m))].map(m=>BF_M[m]).join(' · ');
+  return `<div class="wstats"><div><small>${opt.from||'Inicio'}</small><b>${nf(f.v)} %</b></div><div><small>Ahora</small><b>${nf(l.v)} %</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${d>0?'+':''}${nf(d)} %</b></div></div>
+  ${lineChart(R.map(x=>({d:x.date,v:x.v})),Object.assign({u:' %',label:'% graso',color:ok?'#7CE38B':'#FF8C28'},opt.chart||{}))}
+  <p class="small muted" style="margin:0">Estimado con ${esc(ms)}.</p>`}
+
+// ================= RANGOS DE FUERZA =================
+// Rango orientativo por ejercicio según 1RM estimado relativo al peso corporal (ajustado a 75 kg), sexo y tipo de ejercicio.
+// Familias: carga externa (kg y reps), peso corporal (dominadas, fondos: tu peso + lastre), muchas reps (flexiones, abdominales) y tiempo (plancha).
+const RANKS=[['Hierro','#7A7A7A'],['Bronce','#B87333'],['Plata','#C9D1D9'],['Oro','#FFD60A'],['Rubí','#E0115F'],['Esmeralda','#2ECC71'],['Diamante','#6FD3FF'],['Campeón','#B57BFF']];
+const OLIMPO=['Olimpo','#FFF3B0'];
+const RX_PAT=[
+  // [regex, familia, anclas hombre (principiante→élite), grupo, factor mujer]
+  [/dominad|chin.?up|pull.?up/i,'bw',[1.0,1.17,1.33,1.55,1.8],'Espalda',0.85],
+  [/fondos|dips?\b/i,'bw',[1.03,1.25,1.45,1.7,2.0],'Pecho',0.85],
+  [/flexion|push.?up/i,'reps',[5,15,30,45,65],'Pecho',0.5],
+  [/plancha|plank/i,'time',[20,45,90,150,240],'Core',0.9],
+  [/crunch|abdominal|sit.?up|elevaci[oó]n de piernas|rueda/i,'reps',[10,25,40,60,80],'Core',0.85],
+  [/peso muerto rumano|rumano|rdl/i,'load',[0.6,1.0,1.35,1.8,2.2],'Piernas',0.75],
+  [/peso muerto|deadlift/i,'load',[1.0,1.5,1.85,2.4,2.9],'Piernas',0.75],
+  [/hip.?thrust|puente de gl/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.8],
+  [/prensa|leg.?press/i,'load',[1.5,2.25,3.0,4.0,5.0],'Piernas',0.75],
+  [/sentadilla|squat|hack|p[eé]ndulo|bulgara|zancada/i,'load',[0.75,1.25,1.5,2.0,2.5],'Piernas',0.75],
+  [/ext[\wáéíóú]*\.? (de )?cu[aá]driceps|leg.?ext/i,'load',[0.4,0.65,0.9,1.2,1.5],'Piernas',0.75],
+  [/curl\s*(isq|femoral|femorales)|isquio|leg.?curl/i,'load',[0.3,0.5,0.7,0.95,1.2],'Piernas',0.75],
+  [/gemelo|calf|soleo/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.75],
+  [/abductor|aductor/i,'load',[0.5,0.8,1.1,1.5,1.9],'Piernas',0.8],
+  [/apertura|pec.?deck|contractor|cruce de poleas|fly/i,'load',[0.3,0.5,0.75,1.0,1.3],'Pecho',0.65],
+  [/press (militar|hombro)|militar|overhead|arnold/i,'load',[0.35,0.5,0.7,0.9,1.1],'Hombros',0.65],
+  [/press|banca|bench/i,'load',[0.55,0.8,1.05,1.4,1.75],'Pecho',0.65],
+  [/elevaci[oó]n(es)? (lateral|frontal)|pájaro|pajaro|face.?pull|posterior/i,'load',[0.05,0.09,0.13,0.18,0.24],'Hombros',0.7],
+  [/jal[oó]n|pulldown|pull.?over/i,'load',[0.55,0.8,1.0,1.25,1.5],'Espalda',0.7],
+  [/remo|row/i,'load',[0.5,0.75,0.95,1.2,1.5],'Espalda',0.7],
+  [/curl|b[ií]ceps|martillo/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65],
+  [/tr[ií]ceps|katana|press franc|patada|pushdown|copa/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65]
+];
+const MUSC_G={'Pecho':'Pecho','Espalda':'Espalda','Hombro':'Hombros','Hombros':'Hombros','Bíceps':'Brazos','Tríceps':'Brazos','Antebrazo':'Brazos','Cuádriceps':'Piernas','Isquios':'Piernas','Glúteo':'Piernas','Gemelos':'Piernas','Abductor':'Piernas','Abdomen':'Core','Core':'Core'};
+const GROUPS=['Pecho','Espalda','Hombros','Brazos','Piernas','Core'];
+function exPattern(n){const r=RX_PAT.find(p=>p[0].test(n));if(!r)return null;let A=r[2].slice();
+  if(r[1]==='load'&&/mancuerna|\bdb\b/i.test(n)&&!/curl|b[ií]ceps|martillo|elevaci|tr[ií]ceps|patada/i.test(n))A=A.map(x=>x*0.4);
+  if(r[1]==='load'&&/unilat/i.test(n))A=A.map(x=>x*0.5);
+  if(r[1]==='load'&&/m[aá]q|multipower|smith|placas/i.test(n)&&/press|remo|row|militar/i.test(n))A=A.map(x=>x*1.15);
+  return {fam:r[1],A,g:r[3],fem:r[4]}}
+function lvlOf(r,A){const P=[[0,0],[A[0],1],[A[1],2],[A[2],3],[A[3],4],[A[4],5]];if(r<=0)return 0;
+  for(let i=1;i<P.length;i++)if(r<=P[i][0])return P[i-1][1]+(r-P[i-1][0])/(P[i][0]-P[i-1][0]);
+  return Math.min(5.6,5+(r-A[4])/((A[4]-A[3])||1))}
+function tierOf(L){const x=(L-0.6)*24/5.2;const idx=Math.max(0,Math.min(24,Math.floor(x)));const frac=idx>=24?1:Math.max(0,Math.min(1,x-idx));
+  const rk=idx>=24?OLIMPO:RANKS[Math.floor(idx/3)];const div=idx>=24?'':['I','II','III'][idx%3];return {idx,frac,name:rk[0]+(div?' '+div:''),base:rk[0],color:rk[1],next:idx>=24?null:(idx+1>=24?OLIMPO[0]:RANKS[Math.floor((idx+1)/3)][0]+' '+['I','II','III'][(idx+1)%3])}}
+function setScore(fam,s,bw){const kg=+s.kg||0,reps=+s.reps||0;if(!(reps>0))return 0;
+  if(fam==='load'){if(!(kg>0)||!(bw>0))return 0;return kg*(1+reps/30)/bw*Math.pow(bw/75,0.33)}
+  if(fam==='bw'){if(!(bw>0))return 0;return (bw+kg)*(1+reps/30)/bw}
+  return reps}
+function exRank(n){const P=exPattern(n);if(!P)return null;const H=S.hist[n]||[];if(!H.length)return null;
+  const W=allWeights();const bw=W.length?W[W.length-1].peso:null;if((P.fam==='load'||P.fam==='bw')&&!bw)return null;
+  const A=FICHA.sexo==='Mujer'?P.A.map(x=>x*P.fem):P.A;const lim=iso(daysAgo(56));
+  let best=0,recent=0;H.forEach(h=>{const sc=Math.max(0,...h.sets.map(s=>setScore(P.fam,s,bw)));if(sc>best)best=sc;if(h.date>=lim&&sc>recent)recent=sc});
+  const sc=Math.max(recent,best*0.85);if(!(sc>0))return null;const L=lvlOf(sc,A);
+  const re=routineEx(n);const g=(re&&MUSC_G[re.m])||P.g;return Object.assign({n,L,g},tierOf(L))}
+function allRanks(){const ex=Object.keys(S.hist).map(exRank).filter(Boolean).sort((a,b)=>b.L-a.L);
+  const groups=GROUPS.map(g=>{const xs=ex.filter(e=>e.g===g);if(!xs.length)return null;const L=xs.reduce((a,e)=>a+e.L,0)/xs.length;return Object.assign({g,count:xs.length,L},tierOf(L))}).filter(Boolean);
+  const glob=ex.length>=5&&groups.length?Object.assign({L:groups.reduce((a,x)=>a+x.L,0)/groups.length},tierOf(groups.reduce((a,x)=>a+x.L,0)/groups.length)):null;
+  return {ex,groups,glob}}
+function rankBadge(t,big){return `<span class="rk ${big?'big':''}" style="--rk:${t.color}"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14C6.5 24.5 2 20 2 13V5z"/></svg><b>${esc(t.name)}</b></span>`}
+function rankBar(t){return `<div class="rkbar"><span style="width:${Math.round(t.frac*100)}%;background:${t.color}"></span></div><small class="muted">${t.next?'Siguiente: '+esc(t.next):'Rango máximo'}</small>`}
+function vRanks(){
+  const R=allRanks();const W=allWeights();
+  if(!R.ex.length)return `<div class="empty">${W.length?'Aún no hay rangos: registra tus entrenos y aquí verás tu nivel en cada ejercicio.':'Para calcular tus rangos necesitamos tu peso: llegará con tu primer check-in.'}</div>`;
+  return `${R.glob?`<section class="rkhero" style="--rk:${R.glob.color}">${rankBadge(R.glob,true)}<div><span class="lbl">Rango global</span><b>${esc(R.glob.name)}</b>${rankBar(R.glob)}</div></section>`:`<div class="band">Tu <b>rango global</b> aparece cuando tengas al menos 5 ejercicios con rango (llevas ${R.ex.length}).</div>`}
+  <section class="sec-h"><h2>Por grupo muscular</h2></section>
+  <div class="rkgrid">${R.groups.map(g=>`<div class="rkcard">${rankBadge(g)}<b>${esc(g.g)}</b><small class="muted">${g.count} ejercicio${g.count>1?'s':''}</small>${rankBar(g)}</div>`).join('')}</div>
+  <section class="sec-h"><h2>Por ejercicio</h2></section>
+  <div class="rklist">${R.ex.map(e=>`<div class="rkrow">${rankBadge(e)}<div><b>${esc(e.n)}</b>${rankBar(e)}</div></div>`).join('')}</div>
+  <p class="small muted" style="margin:0">Rangos orientativos: comparan tu mejor marca reciente (1RM estimado con kg y reps) con tu peso corporal y tu sexo. Dominadas y fondos cuentan tu peso + lastre; flexiones y abdominales, las repeticiones; la plancha, los segundos. Si un día rindes peor, tu rango se mantiene.</p>`;
+}

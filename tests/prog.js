@@ -26,14 +26,14 @@ await p.fill('#wF',d25);await p.dispatchEvent('#wF','change');await w(200);await
 console.log('pin:',(await p.textContent('.pinbar')).replace(/\s+/g,' '));
 // rutina: calentamiento + aproximación
 await p.click('.tabs >> text=Rutina');await w(100);
-await p.fill('.warmed textarea >> nth=0','5 min bici + movilidad');await p.dispatchEvent('.warmed textarea >> nth=0','change');
-await p.fill('.warmed input >> nth=0','https://youtu.be/abc');await p.dispatchEvent('.warmed input >> nth=0','change');
+await p.click('text=+ Añadir calentamiento >> nth=0');await w(150);await p.click('text=+ Añadir calentamiento >> nth=0');await w(150);await p.fill('.warmed textarea >> nth=0','5 min bici + movilidad');await p.dispatchEvent('.warmed textarea >> nth=0','change');
+await p.fill('.warmed input >> nth=1','https://youtu.be/abc');await p.dispatchEvent('.warmed input >> nth=1','change');await p.fill('.warmed >> nth=1 >> input >> nth=0','Movilidad hombro');await p.dispatchEvent('.warmed >> nth=1 >> input >> nth=0','change');
 await p.fill('#ea-0-0','1×10 al 40 % · 1×5 al 60 %');await p.dispatchEvent('#ea-0-0','change');await w(800);
 await p.screenshot({path:OUT+'/p0.png',fullPage:true});
 // cliente
 await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('home')});await w(200);
 console.log('home:',(await p.textContent('.wstats')).replace(/\s+/g,' '),'|',(await p.textContent('.phase')).replace(/\s+/g,' '),'| saludo:',await p.textContent('.hello .lbl'));
-await p.evaluate(()=>go('train'));await w(100);console.log('warm:',(await p.textContent('.warm')).replace(/\s+/g,' '),'| aprox:',await p.textContent('.aprox'));
+await p.evaluate(()=>go('train'));await w(100);console.log('warms:',await p.locator('.warm').count(),(await p.textContent('.warm')).replace(/\s+/g,' '),'| aprox:',await p.textContent('.aprox'));
 await p.screenshot({path:OUT+'/p1.png'});
 await p.evaluate(()=>go('res'));await w(100);console.log('res:',(await p.textContent('#screen')).replace(/\s+/g,' ').slice(-330));
 await p.screenshot({path:OUT+'/p2.png',fullPage:true});
