@@ -45,5 +45,5 @@ window.db={
   async upsertDaily(row){if(!can(row.client_id))deny('daily');const r=st.daily_logs.find(x=>x.client_id===row.client_id&&x.fecha===row.fecha);if(r)Object.assign(r,row);else st.daily_logs.push(row);persist()},
   async updateMyProfile(n,t,p){const c=st.clients.find(c=>c.user_id===me().id);if(n!=null)c.ficha.nombre=n;if(t!=null)c.ficha.tel=t;if(p)c.prefs=p;persist()},
   async uploadPhoto(path,blob){if(!isCoach()&&path.split('/')[0]!==myClient())deny('storage');st.files[path]=blob.size;persist()},
-  async photoUrls(paths){return paths.map(()=>'../img/icon-192.png')}
+  async photoUrls(paths){return paths.map((p,i)=>'/img/recetas/'+((p.length+i)%40)+'.jpg')}
 };})();
