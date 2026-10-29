@@ -610,7 +610,7 @@ function inviteMsg(id){
   if(CUR&&CUR.id===id&&FICHA.email)c.email=String(FICHA.email).trim().toLowerCase();
   if(/\.invalid$/.test(c.email)){toast('Antes, pon su email real en la Ficha (Datos generales → Email)');coachTab='ficha';if(CUR&&CUR.id===id)renderCoach();else selectClient(id);return}
   const tel=(CUR&&CUR.id===id?FICHA.tel:'').replace(/\D/g,'');
-  const msg=`¡Capitán! Ya tienes lista tu app de Yaronska_Fit. Entra aquí: ${url}\n\nPulsa «Es mi primera vez: crear mi cuenta» y usa este email: ${c.email}\n\nAhí tendrás tu plan, tu rutina y tus revisiones.`;
+  const msg=`¡Capitán! Ya tienes lista tu app de Yaronska_Fit. Entra aquí: ${url}\n\nPulsa «Es mi primera vez: crear mi cuenta» y usa este email: ${c.email}\n\nAhí tendrás tu plan, tu rutina y tus revisiones.\n\nEsto es una guía básica para aprender a registrarte y guardar la página como si fuese una aplicación.\n\nTendrás que registrarte con el correo electrónico que te doy (el tuyo básicamente) y después pondrás la contraseña que quieras (después se puede cambiar).\n\nOtro apunte es que puedes poner el FACE ID para entrar sin fricciones 👌🏻`;
   const sh=document.getElementById('sheet');
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Invitación"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>Envíale el acceso</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
     <p class="small muted" style="margin:0">Solo podrá crear la cuenta con <b style="color:var(--fg)">${esc(c.email)}</b>. Cualquier otro email queda bloqueado.</p>
