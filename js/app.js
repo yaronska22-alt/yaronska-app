@@ -540,7 +540,7 @@ async function refreshList(){
   const {clients,admin,checkins}=await db.listClients();
   const A={};admin.forEach(a=>A[a.client_id]=a);const L={};checkins.forEach(c=>{if(!L[c.client_id])L[c.client_id]=c.fecha});
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
-    return {id:c.id,email:c.email,ficha:f,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
+    return {id:c.id,email:c.email,ficha:f,adm:a,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
       renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',...statusOf(L[c.id])}});
 }
 function coachItem(s){
@@ -549,7 +549,7 @@ function coachItem(s){
   return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
-  if(CUR&&id===CUR.id)return;
+  if(CUR&&id===CUR.id&&coachSel!=='__biz')return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
   try{await flushSync()}catch(e){}
   coachSel=id;document.querySelector('.cmain').innerHTML='<p class="muted">Cargando…</p>';
   try{await loadClient(id)}catch(e){toast('No se ha podido cargar el cliente');console.error(e)}
@@ -560,15 +560,15 @@ function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=tr
 function _renderCoach(){setTimeout(placeCalc);
   const el=document.getElementById('coachView');
   const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina']];
-  const c=CL.find(x=>CUR&&x.id===CUR.id);
+  const c=coachSel==='__biz'?null:CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
-  <aside class="clist" aria-label="Clientes"><span class="lbl">Tus clientes · ${CL.length}</span>
+  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}</span>
     ${CL.map(coachItem).join('')}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
     <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
   </aside>
   <section class="cmain">
-    ${!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
+    ${coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
     <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
     <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
       <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
@@ -727,7 +727,9 @@ function cFicha(){
     <div class="kpi"><small>Próxima renovación</small><b class="${dleft!=null&&dleft<=7?'badc':dleft!=null&&dleft<=21?'':'good'}" style="${dleft!=null&&dleft>7&&dleft<=21?'color:var(--warn)':''}">${ren?new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'—'}</b><small>${dleft!=null?(dleft>=0?'en '+dleft+' días':'vencida hace '+(-dleft)+' días'):''}</small></div>
     <div class="kpi"><small>Edad</small><b>${age!=null?age+' años':'—'}</b><small>${bd!==''?'🎂 cumple en '+bd+' días':''}</small></div></div>
   <div class="panel"><span class="lbl">Datos generales</span>${grid(inp('nombre','Nombre')+inp('email','Email','email')+inp('tel','Teléfono / WhatsApp','tel')+sel('sexo','Sexo',[['Hombre','Hombre'],['Mujer','Mujer']])+inp('nac','Fecha de nacimiento','date')+(FICHA.nac?'':inp('edad','Edad (si no tienes la fecha)','n'))+inp('altura','Altura (cm)','n')+sel('objetivo','Objetivo',[['perder','Perder grasa'],['ganar','Ganar músculo']]))}</div>
-  <div class="panel"><span class="lbl">📅 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}</div>
+  <div class="panel"><span class="lbl">📅 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}
+    <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div>
+    <div id="payBox">${payList()}</div></div>
   <div class="panel"><span class="lbl">🏋️ Entrenamiento, pasos y revisiones</span>
     <div class="field"><label>Días de entrenamiento</label><div class="chips">${WD.map((d,i)=>{const gi=(i+1)%7;return `<button type="button" class="chip ${f.dias.includes(gi)?'on':''}" onclick="fDay(${gi})">${d.slice(0,3)}</button>`}).join('')}</div></div>
     ${grid(inp('pasosT','👟 Pasos objetivo · día de entreno','n')+inp('pasosR','👟 Pasos objetivo · día sin entreno','n')+inp('tipoEntreno','¿Qué trabaja? (tipo de entrenamiento)')+inp('diasSemana','Nº días entrena por semana','n')+sel('revFis','Día revisión físico / peso',days)+inp('lastFis','Última revisión físico','date')+sel('revEnt','Día revisión entreno',days)+inp('lastEnt','Última revisión entreno','date'))}
@@ -1036,4 +1038,68 @@ async function savePhotos(e,date){
     const keep=(c.fotosP||[]).filter(p=>!Object.keys(paths).some(k=>p.includes('/'+k+'-')));c.fotosP=keep.concat(Object.values(paths));c.fotos=c.fotosP.length;
     save();await flushSync();toast('Fotos guardadas');closeSheet();renderCoach();
   }catch(err){console.error(err);toast('No se han podido subir: '+authMsg(err));btn.disabled=false;btn.textContent='Guardar fotos'}
+}
+
+// ================= MI NEGOCIO: facturación, ticket medio, renovaciones =================
+let PAYS=null; // todos los cobros (entrenador)
+async function loadPays(force){if(PAYS&&!force)return PAYS;try{PAYS=(await db.payments()).map(p=>Object.assign(p,{importe:+p.importe}))}catch(e){PAYS=[]}return PAYS}
+function payList(){if(!PAYS){loadPays().then(()=>{const b=document.getElementById('payBox');if(b)b.innerHTML=payList()});return '<p class="small muted">Cargando…</p>'}
+  const L=PAYS.filter(p=>CUR&&p.client_id===CUR.id).slice().reverse();
+  if(!L.length)return `<p class="small muted" style="margin:0">Sin cobros registrados. Mientras no registres ninguno, «Mi negocio» estima sus cobros con su fecha de alta, el tipo de suscripción y el pago actual.</p>`;
+  return `<div class="tbl-w"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Importe</th><th>Nota</th><th></th></tr></thead><tbody>${L.map(p=>`<tr><td>${new Date(p.fecha+'T12:00').toLocaleDateString('es-ES')}</td><td>${p.concepto==='alta'?'Alta':p.concepto==='renovacion'?'Renovación':'Otro'}</td><td>${nf(p.importe,0)} €</td><td class="wrap">${esc(p.nota||'')}</td><td><button class="x" type="button" aria-label="Borrar cobro" onclick="payDel(${p.id})">×</button></td></tr>`).join('')}</tbody></table></div>`}
+function payForm(){const sh=document.getElementById('sheet');const has=PAYS&&PAYS.some(p=>p.client_id===CUR.id);
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Registrar cobro"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>💶 Registrar cobro · ${esc(CLIENT.name)}</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+  <form class="form" onsubmit="paySave(event)"><div class="fgrid"><div class="field"><label for="pyD">Fecha</label><input id="pyD" type="date" value="${iso(new Date())}" required></div><div class="field"><label for="pyI">Importe (€)</label><input id="pyI" inputmode="decimal" value="${esc(FICHA.pago||'')}" required></div></div>
+  <div class="field"><label for="pyC">Concepto</label><select id="pyC" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="renovacion" ${has||(FICHA.alta&&FICHA.alta<iso(daysAgo(7)))?'selected':''}>Renovación</option><option value="alta" ${has||(FICHA.alta&&FICHA.alta<iso(daysAgo(7)))?'':'selected'}>Alta (primer pago)</option><option value="otro">Otro</option></select></div>
+  <div class="field"><label for="pyN">Nota (opcional)</label><input id="pyN" placeholder="Transferencia, Bizum…"></div>
+  <label class="prow"><span>Mover la próxima renovación un periodo<small>Según su tipo de suscripción (${esc((SUBT.find(x=>x[0]===FICHA.tipo)||['','sin tipo'])[1])})</small></span><input class="sw" type="checkbox" id="pyR" ${SUBM[FICHA.tipo]?'checked':''}></label>
+  <button class="btn" type="submit">Guardar cobro</button></form></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
+async function paySave(e){e.preventDefault();const imp=parseFloat(String(document.getElementById('pyI').value).replace(',','.'));if(!(imp>0)){toast('Pon el importe');return}
+  const row={client_id:CUR.id,fecha:document.getElementById('pyD').value,importe:imp,concepto:document.getElementById('pyC').value,nota:document.getElementById('pyN').value.trim()||null};
+  try{const r=await db.addPayment(row);(PAYS=PAYS||[]).push(Object.assign(r,{importe:+r.importe}));PAYS.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    if(document.getElementById('pyR').checked&&SUBM[FICHA.tipo]){const base=nextRenewal(FICHA)||row.fecha;const d=new Date(base+'T12:00');if(base<=row.fecha||!FICHA.renov){d.setMonth(d.getMonth()+SUBM[FICHA.tipo])}FICHA.renov=iso(d);if(!FICHA.alta)FICHA.alta=row.fecha;save()}
+    toast('Cobro registrado');closeSheet();renderCoach()}catch(err){toast('No se ha podido guardar: '+authMsg(err))}}
+async function payDel(id){if(!confirm('¿Borrar este cobro?'))return;try{await db.delPayment(id);PAYS=PAYS.filter(p=>p.id!==id);renderCoach()}catch(e){toast(authMsg(e))}}
+async function openBiz(){try{await flushSync()}catch(e){}coachSel='__biz';document.querySelector('.cmain').innerHTML='<p class="muted">Calculando…</p>';await Promise.all([refreshList(),loadPays(true)]);renderCoach()}
+const mAdd=(d,m)=>{const x=new Date(d+'T12:00');x.setMonth(x.getMonth()+m);return iso(x)};
+const mDiff=(a,b)=>(new Date(b+'T12:00')-new Date(a+'T12:00'))/(30.44*864e5);
+function bizClients(){const today=iso(new Date());
+  return CL.map(c=>{const a=c.adm||{};const m=SUBM[a.tipo]||1;const pago=+a.pago||0;const alta=a.alta||(c.ficha&&c.ficha.alta)||'';
+    const end=a.estado==='ended'?(a.baja||a.renovacion||today):a.estado==='paused'?(a.pausa||today):today;
+    const real=(PAYS||[]).filter(p=>p.client_id===c.id);let pays,est=false;
+    // Cobros registrados + estimación de los periodos anteriores al primer cobro registrado
+    const firstReal=real.length?real[0].fecha:'9999';pays=[];
+    if(alta&&pago>0){let d=alta,i=0;while(d<=end&&d<=today&&d<firstReal&&i<120){pays.push({fecha:d,importe:pago,concepto:i?'renovacion':'alta'});est=true;d=mAdd(d,m);i++}}
+    real.forEach(p=>pays.push({fecha:p.fecha,importe:p.importe,concepto:p.concepto==='alta'&&pays.length?'renovacion':p.concepto}));
+    const months=alta?Math.max(0,mDiff(alta,end>today?today:end)):null;
+    return {c,a,m,pago,alta,end,pays,est,months,renewals:pays.filter(p=>p.concepto==='renovacion').length,firstDue:alta?mAdd(alta,m):null}})}
+function cBiz(){
+  const B=bizClients();const today=iso(new Date());const ym=today.slice(0,7);
+  const act=B.filter(x=>x.a.estado==='active'||x.a.estado==='trial'),pau=B.filter(x=>x.a.estado==='paused'),end=B.filter(x=>x.a.estado==='ended');
+  const P=B.flatMap(x=>x.pays.map(p=>Object.assign({n:x.c.name,est:x.est},p)));
+  const month=P.filter(p=>p.fecha.slice(0,7)===ym).reduce((s,p)=>s+p.importe,0);
+  const mrr=act.reduce((s,x)=>s+x.pago/x.m,0);
+  const tick=P.length?P.reduce((s,p)=>s+p.importe,0)/P.length:0;
+  const tickAct=act.filter(x=>x.pago>0);const tickA=tickAct.length?tickAct.reduce((s,x)=>s+x.pago,0)/tickAct.length:0;
+  const dur=B.filter(x=>x.months!=null);const avgDur=dur.length?dur.reduce((s,x)=>s+x.months,0)/dur.length:0;
+  const elig=B.filter(x=>x.firstDue&&x.firstDue<=today&&x.pago>0);const renewed=elig.filter(x=>x.renewals>0);
+  const rate=elig.length?renewed.length/elig.length*100:null;const totalRen=B.reduce((s,x)=>s+x.renewals,0);
+  const ltv=dur.length?B.reduce((s,x)=>s+x.pays.reduce((a,p)=>a+p.importe,0),0)/B.length:0;
+  const months=Array.from({length:12},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-11+i);const k=iso(d).slice(0,7);return {k,v:P.filter(p=>p.fecha.slice(0,7)===k).reduce((s,p)=>s+p.importe,0)}});
+  const mx=Math.max(1,...months.map(x=>x.v));const MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const bars=`<svg class="chart" viewBox="0 0 720 220" role="img" aria-label="Facturación por mes">${months.map((x,i)=>{const h=Math.round(x.v/mx*160);const X=20+i*58;return `<rect x="${X}" y="${180-h}" width="40" height="${h}" rx="3" fill="${x.k===ym?'#FFD60A':'#6b5d10'}"><title>${x.k}: ${nf(x.v,0)} €</title></rect>${x.v?`<text x="${X+20}" y="${174-h}" text-anchor="middle" style="fill:#ddd">${nf(x.v,0)}</text>`:''}<text x="${X+20}" y="198" text-anchor="middle">${MN[+x.k.slice(5)-1]}</text>`}).join('')}</svg>`;
+  const lim=mAdd(today,1);const up=act.map(x=>({x,d:nextRenewal({renov:x.a.renovacion||'',tipo:x.a.tipo||'',alta:x.alta})})).filter(o=>o.d&&o.d<=lim).sort((a,b)=>a.d.localeCompare(b.d));
+  const upSum=up.reduce((s,o)=>s+o.x.pago,0);const late=up.filter(o=>o.d<today);
+  const byType=SUBT.map(([k,l])=>({l,n:act.filter(x=>x.a.tipo===k).length})).filter(o=>o.n);
+  const estN=B.filter(x=>x.est).length;
+  const k=(l,v,s,cls)=>`<div class="kpi"><small>${l}</small><b class="${cls||''}">${v}</b>${s?`<small>${s}</small>`:''}</div>`;
+  return `<div class="chead"><div><span class="lbl">Panel general</span><h1>Mi negocio</h1></div></div>
+  <div class="kpis">${k('Facturado este mes',nf(month,0)+' €',new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'}))}${k('Ingreso recurrente mensual',nf(mrr,0)+' €/mes','Lo que generan tus activos al mes')}${k('Ticket medio',nf(tickA,0)+' €',`por cobro (${nf(tick,0)} € de media histórica)`)}${k('Valor medio por cliente',nf(ltv,0)+' €','Total cobrado ÷ clientes')}</div>
+  <div class="kpis">${k('Clientes activos',act.length,`${pau.length} pausados · ${end.length} bajas · ${B.length} en total`)}${k('Duración media',nf(avgDur,1)+' meses','Desde el alta hasta hoy o hasta la baja')}${k('Renovaciones',totalRen,'Cobros de renovación en total')}${k('% de renovación',rate==null?'—':nf(rate,0)+' %',`${renewed.length} de ${elig.length} clientes renovaron al menos una vez`,rate==null?'':rate>=60?'good':rate>=40?'':'badc')}</div>
+  <div class="panel"><span class="lbl">Facturación de los últimos 12 meses</span>${bars}</div>
+  <div class="panel"><div class="sec-h"><span class="lbl">Renovaciones de los próximos 30 días</span><b>${nf(upSum,0)} € previstos</b></div>
+    ${up.length?`<div class="tbl-w"><table><thead><tr><th>Cliente</th><th>Fecha</th><th>Importe</th><th>Tipo</th></tr></thead><tbody>${up.map(o=>`<tr><td><button class="linkbtn" type="button" onclick="coachTab='ficha';selectClient('${o.x.c.id}')">${esc(o.x.c.name)}</button></td><td class="${o.d<today?'badc':''}">${new Date(o.d+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}${o.d<today?' · vencida':''}</td><td>${o.x.pago?nf(o.x.pago,0)+' €':'—'}</td><td>${esc((SUBT.find(t=>t[0]===o.x.a.tipo)||['','—'])[1])}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted" style="margin:0">Ninguna en los próximos 30 días.</p>'}
+    ${late.length?`<p class="small badc" style="margin:0">${late.length} renovación${late.length>1?'es':''} vencida${late.length>1?'s':''}: registra el cobro en su Ficha o cambia su estado.</p>`:''}</div>
+  <div class="panel"><span class="lbl">Activos por tipo de suscripción</span><div class="kpis">${byType.map(o=>k(o.l,o.n)).join('')||'<p class="small muted">Sin datos.</p>'}</div></div>
+  <p class="small muted" style="margin:0">${estN?`⚠️ ${estN} cliente${estN>1?'s':''} con cobros sin registrar: esos cobros se estiman con la fecha de alta, el tipo de suscripción y el pago actual de su Ficha. Para que todo sea exacto, registra cada cobro en su Ficha (💶 Registrar cobro).`:'Todas las cifras salen de los cobros que has registrado.'}</p>`;
 }

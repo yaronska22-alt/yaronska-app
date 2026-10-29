@@ -393,3 +393,4 @@ body.noscroll{overflow:hidden}
 .legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted)}.legend span{display:flex;align-items:center;gap:5px}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px}.legend i.dash{background:none;border-top:2px dashed;height:0}
 .wstats.fat b{color:#FFB070}
+.citem.biz{border-color:rgba(255,214,10,.45);margin-bottom:6px}.citem.biz .av{background:var(--y);color:#000}

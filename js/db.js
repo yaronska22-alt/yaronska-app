@@ -78,6 +78,9 @@ const db = {
   async insertClientRow(row) { return ok(await sb.from('clients').insert(row).select('id').single()).id; },
   async insertMany(table, rows) { if (rows.length) ok(await sb.from(table).insert(rows)); },
   async deleteClient(id) { ok(await sb.from('clients').delete().eq('id', id)); },
+  async payments() { return ok(await sb.from('payments').select('*').order('fecha')); },
+  async addPayment(row) { return ok(await sb.from('payments').insert(row).select('*').single()); },
+  async delPayment(id) { ok(await sb.from('payments').delete().eq('id', id)); },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
   // ---------- escrituras ----------
