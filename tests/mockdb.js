@@ -30,6 +30,10 @@ window.db={
   async loadClient(id,withAdmin){if(!can(id))deny('load');const c=st.clients.find(c=>c.id===id);const f=(t)=>st[t].filter(x=>x.client_id===id).map(x=>JSON.parse(JSON.stringify(x)));
     if(withAdmin&&!isCoach())deny('admin');
     return {client:JSON.parse(JSON.stringify(c)),admin:withAdmin?(st.client_admin.find(a=>a.client_id===id)||null):null,weights:f('weights').sort((a,b)=>a.fecha.localeCompare(b.fecha)),checkins:f('checkins'),daily:f('daily_logs'),logs:f('workout_logs')}},
+  async getDietCalc(id){if(!isCoach())deny('calc');st.calc=st.calc||{};return st.calc[id]||null},
+  async saveDietCalc(id,data){if(!isCoach())deny('calc');st.calc=st.calc||{};st.calc[id]=JSON.parse(JSON.stringify(data));persist()},
+  async getSetting(k){if(!isCoach())deny('set');return (st.settings||{})[k]||null},
+  async setSetting(k,v){if(!isCoach())deny('set');st.settings=st.settings||{};st.settings[k]=v;persist()},
   async templates(){if(!isCoach())deny('tpl');return st.templates},
   async updateClient(id,row){if(!isCoach())deny('updateClient');Object.assign(st.clients.find(c=>c.id===id),JSON.parse(JSON.stringify(row)));window.__writes=(window.__writes||0)+1;persist()},
   async upsertAdmin(row){if(!isCoach())deny('admin');const a=st.client_admin.find(a=>a.client_id===row.client_id);if(a)Object.assign(a,row);else st.client_admin.push(row);persist()},

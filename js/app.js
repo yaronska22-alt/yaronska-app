@@ -69,7 +69,7 @@ let SNAP=null;
 let RECOVERY=false,OFFER_PK=false; // llegó desde el email de "he olvidado mi contraseña"      // copia de lo último guardado, para enviar solo lo que cambia
 
 function fichaPublic(){const o={};Object.keys(FICHA).forEach(k=>{if(!(k in ADMIN_MAP))o[k]=FICHA[k]});return o}
-function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCase()||CUR.email,ficha:fichaPublic(),prefs:S.profile,fase:S.phase,semana:S.week,semanas_fase:S.weeksPhase,kcal:S.kcal,rest_on:S.restOn,plan:S.planOn?{auto:true,kcal:S.kcal}:null,rutina:S.routine,pautas:S.next}}
+function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCase()||CUR.email,ficha:fichaPublic(),prefs:S.profile,fase:S.phase,semana:S.week,semanas_fase:S.weeksPhase,kcal:S.kcal,rest_on:S.restOn,plan:S.planCalc?S.planCalc:S.planOn?{auto:true,kcal:S.kcal}:null,rutina:S.routine,pautas:S.next}}
 function adminRow(){const r={client_id:CUR.id};Object.entries(ADMIN_MAP).forEach(([k,col])=>{let v=FICHA[k];if(v===''||v==null)v=null;if(col==='pago'&&v!=null)v=+v;if(col==='cheatmeals'&&v!=null)v=Math.round(+v);r[col]=v});if(!r.estado)r.estado='active';return r}
 const wBody=w=>({client_id:CUR.id,fecha:w.date,peso:w.peso});
 const cBody=c=>{const {id,date,...data}=c;return {client_id:CUR.id,fecha:date,data}};
@@ -82,7 +82,7 @@ function fromDb(d){
   if(d.admin)Object.entries(ADMIN_MAP).forEach(([k,col])=>{S.ficha[k]=d.admin[col]==null?'':d.admin[col]});
   if(!S.ficha.email)S.ficha.email=c.email;
   S.profile=Object.assign(clone(PROFILE_DEF),c.prefs||{});
-  S.phase=c.fase;S.week=c.semana;S.weeksPhase=c.semanas_fase;S.kcal=c.kcal;S.restOn=c.rest_on;S.planOn=!!c.plan;S.routine=c.rutina||[];
+  S.phase=c.fase;S.week=c.semana;S.weeksPhase=c.semanas_fase;S.kcal=c.kcal;S.restOn=c.rest_on;S.planOn=!!c.plan;S.planCalc=c.plan&&c.plan.source==='calc'?c.plan:null;S.routine=c.rutina||[];
   S.weights=d.weights.map(w=>({id:w.id,date:w.fecha,peso:+w.peso}));
   S.checkins=d.checkins.map(x=>Object.assign({r:{}},x.data,{id:x.id,date:x.fecha}));
   d.daily.forEach(x=>{S.daily[x.fecha]=x.data});
@@ -165,7 +165,7 @@ async function doForgot(e){e.preventDefault();busy(e,true);try{await db.resetPas
 async function doNewPass(e){e.preventDefault();const p=document.getElementById('aP').value,p2=document.getElementById('aP2').value;
   if(p.length<8)return showAuth('newpass','La contraseña debe tener al menos 8 caracteres.');if(p!==p2)return showAuth('newpass','Las contraseñas no coinciden.');
   busy(e,true);try{const r=await db.setPassword(p);RECOVERY=false;history.replaceState(null,'',location.pathname);await enter(r.user)}catch(err){showAuth('newpass',authMsg(err))}}
-async function logout(){try{await flushSync()}catch(e){}await db.signOut();ME=null;CUR=null;SNAP=null;S=emptyS();FICHA=S.ficha;showAuth('login')}
+async function logout(){try{if(CALC.frame){await calcFlush();document.getElementById('calcWrap').hidden=true;CALC.forId=null}}catch(e){}try{await flushSync()}catch(e){}await db.signOut();ME=null;CUR=null;SNAP=null;S=emptyS();FICHA=S.ficha;showAuth('login')}
 
 // ---- Face ID / huella (passkeys): entrar sin escribir la contraseña
 function pkMsg(e){const m=String(e&&(e.code||e.message||e.name)||'');
@@ -256,7 +256,7 @@ function recipeHas(r,g,key){const def=SRC[g].find(x=>x[0]===key);const tag=(r.ta
 function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POSTRE/i.test(r.tags.join(' '))&&['p','f','c'].every(g=>!F[g]||recipeHas(r,g,F[g])))}
 
 // ================= VISTA CLIENTE =================
-function setView(v){view=v;document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
+function setView(v){view=v;setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
 function go(t){tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
@@ -366,25 +366,29 @@ function vFood(){
   if(!S.planOn)return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div><div class="empty">Tu plan aparecerá aquí en cuanto Yaron lo prepare.</div>`;
   if(!S.restOn)dayType='T';
   return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div>
-  ${S.restOn?`<div class="daytype" role="radiogroup" aria-label="Tipo de día"><button type="button" class="t ${dayType==='T'?'on':''}" onclick="dayType='T';render()" aria-pressed="${dayType==='T'}"><b>🏋️ Día de entreno</b><small>${kT()} kcal · comes más</small></button><button type="button" class="r ${dayType==='R'?'on':''}" onclick="dayType='R';render()" aria-pressed="${dayType==='R'}"><b>🏠 Día de descanso</b><small>${kR()} kcal · comes menos</small></button></div>`:''}
+  ${S.restOn?`<div class="daytype" role="radiogroup" aria-label="Tipo de día"><button type="button" class="t ${dayType==='T'?'on':''}" onclick="dayType='T';render()" aria-pressed="${dayType==='T'}"><b>🏋️ Día de entreno</b><small>Comes un poco más</small></button><button type="button" class="r ${dayType==='R'?'on':''}" onclick="dayType='R';render()" aria-pressed="${dayType==='R'}"><b>🏠 Día de descanso</b><small>Comes un poco menos</small></button></div>`:''}
   <div class="tabs" role="tablist"><button type="button" class="${foodTab==='plan'?'on':''}" onclick="foodTab='plan';render()">Mi plan</button><button type="button" class="${foodTab==='recetas'?'on':''}" onclick="foodTab='recetas';render()">Recetas</button></div>
   ${foodTab==='plan'?vPlan():vRecipes()}`;
 }
 const nearK=k=>Math.min(3200,Math.max(1300,Math.round(k/50)*50));
 const kT=()=>S.kcal,kR=()=>S.restOn?S.kcal-250:S.kcal;
-const VAR=()=>DATA.V[nearK(dayType==='R'&&S.restOn?kR():kT())];
+const VAR=()=>S.planCalc?(dayType==='R'&&S.planCalc.R?S.planCalc.R:S.planCalc.T):DATA.V[nearK(dayType==='R'&&S.restOn?kR():kT())];
 const PLAN=()=>VAR().plan;
+function optMeal(m,t){if(!m||(!m.options.length&&!m.note))return '';
+  return `<section class="sec-h"><h2>${esc(t)}</h2></section>${m.options.length?`<div class="hscroll">${m.options.map(b=>`<article class="bfc"><h3>${esc(b.name)}</h3><ul>${b.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>${b.notes?`<p class="small muted" style="margin:6px 0 0">${esc(b.notes)}</p>`:''}</article>`).join('')}</div>`:''}${m.note?`<div class="band">${esc(m.note)}</div>`:''}`}
 function vPlan(){
   const P=PLAN(),m=P[meal];const list=arr=>`<div class="opts">${arr.map(t=>`<div>${esc(t)}</div>`).join('')}</div>`;
   return `<section class="sec-h"><h2>Desayunos</h2><span class="dtag">${dayType==='R'?'Descanso':'Entreno'}</span></section>
-  <div class="hscroll">${P.breakfast.map(b=>`<article class="bfc"><h3>${esc(b.name)}</h3><ul>${b.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></article>`).join('')}</div>
+  <div class="hscroll">${P.breakfast.map(b=>`<article class="bfc"><h3>${esc(b.name)}</h3><ul>${b.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>${b.notes?`<p class="small muted" style="margin:6px 0 0">${esc(b.notes)}</p>`:''}</article>`).join('')}</div>
+  ${P.bfNote?`<p class="small muted" style="margin:0">${esc(P.bfNote)}</p>`:''}
+  ${optMeal(P.midmorning,'Almuerzo / post entreno')}${optMeal(P.snack,'Merienda')}
   <div class="tabs"><button type="button" class="${meal==='lunch'?'on':''}" onclick="meal='lunch';render()">Comida</button><button type="button" class="${meal==='dinner'?'on':''}" onclick="meal='dinner';render()">Cena</button></div>
   <p class="small muted" style="margin:0">Elige <b style="color:var(--fg)">una opción de cada</b>: proteína + grasa + hidrato. Todas valen lo mismo.</p>
   <div class="macro"><div class="macro-h"><span class="pill p-prot">Proteína</span></div>${list(m.protein)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-fat">Grasa</span></div>${list(m.fat)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-carb">Hidratos</span></div>${list(m.carb)}</div>
-  <div class="band"><b style="color:var(--ok)">Añade siempre verdura</b>${esc(m.vegs.slice(0,6).join(' · '))}…</div>
-  <div class="band fruit"><b class="y">Postre · fruta a elegir</b>${esc(m.fruit.join(' · '))}</div>`;
+  <div class="band"><b style="color:var(--ok)">Añade siempre verdura</b>${esc((m.vegs&&m.vegs.length?m.vegs.slice(0,8).join(' · '):m.veg||'Verdura al gusto'))}</div>
+  ${m.fruit&&m.fruit.length?`<div class="band fruit"><b class="y">Postre · fruta a elegir</b>${esc(m.fruit.join(' · '))}</div>`:''}`;
 }
 function vRecipes(){
   const res=filtered();
@@ -516,9 +520,9 @@ async function selectClient(id){
 }
 let RC_BUSY=false;
 function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=true;try{_renderCoach()}finally{RC_BUSY=false}}
-function _renderCoach(){
+function _renderCoach(){setTimeout(placeCalc);
   const el=document.getElementById('coachView');
-  const T=[['ficha','Ficha'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina'],['plan','Plan']];
+  const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina'],['plan','Plan']];
   const c=CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
   <aside class="clist" aria-label="Clientes"><span class="lbl">Tus clientes · ${CL.length}</span>
@@ -534,7 +538,7 @@ function _renderCoach(){
       <div class="field"><label for="wtS">Semanas de esta fase</label><input id="wtS" type="number" min="1" max="52" value="${S.weeksPhase}" onchange="S.weeksPhase=Math.max(S.week,+this.value||1);save();setTimeout(renderCoach)"></div></div>
       <p class="small muted" style="margin:0">Alarga o acorta la fase cambiando «Semanas de esta fase». El cliente lo ve al momento en su Inicio.</p></div>
     <div class="tabs">${T.map(([k,l])=>`<button type="button" class="${coachTab===k?'on':''}" onclick="coachTab='${k}';renderCoach()">${l}</button>`).join('')}</div>
-    ${({ficha:cFicha,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,plan:cPlan})[coachTab]()}`}
+    ${({ficha:cFicha,dieta:cDieta,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,plan:cPlan})[coachTab]()}`}
   </section></div>`;
 }
 // ---- dar de alta un cliente nuevo
@@ -729,7 +733,65 @@ function planPreview(k){
   const v=DATA.V[nearK(k)].plan;
   return `<span class="lbl">Vista previa · ${nearK(k)} kcal</span><div class="kpis"><div class="kpi"><small>Desayuno · ${esc(v.breakfast[0].name)}</small><b style="font-size:14px">${esc(v.breakfast[0].items.slice(0,2).join(' · '))}</b></div><div class="kpi"><small>Proteína comida</small><b style="font-size:14px">${esc(v.lunch.protein[0])}</b></div><div class="kpi"><small>Hidrato comida</small><b style="font-size:14px">${esc(v.lunch.carb[0])}</b></div><div class="kpi"><small>Grasa comida</small><b style="font-size:14px">${esc(v.lunch.fat[0])}</b></div></div>`;
 }
-function applyPlan(){const k=+document.getElementById('pk').value;if(!(k>=1300&&k<=3200)){toast('Pon unas kcal entre 1300 y 3200');return}S.kcal=nearK(k);S.planOn=true;S.restOn=document.getElementById('pr').value==='1';planPrev=null;save();toast('Plan de '+S.kcal+' kcal asignado');renderCoach()}
+function applyPlan(){const k=+document.getElementById('pk').value;if(!(k>=1300&&k<=3200)){toast('Pon unas kcal entre 1300 y 3200');return}S.kcal=nearK(k);S.planOn=true;S.planCalc=null;S.restOn=document.getElementById('pr').value==='1';planPrev=null;save();toast('Plan de '+S.kcal+' kcal asignado');renderCoach()}
 function assignTpl(i){const t=TEMPLATES.concat(TPL_MINE)[i];S.routine=clone(t.days);dayIdx=0;save();toast('Rutina «'+t.name+'» asignada');renderCoach()}
 function saveAsTpl(){const n=TPL_MINE.length+1;TPL_MINE.push({name:'Mi plantilla '+n,desc:'Guardada desde un cliente',days:clone(S.routine)});save();toast('Guardada como «Mi plantilla '+n+'»');renderCoach()}
 boot();
+
+// ================= CALCULADORA DE DIETAS DENTRO DEL PANEL =================
+// La Calculadora original (calc/index.html) va en un marco que no se recarga al cambiar de pestaña.
+// Guarda sus datos de cada cliente en la tabla diet_calc; «Enviar plan a la app» pasa el protocolo al cliente.
+let CALC={frame:null,ready:false,forId:null,saveT:null,pending:null,exportCb:null,full:false};
+function calcWrap(){let w=document.getElementById('calcWrap');if(!w){w=document.createElement('div');w.id='calcWrap';w.hidden=true;
+  w.innerHTML=`<div class="calc-bar"><span class="lbl" style="color:var(--y)">Calculadora · <span id="calcWho"></span></span><button class="btn ghost sm" type="button" onclick="calcFull(false)">✕ Salir de pantalla completa</button></div>`;
+  document.body.appendChild(w)}return w}
+function cDieta(){
+  const pl=S.planCalc?`Calculadora · enviado el ${new Date(S.planCalc.fecha+'T12:00').toLocaleDateString('es-ES')}${S.planCalc.R?' · con días sin entreno':''}`:S.planOn?`Plan automático · ${S.kcal} kcal`:'Ninguno todavía';
+  return `<div class="panel"><div class="sec-h"><div><span class="lbl">Plan que ve el cliente en su app</span><b style="display:block;font-size:15px">${esc(pl)}</b></div>
+    <div class="row"><button class="btn sm" type="button" onclick="calcSend()">📲 Enviar plan a la app</button><button class="btn ghost sm" type="button" onclick="calcFull(true)">⛶ Pantalla completa</button><button class="btn ghost sm" type="button" onclick="setView('client');go('food')">Ver como el cliente</button></div></div>
+    <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p></div>
+  <div id="calcSlot" class="calc-slot"><p class="muted" id="calcLoading">Cargando la Calculadora…</p></div>`;
+}
+function placeCalc(){
+  const w=calcWrap();const slot=document.getElementById('calcSlot');
+  const show=view==='coach'&&coachTab==='dieta'&&slot&&CUR;
+  if(!show&&!CALC.full){w.hidden=true;return}
+  if(!CALC.frame){const f=document.createElement('iframe');f.src='calc/index.html?embed=1';f.title='Calculadora de dietas';f.className='calc-frame';CALC.frame=f;w.appendChild(f)}
+  w.hidden=false;document.getElementById('calcWho').textContent=CLIENT.name;
+  if(!CALC.full&&slot){const r=slot.getBoundingClientRect();w.style.top=(r.top+window.scrollY)+'px';w.style.left=(r.left+window.scrollX)+'px';w.style.width=r.width+'px'}
+  if(CALC.ready&&CUR&&CALC.forId!==CUR.id)calcLoad();
+}
+window.addEventListener('resize',()=>{if(CALC.frame)placeCalc()});
+function calcFull(on){CALC.full=on;const w=calcWrap();w.classList.toggle('full',on);document.body.classList.toggle('noscroll',on);if(!on){setTimeout(placeCalc)}else placeCalc()}
+function calcPost(m){CALC.frame.contentWindow.postMessage(Object.assign({ys:true},m),location.origin)}
+function ageOf(nac){if(!nac)return null;return Math.floor((new Date()-new Date(nac+'T12:00'))/31557600000)}
+async function calcLoad(){
+  if(!CUR||!CALC.ready)return;const id=CUR.id;CALC.forId=id;
+  await calcFlush();
+  let data=null,foods=[];
+  try{[data,foods]=await Promise.all([db.getDietCalc(id),db.getSetting('customFoods')])}catch(e){toast('No se ha podido cargar la dieta: '+authMsg(e));return}
+  if(CALC.forId!==id)return;
+  const W=allWeights();const lastW=W.length?W[W.length-1].peso:null;
+  if(!data){data={id,name:CLIENT.name,desc:'',createdAt:new Date().toISOString(),
+    data:{sex:FICHA.sexo==='Mujer'?'female':'male',age:ageOf(FICHA.nac)||30,height:+FICHA.altura||175,weight:lastW||75,activity:1.55,trainingDays:(FICHA.dias||[]).length||4,steps:+FICHA.pasosT||8000,metabolism:1,meals:4,goal:FICHA.objetivo==='ganar'?'0.10':'-0.15',dietType:'standard',proteinPerKg:1.8},
+    notes:'',history:[],mealPlan:null,measurements:[]}}
+  data.id=id;data.name=CLIENT.name;
+  calcPost({type:'load',client:data,customFoods:Array.isArray(foods)?foods:[],tab:'protocol'});
+}
+async function calcFlush(){if(CALC.pending){clearTimeout(CALC.saveT);const p=CALC.pending;CALC.pending=null;try{await db.saveDietCalc(p.id,p.client);if(p.foods)await db.setSetting('customFoods',p.foods)}catch(e){CALC.pending=p;toast('No se ha podido guardar la dieta. Lo reintento…');CALC.saveT=setTimeout(calcFlush,6000)}}}
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||!e.data||!e.data.ys||!CALC.frame||e.source!==CALC.frame.contentWindow)return;const m=e.data;
+  if(m.type==='ready'){CALC.ready=true;const l=document.getElementById('calcLoading');if(l)l.remove();calcLoad()}
+  if(m.type==='loaded'){const l=document.getElementById('calcLoading');if(l)l.remove()}
+  if(m.type==='save'&&m.client&&m.client.id){CALC.pending={id:m.client.id,client:m.client,foods:m.customFoods};setSaveState('busy');clearTimeout(CALC.saveT);CALC.saveT=setTimeout(()=>calcFlush().then(()=>setSaveState('ok')),800)}
+  if(m.type==='export'&&CALC.exportCb){const cb=CALC.exportCb;CALC.exportCb=null;cb(m.data)}
+});
+function calcSend(){
+  if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
+  CALC.exportCb=d=>{
+    if(!d||d.error){toast(d&&d.error||'No se ha podido exportar el plan');return}
+    S.planCalc=d;S.planOn=true;S.restOn=!!d.R;save();renderCoach();
+    toast(d.R?'Plan enviado: el cliente ya lo ve (entreno y descanso)':'Plan enviado: el cliente ya lo ve');
+  };
+  calcPost({type:'export'});
+}

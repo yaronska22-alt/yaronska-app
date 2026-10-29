@@ -1,0 +1,6 @@
+/* Calculadora dentro de la app: sin lista de clientes ni guardado propio; solo Plan, Constructor y Protocolo */
+.ys-embed .sidebar{display:none!important}
+.ys-embed .main{max-width:none!important;padding:16px!important}
+.ys-embed .topbar-actions .btn-danger,.ys-embed .topbar-actions [onclick^="editClient"]{display:none!important}
+.ys-embed .tabs .tab:not([data-tab="plan"]):not([data-tab="meals"]):not([data-tab="protocol"]){display:none!important}
+.ys-embed #driveBar,.ys-embed .client-summary{display:none!important}

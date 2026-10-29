@@ -70,6 +70,11 @@ const db = {
     const admin = withAdmin ? ok(await sb.from('client_admin').select('*').eq('client_id', id).maybeSingle()) : null;
     return { client, admin, weights, checkins, daily, logs };
   },
+  // ---------- Calculadora de dietas (solo entrenador) ----------
+  async getDietCalc(id) { const r = ok(await sb.from('diet_calc').select('data').eq('client_id', id).maybeSingle()); return r ? r.data : null; },
+  async saveDietCalc(id, data) { ok(await sb.from('diet_calc').upsert({ client_id: id, data, updated_at: new Date().toISOString() })); },
+  async getSetting(key) { const r = ok(await sb.from('coach_settings').select('value').eq('key', key).maybeSingle()); return r ? r.value : null; },
+  async setSetting(key, value) { ok(await sb.from('coach_settings').upsert({ key, value, updated_at: new Date().toISOString() })); },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
   // ---------- escrituras ----------
