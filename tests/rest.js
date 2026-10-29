@@ -1,0 +1,28 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1280,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');
+await p.evaluate(async()=>{const a=await db.createClient('a@t.com',{nombre:'Ana',objetivo:'perder',sexo:'Mujer',altura:165,edad:30,dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(a);coachSel=a;coachTab='dieta';renderCoach()});
+await w(3500);
+await p.click('text=📲 Enviar plan a la app');await w(800);
+console.log('lineal:',await p.evaluate(()=>[S.restOn,!!S.planCalc.R,S.planCalc.mode]));
+await p.click('text=🏋️ Entreno · 🏠 sin entreno');await w(300);
+await p.fill('.rcfg tr:nth-child(5) input >> nth=2','100');await p.dispatchEvent('.rcfg tr:nth-child(5) input >> nth=2','change');await w(300);
+await p.fill('.rcfg tr:nth-child(1) input >> nth=1','40');await p.dispatchEvent('.rcfg tr:nth-child(1) input >> nth=1','change');await w(300);
+await p.click('text=👁️ Ver cómo queda');await w(800);console.log('preview:',(await p.textContent('#restPrev')).replace(/\s+/g,' ').slice(0,300));
+await p.screenshot({path:OUT+'/rest1.png',fullPage:true});
+await p.click('text=📲 Enviar plan a la app');await w(800);
+const r=await p.evaluate(()=>({restOn:S.restOn,mode:S.planCalc.mode,Tl:S.planCalc.T.plan.lunch.carb[1],Rl:S.planCalc.R.plan.lunch.carb[1],Td:S.planCalc.T.plan.dinner.carb[1],Rd:S.planCalc.R.plan.dinner.carb[1],Tp:S.planCalc.T.plan.dinner.protein[1],Rp:S.planCalc.R.plan.dinner.protein[1],Tb:S.planCalc.T.plan.breakfast[0].items.join('|'),Rb:S.planCalc.R.plan.breakfast[0].items.join('|')}));
+console.log(JSON.stringify(r,null,1));
+await p.click('text=🍽️ Igual todos los días');await w(300);console.log('vuelta a lineal restOn:',await p.evaluate(()=>S.restOn));
+console.log('ERR',errs);await b.close()})();

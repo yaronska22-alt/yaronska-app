@@ -801,6 +801,7 @@ function cDieta(){
   return `<div class="panel"><div class="sec-h"><div><span class="lbl">Plan que ve el cliente en su app</span><b style="display:block;font-size:15px">${esc(pl)}</b></div>
     <div class="row"><button class="btn sm" type="button" onclick="calcSend()">📲 Enviar plan a la app</button><button class="btn ghost sm" type="button" onclick="calcFull(true)">⛶ Pantalla completa</button><button class="btn ghost sm" type="button" onclick="setView('client');go('food')">Ver como el cliente</button></div></div>
     <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p></div>
+  ${restPanel()}
   <div id="calcSlot" class="calc-slot"><p class="muted" id="calcLoading">Cargando la Calculadora…</p></div>`;
 }
 function placeCalc(){
@@ -841,12 +842,14 @@ window.addEventListener('message',e=>{
 });
 function calcSend(){
   if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
+  const mode=FICHA.dietMode==='td'?'td':'lineal';
+  if(mode==='td'&&!restHasCuts()){toast('Indica qué baja en los días sin entreno (o elige «Igual todos los días»)');return}
   CALC.exportCb=d=>{
     if(!d||d.error){toast(d&&d.error||'No se ha podido exportar el plan');return}
-    S.planCalc=d;S.planOn=true;S.restOn=!!d.R;save();renderCoach();
-    toast(d.R?'Plan enviado: el cliente ya lo ve (entreno y descanso)':'Plan enviado: el cliente ya lo ve');
+    S.planCalc=d;S.planOn=true;S.restOn=mode==='td'&&!!d.R;save();renderCoach();
+    toast(S.restOn?'Plan enviado: el cliente ve días de entreno y sin entreno':'Plan enviado: el cliente ve el mismo plan todos los días');
   };
-  calcPost({type:'export'});
+  calcPost({type:'export',opts:{mode,cfg:FICHA.restCfg||{}}});
 }
 
 // ================= IMPORTAR CLIENTES DESDE LA CALCULADORA (coaching-data.json) =================
@@ -1123,3 +1126,27 @@ async function acceptConsent(b){if(!document.getElementById('cOk').checked){toas
   tab='home';setView('client');if(OFFER_PK){OFFER_PK=false;offerPasskey()}}
 function consentToggle(el){if(!el.checked){if(!confirm('Si retiras el consentimiento, Yaron no podrá seguir tratando tus datos de salud ni hacer tu seguimiento, y no podrás usar la app hasta que lo vuelvas a dar. ¿Retirarlo?')){el.checked=true;return}
   S.profile.consent=false;S.profile.consentAt=new Date().toISOString();save();flushSync().then(()=>showConsent())}}
+
+// ---- Cómo come el cliente: igual todos los días, o entreno / descanso con bajadas a mano
+const R_MEALS=[['breakfast','Desayuno'],['midmorning','Almuerzo'],['lunch','Comida'],['snack','Merienda'],['dinner','Cena']];
+const R_MAC=[['protein','Proteína'],['fat','Grasas'],['carb','Hidratos'],['fruit','Fruta']];
+const restHasCuts=()=>Object.values(FICHA.restCfg||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
+let restPrev=null;
+function restPanel(){
+  const td=FICHA.dietMode==='td';const C=FICHA.restCfg||{};const tot=R_MEALS.reduce((s,[m])=>s+R_MAC.reduce((a,[g])=>a+(+((C[m]||{})[g])||0),0),0);
+  return `<div class="panel"><div class="sec-h"><span class="lbl">Cómo come este cliente</span><div class="seg2"><button type="button" class="chip ${!td?'on':''}" onclick="setDietMode('lineal')">🍽️ Igual todos los días</button><button type="button" class="chip ${td?'on':''}" onclick="setDietMode('td')">🏋️ Entreno · 🏠 sin entreno</button></div></div>
+  ${td?`<p class="small muted" style="margin:0">Los días sin entreno solo baja lo que pongas aquí (kcal que quitas). Todo lo demás queda igual que los días de entreno. Ejemplo: en la cena, −100 kcal de hidratos.</p>
+    <div class="tbl-w"><table class="rcfg"><thead><tr><th>Comida</th>${R_MAC.map(([,l])=>`<th>${l} (−kcal)</th>`).join('')}<th>Total</th></tr></thead><tbody>
+    ${R_MEALS.map(([m,l])=>{const r=C[m]||{};const t=R_MAC.reduce((a,[g])=>a+(+r[g]||0),0);return `<tr><td>${l}</td>${R_MAC.map(([g])=>`<td><input inputmode="numeric" value="${r[g]?esc(r[g]):''}" placeholder="0" onchange="restSet('${m}','${g}',this.value)" aria-label="${l} ${g}"></td>`).join('')}<td><b>${t?'−'+t:'—'}</b></td></tr>`}).join('')}
+    </tbody><tfoot><tr><td colspan="5"><b>Total del día</b></td><td><b class="y">${tot?'−'+tot+' kcal':'—'}</b></td></tr></tfoot></table></div>
+    <div class="row"><button class="btn ghost sm" type="button" onclick="restPreview()">👁️ Ver cómo queda</button><span class="small muted">Después pulsa «Enviar plan a la app».</span></div><div id="restPrev">${restPrev||''}</div>`
+  :`<p class="small muted" style="margin:0">El cliente verá un solo plan, sin selector de día de entreno o descanso.</p>`}</div>`}
+function setDietMode(m){FICHA.dietMode=m;restPrev=null;if(m==='lineal'&&S.planCalc){S.restOn=false}else if(m==='td'&&S.planCalc&&S.planCalc.R&&S.planCalc.mode==='td'){S.restOn=true}save();renderCoach();
+  if(S.planCalc)toast(m==='lineal'?'El cliente ya ve el mismo plan todos los días':S.restOn?'El cliente ya ve entreno / sin entreno':'Configura las bajadas y pulsa «Enviar plan a la app»')}
+function restSet(m,g,v){const C=FICHA.restCfg=FICHA.restCfg||{};C[m]=C[m]||{};const n=Math.max(0,Math.round(+String(v).replace(',','.')||0));if(n)C[m][g]=n;else delete C[m][g];restPrev=null;save();setTimeout(renderCoach)}
+function restPreview(){if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
+  CALC.exportCb=d=>{if(!d||d.error){toast(d&&d.error||'No se ha podido calcular');return}
+    const rows=d.sum.filter(x=>x.T);const TT=rows.reduce((s,x)=>s+x.T,0),RR=rows.reduce((s,x)=>s+(x.R??x.T),0);
+    restPrev=`<div class="tbl-w"><table><thead><tr><th>Comida</th><th>Entreno</th><th>Sin entreno</th><th>Diferencia</th></tr></thead><tbody>${rows.map(x=>{const l=(R_MEALS.find(r=>r[0]===x.m)||['',x.m])[1];const r=x.R??x.T;return `<tr><td>${l}</td><td>${x.T} kcal</td><td>${r} kcal</td><td class="${r<x.T?'good':''}">${r-x.T?(r-x.T)+' kcal':'='}</td></tr>`}).join('')}<tr><td><b>Día</b></td><td><b>${TT} kcal</b></td><td><b>${RR} kcal</b></td><td><b>${RR-TT} kcal</b></td></tr></tbody></table></div><p class="small muted" style="margin:0">Kcal aproximadas de una opción tipo por comida. Solo lo ves tú: el cliente nunca ve calorías.</p>`;
+    renderCoach()};
+  calcPost({type:'export',opts:{mode:'td',cfg:FICHA.restCfg||{},preview:true}})}

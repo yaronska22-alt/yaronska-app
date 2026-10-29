@@ -397,3 +397,5 @@ body.noscroll{overflow:hidden}
 .consent{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:#DDD8CF}
 .consent input{margin-top:3px;width:18px;height:18px;accent-color:var(--y);flex:none}
 .consent a{color:var(--y)}
+.rcfg input{width:80px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;text-align:center}
+.rcfg td,.rcfg th{white-space:nowrap}

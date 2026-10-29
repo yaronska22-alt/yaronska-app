@@ -35,11 +35,34 @@
     try{YS_BK_F=old}catch(e){}
     return out;
   }
-  window.ysExportForApp=function(){
+  // Días sin entreno A MANO: en cada comida, cuántas kcal quita Yaron de proteína, grasa, hidratos o fruta.
+  // Solo bajan los alimentos de ese macro; el resto de la comida queda igual.
+  const MEALS=['breakfast','midmorning','lunch','snack','dinner'];
+  const clsOf=a=>{const f=a&&pv2Food(a.food);return f?pv2ClassifyFood(f):''};
+  const fct=(k,x)=>k>0?Math.max(0.3,(k-x)/k):1;
+  function cutPlan(p,cfg){
+    const q=JSON.parse(JSON.stringify(p));const done={};
+    MEALS.forEach(m=>{const c=cfg[m]||{};const meal=q[m];if(!meal)return;
+      Object.entries(c).forEach(([g,x])=>{x=+x||0;if(!(x>0))return;
+        if(m==='lunch'||m==='dinner'){const grp=meal[g];if(!grp||!grp.options)return;
+          grp.options.forEach(o=>{const ka=o.alts&&o.alts[0]?pv2Kcal(o.alts[0]):0;const f=fct(ka,x);o.alts=(o.alts||[]).map(a=>ysRestAlt(a,f))});done[m+'.'+g]=true}
+        else{(meal.options||[]).forEach(o=>{const its=(o.items||[]).filter(it=>!it.locked&&it.alts&&it.alts[0]&&clsOf(it.alts[0])===g);
+          const K=its.reduce((s,it)=>s+pv2Kcal(it.alts[0]),0);if(!(K>0))return;const f=fct(K,x);its.forEach(it=>{it.alts=it.alts.map(a=>ysRestAlt(a,f))});done[m+'.'+g]=true})}
+      })});
+    return {q,done};
+  }
+  function mealK(p,m){const meal=p[m];if(!meal)return 0;
+    if(m==='lunch'||m==='dinner'){return ['protein','fat','carb','fruit'].reduce((s,g)=>{const o=meal[g]&&meal[g].options&&meal[g].options[0];return s+(o?pv2OptKcal(o):0)},0)}
+    const o=(meal.options||[]);if(!o.length)return 0;return o.reduce((s,x)=>s+(x.items||[]).reduce((a,it)=>a+(it.alts&&it.alts[0]?pv2Kcal(it.alts[0]):0),0),0)/o.length}
+  window.ysExportForApp=function(opts){
+    opts=opts||{};
     const c=getCurrent();if(!c||!c.protocol||c.protocol.v!==2)return {error:'Este cliente aún no tiene protocolo dietético. Créalo en «Protocolo dietético» (por ejemplo con «Cargar plantilla Yaronska»).'};
-    const p=c.protocol;const RI=ysRestInfo(p);
-    const T=JSON.parse(JSON.stringify(p));const R=RI.f<1?scaled(p,RI.f):null;
-    return {source:'calc',fecha:new Date().toISOString().slice(0,10),T:{plan:planOf(T),ing:ingOf(T)},R:R?{plan:planOf(R),ing:ingOf(R)}:null};
+    const p=c.protocol;const T=JSON.parse(JSON.stringify(p));let R=null,done={};
+    if(opts.mode==='td'&&opts.cfg){const r=cutPlan(p,opts.cfg);done=r.done;if(Object.keys(done).length)R=r.q}
+    else if(!opts.mode){const RI=ysRestInfo(p);R=RI.f<1?scaled(p,RI.f):null}
+    const sum=MEALS.map(m=>({m,T:Math.round(mealK(T,m)),R:R?Math.round(mealK(R,m)):null}));
+    if(opts.preview)return {sum,done};
+    return {source:'calc',mode:opts.mode||'auto',fecha:new Date().toISOString().slice(0,10),T:{plan:planOf(T),ing:ingOf(T)},R:R?{plan:planOf(R),ing:ingOf(R)}:null,sum};
   };
   // Mensajes de la app
   window.addEventListener('message',e=>{
@@ -51,7 +74,7 @@
       showClient();switchTab(m.tab||'protocol');
       send({type:'loaded'});
     }
-    if(m.type==='export'){send({type:'export',data:window.ysExportForApp()})}
+    if(m.type==='export'){send({type:'export',data:window.ysExportForApp(m.opts)})}
     if(m.type==='tab'){switchTab(m.tab)}
   });
   function ready(){send({type:'ready'})}
