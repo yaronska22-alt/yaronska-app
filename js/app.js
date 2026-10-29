@@ -13,18 +13,32 @@ const FICHA_DEF={nombre:'',email:'',tel:'',sexo:'',nac:'',altura:'',objetivo:'pe
 const ADMIN_MAP={estado:'estado',alta:'alta',tipo:'tipo',renov:'renovacion',pago:'pago',cheat:'cheatmeals',pausa:'pausa',baja:'baja',notasCom:'notas'};
 var FICHA=null;
 Object.defineProperties(CLIENT,{
-  program:{get:()=>(FICHA||FICHA_DEF).objetivo==='ganar'?'Ganancia muscular':'Método Anti-Esfuerzo'},
+  program:{get:()=>PROG().n},
   name:{get:()=>(((FICHA||FICHA_DEF).nombre||'').trim()||'Cliente')},
   first:{get:()=>CLIENT.name.split(/\s+/)[0]},
   checkDay:{get:()=>(FICHA||FICHA_DEF).revFis||'Domingo'},
   goal:{get:()=>(FICHA||FICHA_DEF).objetivo},
   trainDays:{get:()=>(FICHA||FICHA_DEF).dias||[]},
   stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +((f.dias||[]).includes(new Date().getDay())?f.pasosT:f.pasosR)||0}}});
-const PHASES=[
-  {n:'Ignición metabólica',d:'Entreno de adaptación para maximizar el gasto y dieta pensada para activar el metabolismo.'},
-  {n:'Moldeado griego',d:'El entreno se orienta a los músculos que quieres resaltar y la dieta acompaña al objetivo estético.'},
-  {n:'Libertad de por vida',d:'Aprendes a gestionar dieta y entreno tú solo, sin rebote.'}
-];
+// Programas: cada cliente está en uno, con sus fases (o etapas en la fase libre)
+const PROGS={
+  perdida:{n:'Método Anti-Esfuerzo',t:'Pérdida de grasa',w:'Fase',ph:[
+    {n:'Ignición metabólica',d:'Entreno de adaptación para maximizar el gasto y dieta pensada para activar el metabolismo. Aquí cae el grueso de la grasa.'},
+    {n:'Moldeado griego',d:'El entreno se orienta a los músculos que quieres resaltar y la dieta acompaña al objetivo estético.'},
+    {n:'Libertad de por vida',d:'Aprendes a gestionar dieta y entreno tú solo para que no haya rebote.'}]},
+  musculo:{n:'Método Anti-Esfuerzo · Masa muscular',t:'Ganancia de masa muscular',w:'Fase',ph:[
+    {n:'Cimientos de acero',d:'Optimizamos tu cuerpo para ganar la máxima masa muscular: creamos el entorno para que construyas músculo de forma súper eficiente.'},
+    {n:'Ascenso al Olimpo',d:'Creamos las formas de tu cuerpo según tus gustos: trabajamos los músculos que tú quieres resaltar.'},
+    {n:'Músculo sin caducidad',d:'Aprendes a mantener todo lo logrado sin perder físico ni rendimiento, gestionando tú solo dieta y entreno.'}]},
+  libre:{n:'Fase libre',t:'Fase libre',w:'Etapa',ph:[
+    {n:'Etapa de volumen',d:'Ganamos masa muscular con un superávit controlado y entreno enfocado en progresar.'},
+    {n:'Etapa de definición',d:'Bajamos grasa manteniendo el músculo y el rendimiento.'},
+    {n:'Etapa de adaptación',d:'Ajustamos dieta y entreno a tu día a día para consolidar lo logrado y preparar el siguiente objetivo.'}]}
+};
+const progKey=f=>{f=f||FICHA||FICHA_DEF;return PROGS[f.programa]?f.programa:(f.objetivo==='ganar'?'musculo':'perdida')};
+const PROG=f=>PROGS[progKey(f)];
+const PH=()=>PROG().ph;
+const phOf=(f,i)=>{const P=PROG(f).ph;return P[Math.min(Math.max(0,i||0),P.length-1)]};
 const RESOURCES=[
   {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan',u:'https://drive.google.com/file/d/13-43KrZG8mGIQNXs5WoVIqhy_aCev0g0/view',k:'PDF'},
   {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',u:'https://drive.google.com/file/d/1Y9CGkn-OOomIIntNeOplIA3wenQGfiab/view',k:'PDF'},
@@ -243,6 +257,7 @@ function lineChart(pts,opt){
   const dots=pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="${i===pts.length-1?4:2.5}" fill="${col}"><title>${fdate(p.d)}: ${nf(p.v,opt.dec??1)}${opt.u||''}</title></circle>`).join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||'Gráfica')}">${grid}<polygon points="${x(0)},${H-B} ${line} ${x(pts.length-1)},${H-B}" fill="${col}" opacity=".12"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>${dots}${lab}</svg>`;
 }
+const clientWeights=()=>{const W=allWeights();const a=FICHA.wFrom||'',b=FICHA.wTo||'';return W.filter(w=>(!a||w.date>=a)&&(!b||w.date<=b))};
 const allWeights=()=>S.weights.concat(S.checkins.filter(c=>c.peso).map(c=>({date:c.date,peso:c.peso}))).sort((a,b)=>a.date.localeCompare(b.date));
 const goodDir=d=>CLIENT.goal==='perder'?d<0:d>0;
 
@@ -327,21 +342,21 @@ function vPerfil(){
   <button class="btn ghost" type="button" onclick="logout()">Cerrar sesión</button>`;
 }
 function vHome(){
-  const ph=PHASES[S.phase];const pct=Math.round(S.week/S.weeksPhase*100);
-  const W=allWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
+  const ph=phOf(FICHA,S.phase);const pct=Math.round(S.week/S.weeksPhase*100);
+  const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
   ${vRemind()}
   <section class="wchart" aria-label="Tu evolución">
     <div class="sec-h"><span class="lbl">Tu evolución · peso</span><span class="small muted">Objetivo: ${CLIENT.goal==='perder'?'perder grasa':'ganar músculo'}</span></div>
-    ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>Inicio</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
+    ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>${FICHA.wFrom?'Desde '+fdate(first.date):'Inicio'}</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
     ${lineChart(W.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})}
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
-    <div class="phase-top"><span class="lbl">Fase ${S.phase+1} de 3</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
+    <div class="phase-top"><span class="lbl">${PROG().w} ${Math.min(S.phase,PH().length-1)+1} de ${PH().length}</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
     <h2>${esc(ph.n)}</h2><div class="bar"><span style="width:${pct}%"></span></div>
-    <div class="steps3">${PHASES.map((p,i)=>`<div class="${i<S.phase?'done':i===S.phase?'now':''}">${i+1} · ${esc(p.n)}</div>`).join('')}</div>
+    <div class="steps3">${PH().map((p,i)=>`<div class="${i<S.phase?'done':i===S.phase?'now':''}">${i+1} · ${esc(p.n)}</div>`).join('')}</div>
   </section>
   <a class="wa-btn" href="https://wa.me/${WA}?text=${encodeURIComponent('¡Hola Yaron! Tengo una duda: ')}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.1.3.6 1 1.4 1.7 1 .9 1.8 1.1 2.1 1.3.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l2 .9c.3.1.4.2.5.3.1.2.1.8-.2 1.5z"/></svg><span>¿Dudas? Escríbeme por WhatsApp<small>Sin horarios · te respondo lo antes posible</small></span></a>`;
 }
@@ -437,6 +452,7 @@ function exCard(e,ei,label){
   return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small></div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
     ${det?`<ol class="setplan">${SS.map((x,i)=>`<li><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${esc(x.reps)}${/ s$/.test(x.reps)?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`
       :`<div class="presc"><span>${e.s} series</span><span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
+    ${e.aprox?`<div class="aprox"><b>Series de aproximación</b><span>${esc(e.aprox)}</span></div>`:''}
     ${nx&&nx.sets?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08);flex-direction:column;align-items:stretch;gap:4px"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span>${nx.sets.map((x,i)=>x.kg||x.reps||x.int?`<b style="color:var(--ok);font-size:13px">Serie ${i+1}${SS[i]&&SS[i].t?' · '+esc(SET_S[SS[i].t]||''):''}: ${[x.kg?esc(x.kg)+' kg':'',x.reps?'× '+esc(x.reps):'',x.int?'· '+esc(x.int):''].filter(Boolean).join(' ')}</b>`:'').join('')}</div>`
     :nx?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08)"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span><b style="color:var(--ok)">${[nx.kg?esc(nx.kg)+' kg':'',nx.reps?'× '+esc(nx.reps):'',nx.int?'· '+esc(nx.int):''].filter(Boolean).join(' ')}</b></div>`:sg?`<div class="target"><span>Objetivo hoy · <small class="muted">${esc(sg.why)}</small></span><b>${nf(sg.kg,1).replace(',0','')} kg · ${esc(sg.txt)}</b></div>`:''}
     <div class="sets2"><span class="h">#</span><span class="h">Semana pasada</span><span class="h">Kg</span><span class="h">Reps</span><span class="h">RIR real</span>
@@ -448,6 +464,7 @@ function vTrain(){
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
   <div class="daysel">${R.map((r,i)=>`<button type="button" class="chip ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${esc(r.d.split('·')[0].trim())}</button>`).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}</h2>
+  ${d.warm&&(d.warm.txt||d.warm.url)?`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>Calentamiento</b>${d.warm.txt?`<small style="white-space:pre-line">${esc(d.warm.txt)}</small>`:''}</div>${d.warm.url?`<a class="vid" href="${esc(d.warm.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`:''}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
 }
@@ -492,8 +509,8 @@ function shrink(file,max){return new Promise((res,rej)=>{const im=new Image();im
 function vRes(){
   return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>guías</em></h1></div>
   <div class="rlist">${RESOURCES.map(r=>`<a class="ritem" href="${r.u}" target="_blank" rel="noopener"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div></a>`).join('')}</div>
-  <section class="sec-h"><h2>Tu programa</h2></section>
-  <div class="rlist">${PHASES.map((p,i)=>`<div class="ritem"><span class="ic o">0${i+1}</span><div><b>${esc(p.n)}</b><small>${esc(p.d)}</small></div></div>`).join('')}</div>`;
+  <section class="sec-h"><h2>Tu programa</h2><span class="small muted">${esc(PROG().t)}</span></section>
+  <div class="rlist">${PH().map((p,i)=>`<div class="ritem ${i===S.phase?'now':''}"><span class="ic o">0${i+1}</span><div><b>${esc(p.n)}${i===S.phase?' <span class="dtag">Ahora</span>':''}</b><small>${esc(p.d)}</small></div></div>`).join('')}</div>`;
 }
 
 // ================= PANEL ENTRENADOR =================
@@ -503,13 +520,13 @@ async function refreshList(){
   const {clients,admin,checkins}=await db.listClients();
   const A={};admin.forEach(a=>A[a.client_id]=a);const L={};checkins.forEach(c=>{if(!L[c.client_id])L[c.client_id]=c.fecha});
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
-    return {id:c.id,email:c.email,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
+    return {id:c.id,email:c.email,ficha:f,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
       renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',...statusOf(L[c.id])}});
 }
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(PHASES[fase]?PHASES[fase].n:'')} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
   if(CUR&&id===CUR.id)return;
@@ -532,9 +549,10 @@ function _renderCoach(){setTimeout(placeCalc);
   </aside>
   <section class="cmain">
     ${!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
-    <div class="chead"><div><span class="lbl">${esc(PHASES[S.phase].n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><span class="st ${c.st}">${esc(c.t)}</span></div>
-    <div class="panel"><span class="lbl">Fase y semana del cliente · lo cambias tú cuando quieras</span><div class="range">
-      <div class="field" style="flex:2"><label for="phS">Fase</label><select id="phS" onchange="S.phase=+this.value;save();setTimeout(renderCoach)">${PHASES.map((p,i)=>`<option value="${i}" ${S.phase===i?'selected':''}>Fase ${i+1} · ${esc(p.n)}</option>`).join('')}</select></div>
+    <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><span class="st ${c.st}">${esc(c.t)}</span></div>
+    <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
+      <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
+      <div class="field" style="flex:2"><label for="phS">${PROG().w}</label><select id="phS" onchange="S.phase=+this.value;save();setTimeout(renderCoach)">${PH().map((p,i)=>`<option value="${i}" ${S.phase===i?'selected':''}>${PROG().w} ${i+1} · ${esc(p.n)}</option>`).join('')}</select></div>
       <div class="field"><label for="wkS">Semana actual</label><input id="wkS" type="number" min="1" max="52" value="${S.week}" onchange="S.week=Math.max(1,+this.value||1);if(S.week>S.weeksPhase)S.weeksPhase=S.week;save();setTimeout(renderCoach)"></div>
       <div class="field"><label for="wtS">Semanas de esta fase</label><input id="wtS" type="number" min="1" max="52" value="${S.weeksPhase}" onchange="S.weeksPhase=Math.max(S.week,+this.value||1);save();setTimeout(renderCoach)"></div></div>
       <p class="small muted" style="margin:0">Alarga o acorta la fase cambiando «Semanas de esta fase». El cliente lo ve al momento en su Inicio.</p></div>
@@ -592,6 +610,8 @@ function cPeso(){
       <div class="field"><label for="wF">Desde</label><input type="date" id="wF" value="${from}" onchange="wFrom=this.value;renderCoach()"></div>
       <div class="field"><label for="wT">Hasta</label><input type="date" id="wT" value="${to}" onchange="wTo=this.value;renderCoach()"></div>
       <button class="btn ghost sm" type="button" onclick="wFrom='';wTo='';renderCoach()">Ver todo</button></div>
+    <div class="pinbar"><div><small class="muted">El cliente ve en su gráfica:</small> <b>${FICHA.wFrom||FICHA.wTo?`${FICHA.wFrom?'desde el '+fdate(FICHA.wFrom):'desde el inicio'} ${FICHA.wTo?'hasta el '+fdate(FICHA.wTo):'hasta hoy (se va actualizando)'}`:'todo, desde el inicio hasta hoy'}</b></div>
+      <div class="row"><button class="btn sm" type="button" onclick="pinRange()">📌 Que vea solo este rango</button>${FICHA.wFrom||FICHA.wTo?`<button class="btn ghost sm" type="button" onclick="FICHA.wFrom='';FICHA.wTo='';save();renderCoach()">Que lo vea todo</button>`:''}</div></div>
     ${R.length?`<div class="kpis"><div class="kpi"><small>Peso inicial · ${fdate(f.date)}</small><b>${nf(f.peso)} kg</b></div><div class="kpi"><small>Peso actual · ${fdate(l.date)}</small><b>${nf(l.peso)} kg</b></div><div class="kpi"><small>${diff<=0?'Peso perdido':'Peso ganado'}</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div><div class="kpi"><small>Media semanal</small><b>${R.length>1?(diff>0?'+':'')+nf(diff/((new Date(l.date)-new Date(f.date))/6048e5||1),2):'—'} kg</b></div></div>
     ${lineChart(R.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Peso en el rango',color:ok?'#7CE38B':'#FFD60A'})}`:'<p class="small muted">No hay pesos en ese rango.</p>'}
   </div>
@@ -646,9 +666,10 @@ function cRutina(){
   <div class="panel"><div class="sec-h"><span class="lbl">Rutina actual del cliente</span><div class="row"><button class="btn ghost sm" type="button" onclick="saveAsTpl()">Guardar como plantilla</button><button class="btn ghost sm" type="button" onclick="setView('client');go('train')">Ver como el cliente</button></div></div>
   <p class="small muted" style="margin:0"><b style="color:var(--fg)">Bloque:</b> pon la misma letra a ejercicios seguidos para hacer superseries, biseries o circuitos. <b style="color:var(--fg)">Series ▾:</b> detalla cada serie (top set, back-off, drop set…).</p>
   ${S.routine.map((d,di)=>{const used=[...new Set(d.ex.map(x=>x.blk).filter(Boolean))];return `<div class="panel" style="background:var(--bg)"><div class="row"><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
+    <div class="warmed"><label class="ef"><small>🔥 Calentamiento del día (lo que tiene que hacer)</small><textarea rows="2" placeholder="5 min bici suave + movilidad de cadera y hombro" onchange="warmEdit(${di},'txt',this.value)">${esc((d.warm||{}).txt||'')}</textarea></label><label class="ef"><small>Vídeo del calentamiento (YouTube)</small><input value="${esc((d.warm||{}).url||'')}" placeholder="https://youtu.be/…" onchange="warmEdit(${di},'url',this.value)"></label></div>
     ${used.length?`<div class="blkbar">${used.map(l=>{const t=(d.ex.find(x=>x.blk===l)||{}).blkT;return `<label>Bloque ${l} ${sel(t,BLK_T,`blkType(${di},'${l}',this.value)`,'Tipo de bloque '+l)}</label>`}).join('')}</div>`:''}
         ${d.ex.map((e,ei)=>{const k=di+'-'+ei;const op=openSets.has(k);const det=detailed(e);return `<div class="ed-ex ${e.blk?'inblk':''}"><div class="ed-row"><label class="ef nm"><small>Ejercicio</small><input id="en-${k}" value="${esc(e.n)}" onchange="exEdit(${di},${ei},'n',this.value)"></label><label class="ef vu"><small>Vídeo (enlace)</small><input id="ev-${k}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="exEdit(${di},${ei},'v',this.value)"></label><label class="ef"><small>Series</small><input id="es-${k}" value="${e.s}" inputmode="numeric" onchange="exEdit(${di},${ei},'s',this.value)"></label><label class="ef"><small>Reps</small><input id="er-${k}" value="${esc(e.r)}" onchange="exEdit(${di},${ei},'r',this.value)"></label><label class="ef"><small>RIR / RPE</small><input id="ei-${k}" value="${esc(e.rir)}" onchange="exEdit(${di},${ei},'rir',this.value)"></label><label class="ef"><small>Descanso</small><input id="et-${k}" value="${esc(e.rest)}" onchange="exEdit(${di},${ei},'rest',this.value)"></label><label class="ef"><small>Bloque</small>${sel(e.blk,[['','—']].concat(BLK_L.map(l=>[l,l])),`blkEdit(${di},${ei},this.value)`,'Bloque')}</label>
-      <div class="acts"><button type="button" class="mini ${det?'on':''}" onclick="togSets('${k}')" aria-expanded="${op}">Series ${op?'▴':'▾'}</button><button type="button" class="mini" onclick="moveEx(${di},${ei},-1)" aria-label="Subir">↑</button><button type="button" class="mini" onclick="moveEx(${di},${ei},1)" aria-label="Bajar">↓</button><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);openSets=new Set();save();renderCoach()">×</button></div></div>
+      <div class="acts"><button type="button" class="mini ${det?'on':''}" onclick="togSets('${k}')" aria-expanded="${op}">Series ${op?'▴':'▾'}</button><button type="button" class="mini" onclick="moveEx(${di},${ei},-1)" aria-label="Subir">↑</button><button type="button" class="mini" onclick="moveEx(${di},${ei},1)" aria-label="Bajar">↓</button><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);openSets=new Set();save();renderCoach()">×</button></div><label class="ef ap"><small>Series de aproximación (sin vídeo)</small><input id="ea-${k}" value="${esc(e.aprox||'')}" placeholder="1×10 al 40 % · 1×5 al 60 % · 1×3 al 80 %" onchange="exEdit(${di},${ei},'aprox',this.value)"></label></div>
       ${op?`<div class="setsed"><div class="sed-row small muted"><span>Serie</span><span>Tipo</span><span>Reps</span><span>RIR / RPE</span><span>Descanso</span><span>Nota para el cliente</span></div>${exSets(e).map((x,si)=>`<div class="sed-row"><span class="sidx">${si+1}</span>${sel(x.t,SET_T,`setEdit(${di},${ei},${si},'t',this.value)`,'Tipo de serie '+(si+1))}<input value="${esc(x.reps)}" onchange="setEdit(${di},${ei},${si},'reps',this.value)" aria-label="Reps serie ${si+1}"><input value="${esc(x.rpe)}" onchange="setEdit(${di},${ei},${si},'rpe',this.value)" aria-label="RIR o RPE serie ${si+1}"><input value="${esc(x.rest)}" onchange="setEdit(${di},${ei},${si},'rest',this.value)" aria-label="Descanso serie ${si+1}"><input value="${esc(x.nota)}" placeholder="${x.t==='backoff'?'-10 % del top set':x.t==='drop'?'Baja un 20-25 % y al fallo':''}" onchange="setEdit(${di},${ei},${si},'nota',this.value)" aria-label="Nota serie ${si+1}"></div>`).join('')}</div>`:''}</div>`}).join('')}
     <button class="btn ghost sm" type="button" onclick="S.routine[${di}].ex.push({n:'Nuevo ejercicio',m:'',s:3,r:'10-12',rir:'RIR 2',rest:'90 s',v:''});save();renderCoach()">+ Añadir ejercicio</button></div>`}).join('')}
   <button class="btn sm" type="button" onclick="S.routine.push({d:'Día '+String.fromCharCode(65+S.routine.length)+' · nuevo',ex:[]});save();renderCoach()">+ Añadir día</button></div>`;
@@ -868,3 +889,8 @@ async function delClient(){
   try{SNAP=null;PENDING=false;CALC.pending=null;await db.deleteClient(CUR.id);toast('Cliente eliminado');CUR=null;await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{S=emptyS();FICHA=S.ficha}coachTab='ficha';renderCoach()}
   catch(e){toast('No se ha podido eliminar: '+authMsg(e))}
 }
+
+function pinRange(){const W=allWeights();if(!W.length)return;const last=W[W.length-1].date;const a=wFrom||'',b=wTo||'';
+  FICHA.wFrom=a&&a>W[0].date?a:'';FICHA.wTo=b&&b<last?b:'';save();toast(FICHA.wFrom||FICHA.wTo?'Listo: el cliente solo ve ese rango':'El rango era todo: el cliente lo ve completo');renderCoach()}
+
+function warmEdit(di,k,v){const d=S.routine[di];d.warm=Object.assign({txt:'',url:''},d.warm||{},{[k]:v.trim()});save()}
