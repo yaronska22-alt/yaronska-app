@@ -26,7 +26,7 @@ await p.fill('.setsed .sed-row:nth-child(2) input >> nth=2','RPE 9');await p.dis
 for(const n of [3,4,5]){await p.selectOption(`.setsed .sed-row:nth-child(${n}) select`,'backoff');await w(80);await p.fill(`.setsed .sed-row:nth-child(${n}) input >> nth=4`,'-10 % del top set');await p.dispatchEvent(`.setsed .sed-row:nth-child(${n}) input >> nth=4`,'change')}
 await p.fill('#ek-0-2','12,5');await p.dispatchEvent('#ek-0-2','change');await w(100);
 // superserie ex1+ex2
-await p.selectOption('.ed-ex >> nth=1 >> select','A');await w(100);await p.selectOption('.ed-ex >> nth=2 >> select >> nth=0','A');await w(100);
+await p.selectOption('.ed-ex >> nth=1 >> select >> nth=1','A');await w(100);await p.selectOption('.ed-ex >> nth=2 >> select >> nth=1','A');await w(100);
 await p.screenshot({path:OUT+'/r1.png',fullPage:true});
 console.log('ex0:',JSON.stringify(await p.evaluate(()=>S.routine[0].ex[0].sets)).slice(0,300));
 console.log('blk:',await p.evaluate(()=>S.routine[0].ex.slice(0,4).map(e=>(e.blk||'-')+'/'+(e.blkT||'')).join(' ')));

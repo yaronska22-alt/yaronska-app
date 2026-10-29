@@ -473,7 +473,7 @@ function suggestion(e){
 function exCard(e,ei,label){
   const h=S.hist[e.n]||[];const last=h[h.length-1];const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const SS=exSets(e);const nx=S.next[e.n];
   const rk=exRank(e.n);
-  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
+  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e))}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
     ${det?`<ol class="setplan">${SS.map((x,i)=>`<li><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${x.kg?esc(String(x.kg).replace('.',','))+' kg × ':''}${esc(x.reps)}${/ s$/.test(x.reps)?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`
       :`<div class="presc"><span>${e.s} series</span>${e.kg?`<span><b>${esc(String(e.kg).replace('.',','))} kg</b></span>`:''}<span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
     ${e.aprox?`<div class="aprox"><b>Series de aproximación</b><span>${esc(e.aprox)}</span></div>`:''}
@@ -484,11 +484,13 @@ function exCard(e,ei,label){
     ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}</div>`:''}</article>`;
 }
 let trainTab='rutina';
+const trainTabs=()=>`<div class="tabs">${[['rutina','Mi rutina'],['volumen','📊 Volumen'],['rangos','🏅 Rangos']].map(([k,l])=>`<button type="button" class="${trainTab===k?'on':''}" onclick="trainTab='${k}';render()">${l}</button>`).join('')}</div>`;
 function vTrain(){
-  if(trainTab==='rangos')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tus <em>rangos</em></h1></div><div class="tabs"><button type="button" onclick="trainTab='rutina';render()">Mi rutina</button><button type="button" class="on" onclick="trainTab='rangos';render()">🏅 Mis rangos</button></div>${vRanks()}`;
+  if(trainTab==='rangos')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tus <em>rangos</em></h1></div>${trainTabs()}${vRanks()}`;
+  if(trainTab==='volumen')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>volumen</em></h1></div>${trainTabs()}${vVolume(false)}`;
   const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
-  <div class="tabs"><button type="button" class="on" onclick="trainTab='rutina';render()">Mi rutina</button><button type="button" onclick="trainTab='rangos';render()">🏅 Mis rangos</button></div>
+  ${trainTabs()}
   <div class="daysel">${R.map((r,i)=>`<button type="button" class="chip ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${esc(r.d.split('·')[0].trim())}</button>`).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}</h2>
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
@@ -648,7 +650,7 @@ function cPeso(){
   ${R.map((w,i)=>{const d=i?w.peso-R[i-1].peso:0,a=w.peso-R[0].peso;return `<tr><td>${new Date(w.date+'T12:00').toLocaleDateString('es-ES')}</td><td>${nf(w.peso)} kg</td><td class="${i?(goodDir(d)?'good':'badc'):''}">${i?(d>0?'+':'')+nf(d):'—'}</td><td class="${i?(goodDir(a)?'good':'badc'):''}">${i?(a>0?'+':'')+nf(a):'—'}</td></tr>`}).reverse().join('')}</tbody></table></div></div>`;
 }
 const e1rm=s=>s.kg*(1+s.reps/30);
-function cEj(){return cEj0()+`<div class="panel"><span class="lbl">🏅 Rangos del cliente</span>${vRanks()}</div>`}
+function cEj(){return `<div class="panel"><span class="lbl">📊 Volumen semanal por músculo</span>${vVolume(true)}</div>`+cEj0()+`<div class="panel"><span class="lbl">🏅 Rangos del cliente</span>${vRanks()}</div>`}
 function cEj0(){
   const names=Object.keys(S.hist);if(!names.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no ha registrado entrenos.</p></div>';if(!exSel||!S.hist[exSel])exSel=names[0];const H=S.hist[exSel]||[];
   const best=h=>h.sets.reduce((b,s)=>e1rm(s)>e1rm(b)?s:b,h.sets[0]);
@@ -681,7 +683,7 @@ const RX=(di,ei)=>S.routine[di].ex[ei];
 function exEdit(di,ei,k,v){const e=RX(di,ei);
   if(k==='s'){const n=Math.max(1,Math.min(15,parseInt(v)||1));const a=exSets(e);while(a.length<n)a.push(Object.assign({},a[a.length-1]||{t:'',reps:e.r,rpe:e.rir,rest:e.rest,nota:''},{t:''}));e.s=n;e.sets=a.slice(0,n);save();renderCoach();return}
   if(['r','rir','rest','kg'].includes(k)){const f={r:'reps',rir:'rpe',rest:'rest',kg:'kg'}[k];const old=e[k];e.sets=exSets(e).map(x=>(!x.t&&(x[f]===old||!x[f]))?Object.assign(x,{[f]:v}):x)}
-  e[k]=v;save()}
+  e[k]=v;save();if(k==='m'||k==='n')renderCoach()}
 function setEdit(di,ei,si,k,v){const e=RX(di,ei);e.sets=exSets(e);e.sets[si][k]=v;save();if(k==='t')renderCoach()}
 function blkEdit(di,ei,v){const d=S.routine[di];const e=d.ex[ei];e.blk=v||'';
   if(v){const mates=d.ex.filter(x=>x.blk===v);const t=(mates.find(x=>x!==e&&x.blkT)||{}).blkT||(mates.length>=4?'circuito':mates.length===3?'triserie':'superserie');mates.forEach(x=>x.blkT=t)}else delete e.blkT;
@@ -699,11 +701,12 @@ function cRutina(){
   ${S.routine.map((d,di)=>{const used=[...new Set(d.ex.map(x=>x.blk).filter(Boolean))];return `<div class="panel" style="background:var(--bg)"><div class="row"><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
     <div class="warmlist">${warmsOf(d).map((w,wi)=>`<div class="warmed"><label class="ef"><small>🔥 Calentamiento ${wi+1} · nombre</small><input value="${esc(w.t||'')}" placeholder="Movilidad de hombro" onchange="warmEdit(${di},${wi},'t',this.value)"></label><label class="ef"><small>Qué tiene que hacer</small><textarea rows="2" placeholder="2 vueltas: 10 rotaciones + 10 aperturas con banda" onchange="warmEdit(${di},${wi},'txt',this.value)">${esc(w.txt||'')}</textarea></label><label class="ef"><small>Vídeo (YouTube)</small><input value="${esc(w.url||'')}" placeholder="https://youtu.be/…" onchange="warmEdit(${di},${wi},'url',this.value)"></label><button class="x" type="button" aria-label="Quitar calentamiento" onclick="warmDel(${di},${wi})">×</button></div>`).join('')}<button class="btn ghost sm" type="button" onclick="warmAdd(${di})">+ Añadir calentamiento</button></div>
     ${used.length?`<div class="blkbar">${used.map(l=>{const t=(d.ex.find(x=>x.blk===l)||{}).blkT;return `<label>Bloque ${l} ${sel(t,BLK_T,`blkType(${di},'${l}',this.value)`,'Tipo de bloque '+l)}</label>`}).join('')}</div>`:''}
-        ${d.ex.map((e,ei)=>{const k=di+'-'+ei;const op=openSets.has(k);const det=detailed(e);return `<div class="ed-ex ${e.blk?'inblk':''}"><div class="ed-row"><label class="ef nm"><small>Ejercicio</small><input id="en-${k}" value="${esc(e.n)}" onchange="exEdit(${di},${ei},'n',this.value)"></label><label class="ef vu"><small>Vídeo (enlace)</small><input id="ev-${k}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="exEdit(${di},${ei},'v',this.value)"></label><label class="ef"><small>Series</small><input id="es-${k}" value="${e.s}" inputmode="numeric" onchange="exEdit(${di},${ei},'s',this.value)"></label><label class="ef"><small>Peso (kg)</small><input id="ek-${k}" value="${esc(e.kg||'')}" inputmode="decimal" placeholder="—" onchange="exEdit(${di},${ei},'kg',this.value.replace(',','.').trim())"></label><label class="ef"><small>Reps</small><input id="er-${k}" value="${esc(e.r)}" onchange="exEdit(${di},${ei},'r',this.value)"></label><label class="ef"><small>RIR / RPE</small><input id="ei-${k}" value="${esc(e.rir)}" onchange="exEdit(${di},${ei},'rir',this.value)"></label><label class="ef"><small>Descanso</small><input id="et-${k}" value="${esc(e.rest)}" onchange="exEdit(${di},${ei},'rest',this.value)"></label><label class="ef"><small>Bloque</small>${sel(e.blk,[['','—']].concat(BLK_L.map(l=>[l,l])),`blkEdit(${di},${ei},this.value)`,'Bloque')}</label>
+        ${d.ex.map((e,ei)=>{const k=di+'-'+ei;const op=openSets.has(k);const det=detailed(e);return `<div class="ed-ex ${e.blk?'inblk':''}"><div class="ed-row"><label class="ef nm"><small>Ejercicio</small><input id="en-${k}" value="${esc(e.n)}" onchange="exEdit(${di},${ei},'n',this.value)"></label><label class="ef mu"><small>Músculo</small><select id="em-${k}" onchange="exEdit(${di},${ei},'m',this.value)" aria-label="Músculo principal">${musOpts(e)}</select></label><label class="ef vu"><small>Vídeo (enlace)</small><input id="ev-${k}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="exEdit(${di},${ei},'v',this.value)"></label><label class="ef"><small>Series</small><input id="es-${k}" value="${e.s}" inputmode="numeric" onchange="exEdit(${di},${ei},'s',this.value)"></label><label class="ef"><small>Peso (kg)</small><input id="ek-${k}" value="${esc(e.kg||'')}" inputmode="decimal" placeholder="—" onchange="exEdit(${di},${ei},'kg',this.value.replace(',','.').trim())"></label><label class="ef"><small>Reps</small><input id="er-${k}" value="${esc(e.r)}" onchange="exEdit(${di},${ei},'r',this.value)"></label><label class="ef"><small>RIR / RPE</small><input id="ei-${k}" value="${esc(e.rir)}" onchange="exEdit(${di},${ei},'rir',this.value)"></label><label class="ef"><small>Descanso</small><input id="et-${k}" value="${esc(e.rest)}" onchange="exEdit(${di},${ei},'rest',this.value)"></label><label class="ef"><small>Bloque</small>${sel(e.blk,[['','—']].concat(BLK_L.map(l=>[l,l])),`blkEdit(${di},${ei},this.value)`,'Bloque')}</label>
       <div class="acts"><button type="button" class="mini ${det?'on':''}" onclick="togSets('${k}')" aria-expanded="${op}">Series ${op?'▴':'▾'}</button><button type="button" class="mini" onclick="moveEx(${di},${ei},-1)" aria-label="Subir">↑</button><button type="button" class="mini" onclick="moveEx(${di},${ei},1)" aria-label="Bajar">↓</button><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);openSets=new Set();save();renderCoach()">×</button></div><label class="ef ap"><small>Series de aproximación (sin vídeo)</small><input id="ea-${k}" value="${esc(e.aprox||'')}" placeholder="1×10 al 40 % · 1×5 al 60 % · 1×3 al 80 %" onchange="exEdit(${di},${ei},'aprox',this.value)"></label></div>
       ${op?`<div class="setsed"><div class="sed-row small muted"><span>Serie</span><span>Tipo</span><span>Kg</span><span>Reps</span><span>RIR / RPE</span><span>Descanso</span><span>Nota para el cliente</span></div>${exSets(e).map((x,si)=>`<div class="sed-row"><span class="sidx">${si+1}</span>${sel(x.t,SET_T,`setEdit(${di},${ei},${si},'t',this.value)`,'Tipo de serie '+(si+1))}<input value="${esc(x.kg)}" inputmode="decimal" placeholder="—" onchange="setEdit(${di},${ei},${si},'kg',this.value.replace(',','.').trim())" aria-label="Kg serie ${si+1}"><input value="${esc(x.reps)}" onchange="setEdit(${di},${ei},${si},'reps',this.value)" aria-label="Reps serie ${si+1}"><input value="${esc(x.rpe)}" onchange="setEdit(${di},${ei},${si},'rpe',this.value)" aria-label="RIR o RPE serie ${si+1}"><input value="${esc(x.rest)}" onchange="setEdit(${di},${ei},${si},'rest',this.value)" aria-label="Descanso serie ${si+1}"><input value="${esc(x.nota)}" placeholder="${x.t==='backoff'?'-10 % del top set':x.t==='drop'?'Baja un 20-25 % y al fallo':''}" onchange="setEdit(${di},${ei},${si},'nota',this.value)" aria-label="Nota serie ${si+1}"></div>`).join('')}</div>`:''}</div>`}).join('')}
     <button class="btn ghost sm" type="button" onclick="S.routine[${di}].ex.push({n:'Nuevo ejercicio',m:'',s:3,r:'10-12',rir:'RIR 2',rest:'90 s',v:''});save();renderCoach()">+ Añadir ejercicio</button></div>`}).join('')}
-  <button class="btn sm" type="button" onclick="S.routine.push({d:'Día '+String.fromCharCode(65+S.routine.length)+' · nuevo',ex:[]});save();renderCoach()">+ Añadir día</button></div>`;
+  <button class="btn sm" type="button" onclick="S.routine.push({d:'Día '+String.fromCharCode(65+S.routine.length)+' · nuevo',ex:[]});save();renderCoach()">+ Añadir día</button></div>
+  ${S.routine.length?`<div class="panel"><div class="sec-h"><span class="lbl">📊 Volumen pautado a la semana</span><button class="btn ghost sm" type="button" onclick="coachTab='ejercicios';renderCoach()">Ver lo que hace →</button></div>${volPlanChips()}</div>`:''}`;
 }
 
 
@@ -1024,6 +1027,75 @@ function vRanks(){
   <section class="sec-h"><h2>Por ejercicio</h2></section>
   <div class="rklist">${R.ex.map(e=>`<div class="rkrow">${rankBadge(e)}<div><b>${esc(e.n)}</b>${rankBar(e)}</div></div>`).join('')}</div>
   <p class="small muted" style="margin:0">Rangos orientativos: comparan tu mejor marca reciente (1RM estimado con kg y reps) con tu peso corporal y tu sexo. Dominadas y fondos cuentan tu peso + lastre; flexiones y abdominales, las repeticiones; la plancha, los segundos. Si un día rindes peor, tu rango se mantiene.</p>`;
+}
+
+// ================= VOLUMEN SEMANAL POR MÚSCULO =================
+// Cuenta series efectivas (no cuenta las de aproximación) por músculo principal del ejercicio.
+const MUSCLES=['Pecho','Espalda','Hombro','Bíceps','Tríceps','Antebrazo','Cuádriceps','Isquios','Glúteo','Gemelos','Abductor','Aductor','Abdomen','Lumbar','Otro'];
+const MUS_NORM={'Hombros':'Hombro','Core':'Abdomen','Abdominales':'Abdomen','Gluteo':'Glúteo','Glúteos':'Glúteo','Biceps':'Bíceps','Triceps':'Tríceps','Cuadriceps':'Cuádriceps','Isquiotibiales':'Isquios','Femoral':'Isquios','Gemelo':'Gemelos','Dorsal':'Espalda'};
+const MUS_RX=[
+  [/curl\s*(de\s*)?(isq|femoral)|femoral|isquio|rumano|rdl|buenos d[ií]as|good.?morning|n[oó]rdico/i,'Isquios'],
+  [/hip.?thrust|puente de gl|gl[uú]te|kickback|patada de gl/i,'Glúteo'],
+  [/abductor/i,'Abductor'],[/aductor/i,'Aductor'],
+  [/gemelo|calf|s[oó]leo/i,'Gemelos'],
+  [/crunch|abdominal|plancha|plank|rueda|elevaci[oó]n(es)? de piernas|pallof|sit.?up|hollow/i,'Abdomen'],
+  [/hiperextensi|lumbar/i,'Lumbar'],
+  [/sentadilla|squat|prensa|leg.?press|hack|p[eé]ndulo|b[uú]lgara|zancada|lunge|ext[\wáéíóú]*\.? (de )?cu[aá]driceps|leg.?ext|step.?up|sissy/i,'Cuádriceps'],
+  [/peso muerto|deadlift/i,'Isquios'],
+  [/antebrazo|mu[ñn]eca|wrist/i,'Antebrazo'],
+  [/tr[ií]ceps|franc[eé]s|katana|patada|pushdown|copa|skull|jm press|press cerrado/i,'Tríceps'],
+  [/curl|b[ií]ceps|martillo/i,'Bíceps'],
+  [/militar|hombro|overhead|arnold|elevaci[oó]n(es)? (lateral|frontal)|lateral|p[aá]jaro|face.?pull|posterior|deltoid|upright|remo al ment[oó]n/i,'Hombro'],
+  [/dominad|chin.?up|pull.?up|jal[oó]n|pulldown|pull.?over|remo|row|dorsal|espalda|encogimiento|shrug/i,'Espalda'],
+  [/banca|bench|press|apertura|pec.?deck|contractor|cruce|fly|fondos|dips?\b|flexi[oó]n|push.?up|pecho/i,'Pecho']
+];
+const musGuess=n=>{const r=MUS_RX.find(x=>x[0].test(n||''));return r?r[1]:''};
+function volMuscle(n,m){m=(m||'').trim();m=MUS_NORM[m]||m;return m||musGuess(n)||'Otro'}
+const musOf=e=>volMuscle(e.n,e.m);
+function musOpts(e){const g=musGuess(e.n);const cur=MUS_NORM[e.m]||e.m||'';const list=cur&&!MUSCLES.includes(cur)?MUSCLES.concat(cur):MUSCLES;
+  return `<option value="" ${!cur?'selected':''}>Auto${g?': '+g:''}</option>`+list.map(m=>`<option ${cur===m?'selected':''}>${esc(m)}</option>`).join('')}
+const effSets=e=>exSets(e).filter(x=>x.t!=='aprox').length;
+function volPlan(){const per={};let tot=0;const nd=S.routine.length;
+  S.routine.forEach(d=>d.ex.forEach(e=>{const k=musOf(e),c=effSets(e);per[k]=(per[k]||0)+c}));
+  const f=FICHA||{};const ds=+f.diasSemana||(f.diasModo!=='libre'?(f.dias||[]).length:0)||nd;const fac=nd?ds/nd:1;
+  Object.keys(per).forEach(k=>{per[k]=Math.round(per[k]*fac*10)/10;tot+=per[k]});
+  return {per,tot:Math.round(tot*10)/10,nd,ds,fac}}
+function volWeek(off){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7)+7*off);const e=new Date(d);e.setDate(e.getDate()+6);return {a:iso(d),b:iso(e),da:d,db:e}}
+function volDone(a,b){const per={};let tot=0,ses=new Set();
+  Object.entries(S.hist).forEach(([n,H])=>{const re=routineEx(n);const m=volMuscle(n,re&&re.m);
+    H.forEach(h=>{if(h.date>=a&&h.date<=b){const c=(h.sets||[]).filter(s=>s.t!=='aprox').length;if(c){per[m]=(per[m]||0)+c;tot+=c;ses.add(h.date)}}})});
+  return {per,tot,ses:ses.size}}
+const vnum=x=>nf(x,1).replace(',0','');
+let volWk=0,volMus='';
+function volPlanChips(){const P=volPlan();const ks=Object.keys(P.per).sort((a,b)=>P.per[b]-P.per[a]);
+  if(!ks.length)return '<p class="small muted" style="margin:0">Añade ejercicios para ver el volumen.</p>';
+  return `<div class="vchips">${ks.map(k=>`<span class="vchip"><b>${vnum(P.per[k])}</b> ${esc(k)}</span>`).join('')}</div>
+  <p class="small muted" style="margin:0">Series efectivas por semana (sin contar las de aproximación) · total <b style="color:var(--fg)">${vnum(P.tot)}</b>.${P.fac!==1?` La rutina tiene ${P.nd} días y entrena ${P.ds} por semana, así que se escala ×${vnum(P.fac)}.`:''} El músculo de cada ejercicio lo eliges en «Músculo»; en «Auto» se deduce del nombre.</p>`}
+function vVolume(coach){
+  const rr=coach?'renderCoach()':'render()';const P=volPlan();const W=volWeek(volWk);const D=volDone(W.a,W.b);
+  if(!S.routine.length&&!Object.keys(S.hist).length)return `<div class="empty">${coach?'Cuando tenga rutina y registre entrenos, aquí verás sus series por músculo.':'Cuando tengas rutina y registres entrenos, aquí verás tus series por músculo.'}</div>`;
+  const ks=[...new Set(Object.keys(P.per).concat(Object.keys(D.per)))].sort((a,b)=>(P.per[b]||D.per[b]||0)-(P.per[a]||D.per[a]||0)||MUSCLES.indexOf(a)-MUSCLES.indexOf(b));
+  const mx=Math.max(1,...ks.map(k=>Math.max(P.per[k]||0,D.per[k]||0)));
+  const fd=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+  const pct=P.tot?Math.round(D.tot/P.tot*100):null;
+  const bars=ks.map(k=>{const p=P.per[k]||0,d=D.per[k]||0;const st=p?(d>=p?'ok':''):'';return `<div class="vrow"><b>${esc(k)}</b><div class="vtrack"><span class="vfill ${st}" style="width:${(d/mx*100).toFixed(1)}%"></span>${p?`<i class="vplan" style="left:${(p/mx*100).toFixed(1)}%" title="Pautadas: ${vnum(p)}"></i>`:''}</div><span class="vnum">${vnum(d)}${p?`<small> / ${vnum(p)}</small>`:''}</span></div>`}).join('');
+  // tendencia: últimas 8 semanas
+  if(volMus&&!ks.includes(volMus))volMus='';
+  const N=8,wk=[];for(let i=N-1;i>=0;i--){const w=volWeek(volWk-i);const dd=volDone(w.a,w.b);wk.push({w,v:volMus?(dd.per[volMus]||0):dd.tot})}
+  const pl=volMus?(P.per[volMus]||0):P.tot;
+  const CW=340,CH=160,L=26,R=8,T=16,B=24;const top=Math.max(1,pl,...wk.map(x=>x.v))*1.12;const bw=(CW-L-R)/N;const y=v=>T+(1-v/top)*(CH-T-B);
+  const svg=`<svg class="chart" viewBox="0 0 ${CW} ${CH}" role="img" aria-label="Series por semana">
+    ${[0,.5,1].map(f=>`<line x1="${L}" x2="${CW-R}" y1="${y(top*f/1.12)}" y2="${y(top*f/1.12)}" stroke="#2E2A24"/><text x="${L-5}" y="${y(top*f/1.12)+3}" text-anchor="end">${Math.round(top*f/1.12)}</text>`).join('')}
+    ${wk.map((x,i)=>{const cx=L+i*bw+bw*.18,w=bw*.64;const cur=i===N-1;return `<rect x="${cx.toFixed(1)}" y="${y(x.v).toFixed(1)}" width="${w.toFixed(1)}" height="${(CH-B-y(x.v)).toFixed(1)}" rx="3" fill="#FFD60A" opacity="${cur?1:.55}"><title>Semana del ${fd(x.w.da)}: ${vnum(x.v)} series</title></rect>${x.v?`<text x="${(cx+w/2).toFixed(1)}" y="${(y(x.v)-4).toFixed(1)}" text-anchor="middle" fill="#E8E5DF">${vnum(x.v)}</text>`:''}<text x="${(cx+w/2).toFixed(1)}" y="${CH-8}" text-anchor="middle">${x.w.da.getDate()}/${x.w.da.getMonth()+1}</text>`}).join('')}
+    ${pl?`<line x1="${L}" x2="${CW-R}" y1="${y(pl)}" y2="${y(pl)}" stroke="#7CE38B" stroke-width="1.5" stroke-dasharray="5 4"/>`:''}</svg>`;
+  return `<div class="volnav"><button type="button" class="mini" onclick="volWk--;${rr}" aria-label="Semana anterior">‹</button><div><b>${volWk===0?'Esta semana':volWk===-1?'Semana pasada':'Semana del '+fd(W.da)}</b><small class="muted">${fd(W.da)} – ${fd(W.db)}</small></div><button type="button" class="mini" onclick="volWk=Math.min(0,volWk+1);${rr}" aria-label="Semana siguiente" ${volWk>=0?'disabled':''}>›</button></div>
+  <div class="kpis"><div class="kpi"><small>Series hechas</small><b>${vnum(D.tot)}</b></div><div class="kpi"><small>Series pautadas / semana</small><b>${P.tot?vnum(P.tot):'—'}</b></div><div class="kpi"><small>Cumplimiento</small><b class="${pct===null?'':pct>=90?'good':pct>=60||volWk===0?'':'badc'}">${pct===null?'—':pct+' %'}</b></div><div class="kpi"><small>Días entrenados</small><b>${D.ses}</b></div></div>
+  <div class="vbars">${bars||'<p class="small muted" style="margin:0">Sin datos esta semana.</p>'}</div>
+  <div class="vleg small muted"><span><i class="lg f"></i>Series hechas</span><span><i class="lg p"></i>Pautadas por semana</span></div>
+  <section class="sec-h" style="margin-top:6px"><h2 style="font-size:16px">Evolución · últimas ${N} semanas</h2></section>
+  <div class="mtabs">${['',...ks].map(k=>`<button type="button" class="chip ${volMus===k?'on':''}" onclick="volMus='${k}';${rr}">${k?esc(k):'Todos'}</button>`).join('')}</div>
+  ${svg}
+  <p class="small muted" style="margin:0">Cuenta las series registradas de cada ejercicio en su músculo principal (no cuenta las de aproximación). La línea verde discontinua es lo pautado por semana.</p>`;
 }
 
 function fatStats(F,from){const f=F[0],l=F[F.length-1],d=l.v-f.v;return `<div class="wstats fat"><div><small>% graso · ${esc(from)}</small><b>${nf(f.v)} %</b></div><div><small>% graso ahora</small><b>${nf(l.v)} %</b></div><div><small>Cambio</small><b class="${d<=0?'good':'badc'}">${d>0?'+':''}${nf(d)} %</b></div></div>`}
