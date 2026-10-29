@@ -19,7 +19,9 @@ Object.defineProperties(CLIENT,{
   checkDay:{get:()=>(FICHA||FICHA_DEF).revFis||'Domingo'},
   goal:{get:()=>(FICHA||FICHA_DEF).objetivo},
   trainDays:{get:()=>(FICHA||FICHA_DEF).dias||[]},
-  stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +((f.dias||[]).includes(new Date().getDay())?f.pasosT:f.pasosR)||0}}});
+  stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +(isTrainToday()?f.pasosT:f.pasosR)||0}}});
+// ¿Hoy entrena? Lo que marque el cliente hoy; si no, sus días fijos (en «rotación» no hay días fijos)
+function isTrainToday(){try{const d=S&&S.daily&&S.daily[iso(new Date())];if(d&&d.tipo)return d.tipo==='T';if(d&&d.train===true)return true}catch(e){}const f=FICHA||FICHA_DEF;return f.diasModo!=='libre'&&(f.dias||[]).includes(new Date().getDay())}
 // Programas: cada cliente está en uno, con sus fases (o etapas en la fase libre)
 const PROGS={
   perdida:{n:'Método Anti-Esfuerzo',t:'Pérdida de grasa',w:'Fase',ph:[
@@ -110,7 +112,7 @@ function fromDb(d){
 }
 async function loadClient(id){
   const d=await db.loadClient(id,ME.role==='coach');fromDb(d);
-  dayIdx=0;today={};ck={};dayType=CLIENT.trainDays.includes(new Date().getDay())?'T':'R';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
+  dayIdx=0;today={};ck={};dayType=isTrainToday()?'T':'R';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
 }
 
 async function sync(){
@@ -382,12 +384,13 @@ function vHome(){
 }
 function vDaily(){
   const k=iso(new Date());const d=S.daily[k]||{};const t=Object.assign({steps:'',diet:null,train:null,stepsOk:null,estres:0,energia:0,animo:0},d,today);
-  const isTrain=CLIENT.trainDays.includes(new Date().getDay());
+  const isTrain=isTrainToday();const tipoSet=!!(d.tipo||d.train===true);const libre=FICHA.diasModo==='libre';
   const week=[6,5,4,3,2,1,0].map(i=>{const dd=daysAgo(i);const v=S.daily[iso(dd)];let c='';if(v){const n=[v.diet,v.train===null?true:v.train,v.stepsOk].filter(Boolean).length;c=n===3?'full':n>0?'part':''}return `<span>${'DLMXJVS'[dd.getDay()]}<em class="${c}">${v?(c==='full'?'✓':'·'):''}</em></span>`}).join('');
   const tg=(key,ico,lbl)=>`<button type="button" class="tg ${t[key]?'on':''}" onclick="today.${key}=!(${JSON.stringify(!!t[key])});render()" aria-pressed="${!!t[key]}"><i>${t[key]?'✓':ico}</i>${lbl}</button>`;
   const mini=(key,lbl)=>`<span>${lbl}</span><div class="dots">${[1,2,3,4,5].map(n=>`<button type="button" class="${t[key]===n?'on':''}" onclick="today.${key}=${n};render()" aria-label="${lbl} ${n}">${n}</button>`).join('')}</div>`;
   return `<section class="daily" aria-label="Objetivos de hoy">
     <div class="daily-h"><h2>Hoy</h2><span class="small muted">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} · ${isTrain?'día de entreno':'día de descanso'}</span></div>
+    <div class="daytog"><span class="small muted">${libre&&!tipoSet?'¿Hoy entrenas?':'Hoy es'}</span><div class="seg2"><button type="button" class="chip ${isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('T')">🏋️ Día de entreno</button><button type="button" class="chip ${!isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('R')">🏠 Descanso</button></div></div>
     <div class="stepsrow"><div class="field"><label for="dSteps">Pasos de hoy${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>
     <div class="toggles">${tg('diet','🍽','Dieta')}${tg('train','🏋',isTrain?'Entreno':'Descanso ok')}${tg('stepsOk','👟','Pasos')}</div>
     <div class="mini">${mini('estres','Estrés')}${mini('energia','Energía')}${mini('animo','Ánimo')}</div>
@@ -497,7 +500,7 @@ function saveSession(){
   d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');const kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`)),reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`)),rir=parseInt(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     if(sets.length){any=true;(S.hist[e.n]=S.hist[e.n]||[]).push({date,day:d.d,sets,ts:Date.now()});delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps)');return}
-  const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true});
+  const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
   save();toast('Entreno guardado');render();
 }
 function vCheck(){
@@ -737,7 +740,8 @@ function cFicha(){
     <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div>
     <div id="payBox">${payList()}</div></div>
   <div class="panel"><span class="lbl">🏋️ Entrenamiento, pasos y revisiones</span>
-    <div class="field"><label>Días de entrenamiento</label><div class="chips">${WD.map((d,i)=>{const gi=(i+1)%7;return `<button type="button" class="chip ${f.dias.includes(gi)?'on':''}" onclick="fDay(${gi})">${d.slice(0,3)}</button>`}).join('')}</div></div>
+    <div class="field"><label>Cómo entrena</label><div class="seg2"><button type="button" class="chip ${f.diasModo!=='libre'?'on':''}" onclick="FICHA.diasModo='fijo';save();setTimeout(renderCoach)">📅 Días fijos</button><button type="button" class="chip ${f.diasModo==='libre'?'on':''}" onclick="FICHA.diasModo='libre';save();setTimeout(renderCoach)">🔄 Rotación (elige cada día)</button></div><small class="muted">${f.diasModo==='libre'?'Cada día el cliente marca en su Inicio si entrena o descansa; con eso cambian su objetivo de pasos y su plan de comidas.':'Los días marcados abajo son de entreno. Aun así, el cliente puede cambiar el día en su Inicio si un día entrena o descansa fuera de lo previsto.'}</small></div>
+    <div class="field" ${f.diasModo==='libre'?'hidden':''}><label>Días de entrenamiento</label><div class="chips">${WD.map((d,i)=>{const gi=(i+1)%7;return `<button type="button" class="chip ${f.dias.includes(gi)?'on':''}" onclick="fDay(${gi})">${d.slice(0,3)}</button>`}).join('')}</div></div>
     ${grid(inp('pasosT','👟 Pasos objetivo · día de entreno','n')+inp('pasosR','👟 Pasos objetivo · día sin entreno','n')+inp('tipoEntreno','¿Qué trabaja? (tipo de entrenamiento)')+inp('diasSemana','Nº días entrena por semana','n')+sel('revFis','Día revisión físico / peso',days)+inp('avisoV','🔔 Aviso la víspera (hora)','time')+inp('avisoD','🔔 Aviso el día de la revisión (hora)','time')+inp('lastFis','Última revisión físico','date')+sel('revEnt','Día revisión entreno',days)+inp('lastEnt','Última revisión entreno','date'))}
     <p class="small muted" style="margin:0">El cliente ve en su Inicio el objetivo de pasos que toca según el día (entreno o descanso). Avisos de la revisión: la víspera a las ${esc(f.avisoV||'20:00')} y el mismo día a las ${esc(f.avisoD||'06:00')} (si aún no la ha enviado).</p>
     <div class="row"><span class="small" id="pushCnt">Dispositivos con avisos activados: …</span><button class="btn ghost sm" type="button" onclick="testPushC()">🔔 Enviar aviso de prueba</button></div></div>
@@ -1189,3 +1193,5 @@ async function testPushC(){try{const r=await db.testPush(CUR.id);toast(r&&r.sent
 function applyMobile(){let m=false;try{m=localStorage.getItem('ys-mobile')==='1'}catch(e){}document.body.classList.toggle('mobile-mode',m);const b=document.getElementById('mobBtn');if(b)b.textContent=m?'🖥️ Ver en grande':'📱 Ver como en el móvil'}
 function toggleMobile(){let m=document.body.classList.contains('mobile-mode');try{localStorage.setItem('ys-mobile',m?'0':'1')}catch(e){}applyMobile();window.scrollTo(0,0)}
 applyMobile();
+
+function setDayTipo(t){const k=iso(new Date());S.daily[k]=Object.assign({},S.daily[k]||{},{tipo:t});if(t==='R'&&S.daily[k].train===true)S.daily[k].train=false;dayType=t;if(today.train!==undefined&&t==='R')delete today.train;save();render()}

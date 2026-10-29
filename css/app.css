@@ -431,3 +431,4 @@ body.noscroll{overflow:hidden}
 .top{top:0;padding-top:env(safe-area-inset-top,0px);background:#0A0907}
 .auth{padding-top:max(24px,calc(env(safe-area-inset-top,0px) + 16px))}
 .screen{scroll-margin-top:80px}
+.daytog{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
