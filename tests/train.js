@@ -21,9 +21,10 @@ await p.evaluate(()=>{coachTab='rutina';renderCoach()});
 await p.fill('#es-0-0','4');await p.dispatchEvent('#es-0-0','change');await w(100);
 await p.click('.ed-ex >> nth=0 >> text=Series ▾');await w(100);
 await p.selectOption('.setsed .sed-row:nth-child(2) select','top');await w(100);
-await p.fill('.setsed .sed-row:nth-child(2) input >> nth=0','4-6');await p.dispatchEvent('.setsed .sed-row:nth-child(2) input >> nth=0','change');
-await p.fill('.setsed .sed-row:nth-child(2) input >> nth=1','RPE 9');await p.dispatchEvent('.setsed .sed-row:nth-child(2) input >> nth=1','change');
-for(const n of [3,4,5]){await p.selectOption(`.setsed .sed-row:nth-child(${n}) select`,'backoff');await w(80);await p.fill(`.setsed .sed-row:nth-child(${n}) input >> nth=3`,'-10 % del top set');await p.dispatchEvent(`.setsed .sed-row:nth-child(${n}) input >> nth=3`,'change')}
+await p.fill('.setsed .sed-row:nth-child(2) input >> nth=1','4-6');await p.dispatchEvent('.setsed .sed-row:nth-child(2) input >> nth=1','change');
+await p.fill('.setsed .sed-row:nth-child(2) input >> nth=2','RPE 9');await p.dispatchEvent('.setsed .sed-row:nth-child(2) input >> nth=2','change');
+for(const n of [3,4,5]){await p.selectOption(`.setsed .sed-row:nth-child(${n}) select`,'backoff');await w(80);await p.fill(`.setsed .sed-row:nth-child(${n}) input >> nth=4`,'-10 % del top set');await p.dispatchEvent(`.setsed .sed-row:nth-child(${n}) input >> nth=4`,'change')}
+await p.fill('#ek-0-2','12,5');await p.dispatchEvent('#ek-0-2','change');await w(100);
 // superserie ex1+ex2
 await p.selectOption('.ed-ex >> nth=1 >> select','A');await w(100);await p.selectOption('.ed-ex >> nth=2 >> select >> nth=0','A');await w(100);
 await p.screenshot({path:OUT+'/r1.png',fullPage:true});
@@ -35,7 +36,7 @@ await w(700);const st=await p.evaluate(()=>window.__mock);console.log('db rutina
 await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('train')});await w(200);
 await p.screenshot({path:OUT+'/r2.png',fullPage:true});
 console.log('client blk header:',await p.textContent('.blk-h'));
-console.log('labels:',await p.evaluate(()=>[...document.querySelectorAll('.ex-n')].slice(0,5).map(x=>x.textContent).join(',')));
+console.log('kg curl:',(await p.textContent('.ex >> nth=3')).match(/12,5 kg[^R]*/)&&'ok',await p.getAttribute('#kg-0-2-0','placeholder'));console.log('labels:',await p.evaluate(()=>[...document.querySelectorAll('.ex-n')].slice(0,5).map(x=>x.textContent).join(',')));
 // el cliente registra el entreno del día 1
 await p.fill('#kg-0-0-0','100');await p.fill('#rp-0-0-0','5');await p.fill('#ri-0-0-0','1');
 await p.fill('#kg-0-0-2','90');await p.fill('#rp-0-0-2','8');

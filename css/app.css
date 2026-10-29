@@ -432,3 +432,7 @@ body.noscroll{overflow:hidden}
 .auth{padding-top:max(24px,calc(env(safe-area-inset-top,0px) + 16px))}
 .screen{scroll-margin-top:80px}
 .daytog{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ed-row{grid-template-columns:repeat(6,minmax(0,1fr)) auto}
+.ed-row .nm{grid-column:1/4}.ed-row .vu{grid-column:4/-1}
+.sed-row{grid-template-columns:40px 1fr .6fr .7fr .7fr .7fr 1.5fr}
+@media (max-width:600px){.ed-row{grid-template-columns:repeat(3,minmax(0,1fr))}.ed-row .nm,.ed-row .vu,.ed-row .acts{grid-column:1/-1}.sed-row{grid-template-columns:30px 1fr 1fr}}
