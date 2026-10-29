@@ -390,3 +390,6 @@ body.noscroll{overflow:hidden}
 .rkrow{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px}.rkrow>div{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}.rkrow>div b{font-size:14px}
 .rkrow .rk{min-width:92px;justify-content:flex-start}
 .seg2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted)}.legend span{display:flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px}.legend i.dash{background:none;border-top:2px dashed;height:0}
+.wstats.fat b{color:#FFB070}

@@ -257,6 +257,21 @@ function lineChart(pts,opt){
   const dots=pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="${i===pts.length-1?4:2.5}" fill="${col}"><title>${fdate(p.d)}: ${nf(p.v,opt.dec??1)}${opt.u||''}</title></circle>`).join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opt.label||'Gráfica')}">${grid}<polygon points="${x(0)},${H-B} ${line} ${x(pts.length-1)},${H-B}" fill="${col}" opacity=".12"/><polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>${dots}${lab}</svg>`;
 }
+// Peso y % graso en la MISMA gráfica: peso a la izquierda (kg), % graso a la derecha (línea discontinua naranja)
+function dualChart(A,B,opt){opt=opt||{};if(A.length<2&&B.length<2)return '<p class="small muted" style="margin:0">Hacen falta al menos 2 registros para dibujar la gráfica.</p>';
+  const W=opt.w||340,H=opt.h||170,L=36,R=38,T=14,Bm=22;const all=A.concat(B).map(p=>p.d).sort();const t0=+new Date(all[0]+'T12:00'),t1=+new Date(all[all.length-1]+'T12:00');
+  const x=d=>t1>t0?L+(new Date(d+'T12:00')-t0)/(t1-t0)*(W-L-R):(L+W-R)/2;
+  const sc=P=>{const v=P.map(p=>p.v);let mn=Math.min(...v),mx=Math.max(...v);const pd=(mx-mn)*0.15||1;return [mn-pd,mx+pd]};
+  const [a0,a1]=A.length?sc(A):[0,1],[b0,b1]=B.length?sc(B):[0,1];
+  const ya=v=>T+(1-(v-a0)/(a1-a0))*(H-T-Bm),yb=v=>T+(1-(v-b0)/(b1-b0))*(H-T-Bm);
+  const ca=opt.color||'#FFD60A',cb='#FF8C28';
+  const grid=[0,.5,1].map(f=>{const y=T+f*(H-T-Bm);return `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#2E2A24"/>${A.length?`<text x="${L-6}" y="${y+3}" text-anchor="end">${nf(a1-f*(a1-a0))}</text>`:''}${B.length?`<text x="${W-R+6}" y="${y+3}" fill="${cb}">${nf(b1-f*(b1-b0))}%</text>`:''}`}).join('');
+  const ln=(P,y)=>P.map(p=>`${x(p.d).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const la=A.length?`<polygon points="${x(A[0].d)},${H-Bm} ${ln(A,ya)} ${x(A[A.length-1].d)},${H-Bm}" fill="${ca}" opacity=".10"/><polyline points="${ln(A,ya)}" fill="none" stroke="${ca}" stroke-width="2.2" stroke-linejoin="round"/>${A.map((p,i)=>`<circle cx="${x(p.d)}" cy="${ya(p.v)}" r="${i===A.length-1?4:2.5}" fill="${ca}"><title>${fdate(p.d)}: ${nf(p.v)} kg</title></circle>`).join('')}`:'';
+  const lb=B.length?`<polyline points="${ln(B,yb)}" fill="none" stroke="${cb}" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>${B.map((p,i)=>`<rect x="${x(p.d)-3}" y="${yb(p.v)-3}" width="6" height="6" fill="${cb}" transform="rotate(45 ${x(p.d)} ${yb(p.v)})"><title>${fdate(p.d)}: ${nf(p.v)} % graso</title></rect>`).join('')}`:'';
+  const lab=`<text x="${L}" y="${H-6}">${fdate(all[0])}</text><text x="${W-R}" y="${H-6}" text-anchor="end">${fdate(all[all.length-1])}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Peso y % graso">${grid}${la}${lb}${lab}</svg>
+  <div class="legend"><span><i style="background:${ca}"></i>Peso (kg)</span>${B.length?`<span><i class="dash" style="border-color:${cb}"></i>% graso</span>`:''}</div>`}
 const clientWeights=()=>{const W=allWeights();const a=FICHA.wFrom||'',b=FICHA.wTo||'';return W.filter(w=>(!a||w.date>=a)&&(!b||w.date<=b))};
 const allWeights=()=>S.weights.concat(S.checkins.filter(c=>c.peso).map(c=>({date:c.date,peso:c.peso}))).sort((a,b)=>a.date.localeCompare(b.date));
 const goodDir=d=>CLIENT.goal==='perder'?d<0:d>0;
@@ -347,12 +362,12 @@ function vHome(){
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
   ${vRemind()}
   <section class="wchart" aria-label="Tu evolución">
-    <div class="sec-h"><span class="lbl">Tu evolución · peso</span><span class="small muted">Objetivo: ${CLIENT.goal==='perder'?'perder grasa':'ganar músculo'}</span></div>
+    <div class="sec-h"><span class="lbl">Tu evolución · peso${FICHA.showFat?' y % graso':''}</span><span class="small muted">Objetivo: ${CLIENT.goal==='perder'?'perder grasa':'ganar músculo'}</span></div>
     ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>${FICHA.wFrom?'Desde '+fdate(first.date):'Inicio'}</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
-    ${lineChart(W.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})}
+    ${(()=>{const a=FICHA.wFrom||'',b=FICHA.wTo||'';const F=FICHA.showFat?fatSeries().filter(x=>(!a||x.date>=a)&&(!b||x.date<=b)):[];const P=W.map(w=>({d:w.date,v:w.peso}));
+      return F.length?`${fatStats(F,FICHA.wFrom?'Desde '+fdate(F[0].date):'Inicio')}${dualChart(P,F.map(x=>({d:x.date,v:x.v})),{color:ok?'#7CE38B':'#FFD60A'})}`:lineChart(P,{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})})()}
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
-  ${FICHA.showFat?(()=>{const a=FICHA.wFrom||'',b=FICHA.wTo||'';const F=fatSeries().filter(x=>(!a||x.date>=a)&&(!b||x.date<=b));return F.length?`<section class="wchart" aria-label="Tu % graso"><div class="sec-h"><span class="lbl">Tu evolución · % graso</span></div>${fatBlock(F,{from:a?'Desde '+fdate(F[0].date):'Inicio'})}</section>`:''})():''}
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
     <div class="phase-top"><span class="lbl">${PROG().w} ${Math.min(S.phase,PH().length-1)+1} de ${PH().length}</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
@@ -618,10 +633,9 @@ function cPeso(){
     <div class="pinbar"><div><small class="muted">El cliente ve en su gráfica:</small> <b>${FICHA.wFrom||FICHA.wTo?`${FICHA.wFrom?'desde el '+fdate(FICHA.wFrom):'desde el inicio'} ${FICHA.wTo?'hasta el '+fdate(FICHA.wTo):'hasta hoy (se va actualizando)'}`:'todo, desde el inicio hasta hoy'}</b></div>
       <div class="row"><button class="btn sm" type="button" onclick="pinRange()">📌 Que vea solo este rango</button>${FICHA.wFrom||FICHA.wTo?`<button class="btn ghost sm" type="button" onclick="FICHA.wFrom='';FICHA.wTo='';save();renderCoach()">Que lo vea todo</button>`:''}</div></div>
     ${R.length?`<div class="kpis"><div class="kpi"><small>Peso inicial · ${fdate(f.date)}</small><b>${nf(f.peso)} kg</b></div><div class="kpi"><small>Peso actual · ${fdate(l.date)}</small><b>${nf(l.peso)} kg</b></div><div class="kpi"><small>${diff<=0?'Peso perdido':'Peso ganado'}</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div><div class="kpi"><small>Media semanal</small><b>${R.length>1?(diff>0?'+':'')+nf(diff/((new Date(l.date)-new Date(f.date))/6048e5||1),2):'—'} kg</b></div></div>
-    ${lineChart(R.map(w=>({d:w.date,v:w.peso})),{u:' kg',label:'Peso en el rango',color:ok?'#7CE38B':'#FFD60A'})}`:'<p class="small muted">No hay pesos en ese rango.</p>'}
+    ${(()=>{const F=fatSeries().filter(x=>x.date>=from&&x.date<=to);return `${F.length?fatStats(F,'Inicial · '+fdate(F[0].date)):''}${dualChart(R.map(w=>({d:w.date,v:w.peso})),F.map(x=>({d:x.date,v:x.v})),{w:560,h:220,color:ok?'#7CE38B':'#FFD60A'})}${F.length?`<p class="small muted" style="margin:0">% graso estimado con ${esc([...new Set(F.map(x=>BF_M[x.m]))].join(' · '))}.</p>`:`<p class="small muted" style="margin:0">Sin % graso en este rango: se calcula con cuello y cintura (y cadera en mujeres) del check-in, con el sexo, la altura y la edad de su Ficha.</p>`}`})()}`:'<p class="small muted">No hay pesos en ese rango.</p>'}
+    <div class="seg2"><span class="small muted">En su gráfica el cliente ve:</span><button type="button" class="chip ${!FICHA.showFat?'on':''}" onclick="FICHA.showFat=false;save();renderCoach()">Solo peso</button><button type="button" class="chip ${FICHA.showFat?'on':''}" onclick="FICHA.showFat=true;save();renderCoach()">Peso y % graso</button></div>
   </div>
-  <div class="panel"><div class="sec-h"><span class="lbl">% graso</span><div class="seg2"><span class="small muted">El cliente ve:</span><button type="button" class="chip ${!FICHA.showFat?'on':''}" onclick="FICHA.showFat=false;save();renderCoach()">Solo peso</button><button type="button" class="chip ${FICHA.showFat?'on':''}" onclick="FICHA.showFat=true;save();renderCoach()">Peso y % graso</button></div></div>
-    ${fatBlock(fatSeries().filter(x=>x.date>=from&&x.date<=to),{coach:true,from:'Inicial · '+fdate(from),chart:{w:720,h:220}})}</div>
   <div class="panel"><span class="lbl">Todos los pesos del rango</span><div class="tbl-w"><table><thead><tr><th>Fecha</th><th>Peso</th><th>Cambio vs anterior</th><th>Cambio acumulado</th></tr></thead><tbody>
   ${R.map((w,i)=>{const d=i?w.peso-R[i-1].peso:0,a=w.peso-R[0].peso;return `<tr><td>${new Date(w.date+'T12:00').toLocaleDateString('es-ES')}</td><td>${nf(w.peso)} kg</td><td class="${i?(goodDir(d)?'good':'badc'):''}">${i?(d>0?'+':'')+nf(d):'—'}</td><td class="${i?(goodDir(a)?'good':'badc'):''}">${i?(a>0?'+':'')+nf(a):'—'}</td></tr>`}).reverse().join('')}</tbody></table></div></div>`;
 }
@@ -699,7 +713,7 @@ function fSet(k,v,t){FICHA[k]=t==='n'?(v===''?'':parseFloat(String(v).replace(',
 function fDay(i){const a=FICHA.dias;const j=a.indexOf(i);if(j>=0)a.splice(j,1);else a.push(i);a.sort();FICHA.diasSemana=a.length;save();setTimeout(renderCoach)}
 function cFicha(){
   const f=FICHA;const ren=nextRenewal(f);const dleft=ren?Math.round((new Date(ren+'T12:00')-new Date())/864e5):null;
-  const m=SUBM[f.tipo]||1;const age=f.nac?Math.floor((new Date()-new Date(f.nac+'T12:00'))/31557600000):null;
+  const m=SUBM[f.tipo]||1;const age=f.nac?Math.floor((new Date()-new Date(f.nac+'T12:00'))/31557600000):(+f.edad||null);
   let bd='';if(f.nac){const b=new Date(f.nac+'T12:00');const n=new Date();b.setFullYear(n.getFullYear());if(b<n)b.setFullYear(n.getFullYear()+1);bd=Math.round((b-n)/864e5)}
   const inp=(k,l,t='text',ph='')=>`<div class="field"><label for="f-${k}">${l}</label><input id="f-${k}" type="${t==='n'?'number':t}" step="any" value="${esc(f[k])}" placeholder="${esc(ph)}" onchange="fSet('${k}',this.value,'${t}')"${t==='date'?` onblur="fBlur('${k}')"`:''}></div>`;
   const sel=(k,l,opts)=>`<div class="field"><label for="f-${k}">${l}</label><select id="f-${k}" onchange="fSet('${k}',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)">${opts.map(([v,t])=>`<option value="${esc(v)}" ${String(f[k])===String(v)?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
@@ -711,7 +725,7 @@ function cFicha(){
     <div class="kpi"><small>Pago · ${esc((SUBT.find(x=>x[0]===f.tipo)||['','—'])[1])}</small><b>${f.pago?nf(f.pago,0)+' €':'—'}</b><small>${f.pago&&SUBM[f.tipo]?nf(f.pago/m,0)+' €/mes':''}</small></div>
     <div class="kpi"><small>Próxima renovación</small><b class="${dleft!=null&&dleft<=7?'badc':dleft!=null&&dleft<=21?'':'good'}" style="${dleft!=null&&dleft>7&&dleft<=21?'color:var(--warn)':''}">${ren?new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'—'}</b><small>${dleft!=null?(dleft>=0?'en '+dleft+' días':'vencida hace '+(-dleft)+' días'):''}</small></div>
     <div class="kpi"><small>Edad</small><b>${age!=null?age+' años':'—'}</b><small>${bd!==''?'🎂 cumple en '+bd+' días':''}</small></div></div>
-  <div class="panel"><span class="lbl">Datos generales</span>${grid(inp('nombre','Nombre')+inp('email','Email','email')+inp('tel','Teléfono / WhatsApp','tel')+sel('sexo','Sexo',[['Hombre','Hombre'],['Mujer','Mujer']])+inp('nac','Fecha de nacimiento','date')+inp('altura','Altura (cm)','n')+sel('objetivo','Objetivo',[['perder','Perder grasa'],['ganar','Ganar músculo']]))}</div>
+  <div class="panel"><span class="lbl">Datos generales</span>${grid(inp('nombre','Nombre')+inp('email','Email','email')+inp('tel','Teléfono / WhatsApp','tel')+sel('sexo','Sexo',[['Hombre','Hombre'],['Mujer','Mujer']])+inp('nac','Fecha de nacimiento','date')+(FICHA.nac?'':inp('edad','Edad (si no tienes la fecha)','n'))+inp('altura','Altura (cm)','n')+sel('objetivo','Objetivo',[['perder','Perder grasa'],['ganar','Ganar músculo']]))}</div>
   <div class="panel"><span class="lbl">📅 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}</div>
   <div class="panel"><span class="lbl">🏋️ Entrenamiento, pasos y revisiones</span>
     <div class="field"><label>Días de entrenamiento</label><div class="chips">${WD.map((d,i)=>{const gi=(i+1)%7;return `<button type="button" class="chip ${f.dias.includes(gi)?'on':''}" onclick="fDay(${gi})">${d.slice(0,3)}</button>`}).join('')}</div></div>
@@ -850,7 +864,7 @@ function readImport(inp){const f=inp.files[0];if(!f)return;const r=new FileReade
 const impSlug=s=>String(s||'cliente').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/g,'')||'cliente';
 function impFicha(c){const p=c.profile||{},d=c.data||{};const n=v=>v===undefined||v===null?'':v;
   return Object.assign({},(()=>{const o={};Object.keys(FICHA_DEF).forEach(k=>{if(!(k in ADMIN_MAP))o[k]=FICHA_DEF[k]});return o})(),{
-    nombre:c.name||'',email:'',tel:'',sexo:d.sex==='female'?'Mujer':d.sex==='male'?'Hombre':'',nac:n(p.fechaNacimiento),altura:n(d.height),objetivo:(parseFloat(d.goal)||0)>0?'ganar':'perder',
+    nombre:c.name||'',email:'',tel:'',edad:n(d.age),sexo:d.sex==='female'?'Mujer':d.sex==='male'?'Hombre':'',nac:n(p.fechaNacimiento),altura:n(d.height),objetivo:(parseFloat(d.goal)||0)>0?'ganar':'perder',
     tipoEntreno:n(p.tipoEntreno),diasSemana:n(p.diasSemana||d.trainingDays),dias:[],pasosT:n(d.steps),pasosR:n(d.steps),
     revFis:n(p.revFisicoDay)||'Domingo',lastFis:n(p.lastRevFisico),revEnt:n(p.revEntrenoDay),lastEnt:n(p.lastRevEntreno),
     objLargo:n(p.objetivo),patologias:n(p.patologias),alergias:n(p.alergias),intol:n(p.intolerancias),lesiones:n(p.lesiones),medicacion:n(p.medicacion),suplem:n(p.suplementacion),ciclo:n(p.ciclo),histDietas:n(p.historialDietas),prefs:n(p.preferencias),evitar:n(p.alimentosEvitar),sueno:n(p.horasSueno),estres:n(p.estres),motiv:n(p.motivacion),
@@ -914,7 +928,7 @@ function bfNavy(sex,h,neck,waist,hip){if(!(h>0&&neck>0&&waist>0))return null;
   if(sex==='Mujer'){if(!(hip>0))return null;const x=waist+hip-neck;return x>0?495/(1.29579-0.35004*Math.log10(x)+0.22100*Math.log10(h))-450:null}
   const x=waist-neck;return x>0?495/(1.0324-0.19077*Math.log10(x)+0.15456*Math.log10(h))-450:null}
 function bfDeur(sex,h,kg,age){if(!(h>0&&kg>0&&age>0)||!sex)return null;const imc=kg/((h/100)**2);return 1.2*imc+0.23*age-10.8*(sex==='Mujer'?0:1)-5.4}
-const ageAt=(nac,date)=>nac?Math.floor((new Date(date+'T12:00')-new Date(nac+'T12:00'))/31557600000):null;
+const ageAt=(nac,date)=>nac?Math.floor((new Date(date+'T12:00')-new Date(nac+'T12:00'))/31557600000):(+FICHA.edad||null);
 const BF_M={navy:'medidas (cuello, cintura'+'…)',calc:'Calculadora',imc:'IMC + edad'};
 function fatSeries(){const sex=FICHA.sexo,h=+FICHA.altura;
   return S.checkins.map(c=>{let v=null,m='';const nv=sex?bfNavy(sex,h,+c.cuello,+(c.cintura||c.abdomen),+c.cadera):null;
@@ -994,3 +1008,5 @@ function vRanks(){
   <div class="rklist">${R.ex.map(e=>`<div class="rkrow">${rankBadge(e)}<div><b>${esc(e.n)}</b>${rankBar(e)}</div></div>`).join('')}</div>
   <p class="small muted" style="margin:0">Rangos orientativos: comparan tu mejor marca reciente (1RM estimado con kg y reps) con tu peso corporal y tu sexo. Dominadas y fondos cuentan tu peso + lastre; flexiones y abdominales, las repeticiones; la plancha, los segundos. Si un día rindes peor, tu rango se mantiene.</p>`;
 }
+
+function fatStats(F,from){const f=F[0],l=F[F.length-1],d=l.v-f.v;return `<div class="wstats fat"><div><small>% graso · ${esc(from)}</small><b>${nf(f.v)} %</b></div><div><small>% graso ahora</small><b>${nf(l.v)} %</b></div><div><small>Cambio</small><b class="${d<=0?'good':'badc'}">${d>0?'+':''}${nf(d)} %</b></div></div>`}

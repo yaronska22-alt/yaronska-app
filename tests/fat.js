@@ -19,7 +19,7 @@ await p.evaluate(async()=>{const id=await db.createClient('a@t.com',{nombre:'Ana
   for(const [n,sets] of [['Dominadas',[{kg:10,reps:8}]],['Press banca',[{kg:90,reps:6}]],['Press máquina placas',[{kg:80,reps:10}]],['Jalón al pecho',[{kg:70,reps:10}]],['Curl bíceps',[{kg:30,reps:10}]],['Extensión cuádriceps',[{kg:60,reps:12}]],['Plancha',[{kg:0,reps:60}]],['Prensa de discos',[{kg:200,reps:10}]]]){const x=new Date();x.setDate(x.getDate()-3);await db.insert('workout_logs',{client_id:id,fecha:iso(x),dia:'Día 1',ejercicio:n,sets})}
   await refreshList();coachSel=id;await loadClient(id);S.routine=tpl;save();renderCoach()});
 await p.click('.tabs >> text=Peso');await w(200);
-console.log('fat coach:',(await p.textContent('.cmain')).replace(/\s+/g,' ').match(/% graso.{0,200}/)[0]);
+await p.screenshot({path:OUT+'/fat0.png',fullPage:true});console.log('legend:',await p.textContent('.legend'));
 await p.click('text=Peso y % graso');await w(300);
 await p.click('.tabs >> text=Ejercicios');await w(200);await p.screenshot({path:OUT+'/rk0.png',fullPage:true});
 console.log('rangos coach:',(await p.textContent('.rklist')).replace(/\s+/g,' ').slice(0,400));
