@@ -1,4 +1,5 @@
 // Mock en memoria de js/db.js con las mismas reglas que la base de datos real
+window.APP_URL='http://app.test/';
 (function(){
 const K='mockdb';const st=JSON.parse(localStorage.getItem(K)||'null')||{users:[{id:'u-coach',email:'yaronska22@gmail.com',pass:'coachpass1',role:'coach'}],clients:[],client_admin:[],weights:[],checkins:[],daily_logs:[],workout_logs:[],templates:[],files:{},seq:1,session:null};
 const persist=()=>localStorage.setItem(K,JSON.stringify(st));window.__mock=st;window.__persist=persist;

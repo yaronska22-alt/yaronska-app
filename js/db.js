@@ -2,6 +2,9 @@
 // La clave "publishable" es pública por diseño: la seguridad la ponen las reglas (RLS) de la base de datos.
 const SUPABASE_URL = 'https://gpiykjgziuxvjlmbgyds.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gQv24EzHgyXWlJdl7Lx30Q_mm6qX0nz';
+// Dirección oficial de la app: la que reciben los clientes y la de los emails de acceso
+const APP_URL = 'https://app.yaronskafit.com/';
+window.APP_URL = APP_URL;
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, experimental: { passkey: true } }
@@ -15,10 +18,10 @@ const db = {
   onAuth(cb) { return sb.auth.onAuthStateChange((ev, s) => cb(ev, s)); },
   async signIn(email, password) { return ok(await sb.auth.signInWithPassword({ email, password })); },
   async signUp(email, password) {
-    return ok(await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } }));
+    return ok(await sb.auth.signUp({ email, password, options: { emailRedirectTo: APP_URL } }));
   },
   async resetPassword(email) {
-    return ok(await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }));
+    return ok(await sb.auth.resetPasswordForEmail(email, { redirectTo: APP_URL }));
   },
   async setPassword(password) { return ok(await sb.auth.updateUser({ password })); },
   async signOut() { await sb.auth.signOut(); },

@@ -543,7 +543,7 @@ async function createClient(e){
   }catch(err){console.error(err);b.disabled=false;b.textContent='Dar de alta';toast('No se ha podido crear: '+authMsg(err))}
 }
 function inviteMsg(id){
-  const c=CL.find(x=>x.id===id);if(!c)return;const url=location.origin+location.pathname;
+  const c=CL.find(x=>x.id===id);if(!c)return;const url=APP_URL;
   const tel=(CUR&&CUR.id===id?FICHA.tel:'').replace(/\D/g,'');
   const msg=`¡Capitán! Ya tienes lista tu app de Yaronska_Fit. Entra aquí: ${url}\n\nPulsa «Es mi primera vez: crear mi cuenta» y usa este email: ${c.email}\n\nAhí tendrás tu plan, tu rutina y tus revisiones.`;
   const sh=document.getElementById('sheet');
