@@ -607,6 +607,7 @@ async function createClient(e){
 }
 function inviteMsg(id){
   const c=CL.find(x=>x.id===id);if(!c)return;const url=APP_URL;
+  if(CUR&&CUR.id===id&&FICHA.email)c.email=String(FICHA.email).trim().toLowerCase();
   if(/\.invalid$/.test(c.email)){toast('Antes, pon su email real en la Ficha (Datos generales → Email)');coachTab='ficha';if(CUR&&CUR.id===id)renderCoach();else selectClient(id);return}
   const tel=(CUR&&CUR.id===id?FICHA.tel:'').replace(/\D/g,'');
   const msg=`¡Capitán! Ya tienes lista tu app de Yaronska_Fit. Entra aquí: ${url}\n\nPulsa «Es mi primera vez: crear mi cuenta» y usa este email: ${c.email}\n\nAhí tendrás tu plan, tu rutina y tus revisiones.`;
