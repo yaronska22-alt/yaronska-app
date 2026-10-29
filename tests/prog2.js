@@ -1,0 +1,26 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);
+  const add=(n,date,kg,reps)=>{(S.hist[n]=S.hist[n]||[]).push({date,day:'',sets:[{kg,reps,rir:2},{kg:kg-5,reps,rir:2}],ts:Date.now()})};
+  S.routine[0].ex.slice(0,4).forEach((e,i)=>{for(let w=0;w<6;w++){const d=new Date();d.setDate(d.getDate()-7*(5-w));add(e.n,iso(d),40+i*5+w*(i===3?-1:2.5),8+(w%2))}});
+  add(S.routine[1].ex[0].n,iso(new Date()),100,8);
+  save();await flushSync();setView('client');go('train');trainTab='progreso';render()});
+await p.setViewportSize({width:390,height:844});await p.evaluate(()=>render());await w(200);
+await p.screenshot({path:OUT+'/g1.png',fullPage:true});
+await p.click('.pgc >> nth=2');await w(300);await p.click('.mtabs .chip >> nth=2');await w(100);
+console.log('sel:',await p.evaluate(()=>exSel),await p.$eval('#exS',e=>e.value));
+await p.setViewportSize({width:1200,height:900});await p.evaluate(()=>{window.scrollTo(0,0);render()});await w(200);await p.screenshot({path:OUT+'/g2.png'});
+await p.click('#vCoach');await w(300);await p.evaluate(()=>{coachTab='ejercicios';renderCoach()});await w(500);await p.screenshot({path:OUT+'/g3.png'});console.log('coach ok:',await p.isVisible('#exS'),await p.evaluate(()=>[view,coachTab,!!document.querySelector('#coachView #exS')]),(await p.textContent('main, body')).slice(0,300).replace(/\s+/g,' '));
+console.log('ERR',errs);await b.close()})();

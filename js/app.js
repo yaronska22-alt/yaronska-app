@@ -485,9 +485,10 @@ function exCard(e,ei,label){
 }
 const OPT_TXT='Esta sesión es opcional: hazla si esta semana tienes tiempo y energía. Si no, no pasa nada, tu progreso no depende de ella.';
 let trainTab='rutina';
-const trainTabs=()=>`<div class="tabs">${[['rutina','Mi rutina'],['volumen','📊 Volumen'],['rangos','🏅 Rangos']].map(([k,l])=>`<button type="button" class="${trainTab===k?'on':''}" onclick="trainTab='${k}';render()">${l}</button>`).join('')}</div>`;
+const trainTabs=()=>`<div class="tabs">${[['rutina','Mi rutina'],['progreso','📈 Progreso'],['volumen','📊 Volumen'],['rangos','🏅 Rangos']].map(([k,l])=>`<button type="button" class="${trainTab===k?'on':''}" onclick="trainTab='${k}';render()">${l}</button>`).join('')}</div>`;
 function vTrain(){
   if(trainTab==='rangos')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tus <em>rangos</em></h1></div>${trainTabs()}${vRanks()}`;
+  if(trainTab==='progreso')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>progreso</em></h1></div>${trainTabs()}${vProgress()}`;
   if(trainTab==='volumen')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>volumen</em></h1></div>${trainTabs()}${vVolume(false)}`;
   const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
@@ -653,13 +654,21 @@ function cPeso(){
 }
 const e1rm=s=>s.kg*(1+s.reps/30);
 function cEj(){return `<div class="panel"><span class="lbl">📊 Volumen semanal por músculo</span>${vVolume(true)}</div>`+cEj0()+`<div class="panel"><span class="lbl">🏅 Rangos del cliente</span>${vRanks()}</div>`}
-function cEj0(){
-  const names=Object.keys(S.hist);if(!names.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no ha registrado entrenos.</p></div>';if(!exSel||!S.hist[exSel])exSel=names[0];const H=S.hist[exSel]||[];
+// orden: primero los ejercicios de su rutina actual, luego el resto
+function exOrder(){const seen=new Set(),out=[];S.routine.forEach(d=>d.ex.forEach(e=>{if(S.hist[e.n]&&S.hist[e.n].length&&!seen.has(e.n)){seen.add(e.n);out.push(e.n)}}));Object.keys(S.hist).forEach(n=>{if(S.hist[n].length&&!seen.has(n)){seen.add(n);out.push(n)}});return out}
+function spark(v,col){if(v.length<2)return '';const W=120,H=34,mn=Math.min(...v),mx=Math.max(...v),r=mx-mn||1;const pts=v.map((x,i)=>`${(i*(W-4)/(v.length-1)+2).toFixed(1)},${(H-3-(x-mn)/r*(H-6)).toFixed(1)}`).join(' ');return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" vector-effect="non-scaling-stroke" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`}
+function vProgress(){
+  const names=exOrder();const top=h=>h.sets.reduce((b,s)=>e1rm(s)>e1rm(b)?s:b,h.sets[0]);
+  const cards=names.map(n=>{const H=S.hist[n].filter(h=>h.sets&&h.sets.length);if(!H.length)return '';const v=H.map(h=>e1rm(top(h)));const f=v[0],l=v[v.length-1];const pc=f?Math.round((l-f)/f*100):0;const ls=top(H[H.length-1]);
+    return `<button type="button" class="pgc ${n===exSel?'on':''}" onclick="exSel=${esc(JSON.stringify(n))};render();setTimeout(()=>document.getElementById('exS')&&document.getElementById('exS').scrollIntoView({behavior:'smooth',block:'start'}),30)"><b>${esc(n)}</b><small class="muted">${H.length} sesi${H.length>1?'ones':'ón'} · última ${nf(ls.kg,1).replace(',0','')} kg × ${ls.reps}</small>${spark(v,pc>=0?'#7CE38B':'#FF6B5B')}<span class="pgp ${H.length<2?'':pc>=0?'good':'badc'}">${H.length<2?'Primera sesión':(pc>0?'+':'')+pc+' % fuerza'}</span></button>`}).join('');
+  return `${names.length?`<section class="sec-h"><h2 style="font-size:16px">Tus ejercicios</h2></section><div class="pgrid2">${cards}</div><p class="small muted" style="margin:0">«% fuerza» compara tu 1RM estimado (con los kg y las reps de tu mejor serie) de la primera sesión con la última. Toca un ejercicio para ver su gráfica.</p>`:''}${cEj0(false)}`}
+function cEj0(coach=true){const rr=coach?'renderCoach()':'render()';
+  const names=exOrder();if(!names.length)return `<div class="panel"><p class="small muted" style="margin:0">${coach?'Aún no ha registrado entrenos.':'Cuando registres tus entrenos, aquí verás cómo mejoras en cada ejercicio.'}</p></div>`;if(!exSel||!S.hist[exSel])exSel=names[0];const H=S.hist[exSel]||[];
   const best=h=>h.sets.reduce((b,s)=>e1rm(s)>e1rm(b)?s:b,h.sets[0]);
   const M={kg:{l:'Peso (serie top)',f:h=>Math.max(...h.sets.map(s=>s.kg)),u:' kg'},reps:{l:'Repeticiones totales',f:h=>h.sets.reduce((a,s)=>a+s.reps,0),u:' reps',dec:0},rm:{l:'Intensidad · 1RM estimado',f:h=>e1rm(best(h)),u:' kg'},rir:{l:'RIR medio',f:h=>{const r=h.sets.filter(s=>s.rir!=null);return r.length?r.reduce((a,s)=>a+s.rir,0)/r.length:0},u:'',dec:1}};
   const m=M[exMetric];const pts=H.map(h=>({d:h.date,v:m.f(h)}));const ch=pts.length>1?pts[pts.length-1].v-pts[0].v:0;
-  return `<div class="panel"><div class="range"><div class="field"><label for="exS">Ejercicio</label><select id="exS" onchange="exSel=this.value;renderCoach()">${names.map(n=>`<option ${n===exSel?'selected':''}>${esc(n)}</option>`).join('')}</select></div></div>
-    <div class="mtabs">${Object.entries(M).map(([k,v])=>`<button type="button" class="chip ${exMetric===k?'on':''}" onclick="exMetric='${k}';renderCoach()">${v.l}</button>`).join('')}</div>
+  return `<div class="panel"><div class="range"><div class="field"><label for="exS">Ejercicio</label><select id="exS" onchange="exSel=this.value;${rr}">${names.map(n=>`<option ${n===exSel?'selected':''}>${esc(n)}</option>`).join('')}</select></div></div>
+    <div class="mtabs">${Object.entries(M).map(([k,v])=>`<button type="button" class="chip ${exMetric===k?'on':''}" onclick="exMetric='${k}';${rr}">${v.l}</button>`).join('')}</div>
     <div class="kpis"><div class="kpi"><small>Primera sesión</small><b>${pts.length?nf(pts[0].v,m.dec??1)+m.u:'—'}</b></div><div class="kpi"><small>Última sesión</small><b>${pts.length?nf(pts[pts.length-1].v,m.dec??1)+m.u:'—'}</b></div><div class="kpi"><small>Mejora</small><b class="${(exMetric==='rir'?ch<=0:ch>=0)?'good':'badc'}">${ch>0?'+':''}${nf(ch,m.dec??1)}${m.u}</b></div><div class="kpi"><small>Sesiones</small><b>${pts.length}</b></div></div>
     ${lineChart(pts,{u:m.u,dec:m.dec??1,label:m.l})}
   </div>
