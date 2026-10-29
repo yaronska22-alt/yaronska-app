@@ -72,7 +72,7 @@ const MEAS=[['peso','Peso','kg'],['hs','Horas de sueño','h'],['cuello','Cuello'
 const pad2=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return d};
-const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nTrain:true,hora:'20:00',unid:'kg',consent:false};
+const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nTrain:true,hora:'21:00',unid:'kg',consent:false};
 const emptyS=()=>({weights:[],checkins:[],hist:{},daily:{},routine:[],kcal:1800,restOn:true,planOn:false,next:{},phase:0,week:1,weeksPhase:4,ficha:clone(FICHA_DEF),profile:clone(PROFILE_DEF)});
 let S=emptyS();FICHA=S.ficha;
 let ME=null;        // {id,email,role,clientId}
@@ -228,7 +228,8 @@ async function enter(user){
   document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
   document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
-  tab='home';setView(ME.role==='coach'?'coach':'client');
+  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:'home';if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
+  if(ME.role==='client')pushSilent();
   if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
 async function boot(){
@@ -347,8 +348,9 @@ function vPerfil(){
     <button class="btn ghost sm" type="button" onclick="pForgot()">He olvidado mi contraseña</button></section>
   <section class="pcard"><span class="lbl">Face ID / huella</span><div id="pkBox"><p class="small muted" style="margin:0">Cargando…</p></div></section>
   <section class="pcard"><span class="lbl">Recordatorios</span>
-    ${sw('nCheck','Revisión semanal','El día anterior y el mismo '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Pasos, dieta, entreno y cómo te sientes')}${sw('nTrain','Días de entreno','Aviso con tu sesión del día')}
-    <div class="field"><label for="ph">Hora de los avisos</label><input id="ph" type="time" value="${esc(p.hora)}" onchange="pSet('hora',this.value)"></div></section>
+    <div id="pushBox">${pushStatusHTML()}</div>
+    ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}
+    <div class="field"><label for="ph">Hora del recordatorio diario</label><input id="ph" type="time" value="${esc(p.hora||'21:00')}" onchange="pSet('hora',this.value)"></div></section>
   <section class="pcard"><span class="lbl">Preferencias</span>
     <div class="field"><label for="pu">Unidades de peso</label><select id="pu" onchange="pSet('unid',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="kg" ${p.unid==='kg'?'selected':''}>Kilos (kg)</option><option value="lb" ${p.unid==='lb'?'selected':''}>Libras (lb)</option></select></div></section>
   <section class="pcard"><span class="lbl">Privacidad</span>
@@ -362,6 +364,7 @@ function vHome(){
   const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
   ${vRemind()}
+  ${pushCard()}
   <section class="wchart" aria-label="Tu evolución">
     <div class="sec-h"><span class="lbl">Tu evolución · peso${FICHA.showFat?' y % graso':''}</span><span class="small muted">Objetivo: ${CLIENT.goal==='perder'?'perder grasa':'ganar músculo'}</span></div>
     ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>${FICHA.wFrom?'Desde '+fdate(first.date):'Inicio'}</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
@@ -715,6 +718,7 @@ function fBlur(k){if(F_RERENDER.includes(k))setTimeout(renderCoach)}
 function fSet(k,v,t){FICHA[k]=t==='n'?(v===''?'':parseFloat(String(v).replace(',','.'))):v;save();if(t!=='date'&&['nombre','revFis','tipo','alta','renov','pago','estado','objetivo','nac','pasosT','pasosR'].includes(k))setTimeout(renderCoach)}
 function fDay(i){const a=FICHA.dias;const j=a.indexOf(i);if(j>=0)a.splice(j,1);else a.push(i);a.sort();FICHA.diasSemana=a.length;save();setTimeout(renderCoach)}
 function cFicha(){
+  setTimeout(()=>{if(CUR)db.pushCount(CUR.id).then(n=>{const e=document.getElementById('pushCnt');if(e)e.textContent=`Dispositivos con avisos activados: ${n}${n?'':' · el cliente tiene que activarlos en su app'}`}).catch(()=>{})});
   const f=FICHA;const ren=nextRenewal(f);const dleft=ren?Math.round((new Date(ren+'T12:00')-new Date())/864e5):null;
   const m=SUBM[f.tipo]||1;const age=f.nac?Math.floor((new Date()-new Date(f.nac+'T12:00'))/31557600000):(+f.edad||null);
   let bd='';if(f.nac){const b=new Date(f.nac+'T12:00');const n=new Date();b.setFullYear(n.getFullYear());if(b<n)b.setFullYear(n.getFullYear()+1);bd=Math.round((b-n)/864e5)}
@@ -734,8 +738,9 @@ function cFicha(){
     <div id="payBox">${payList()}</div></div>
   <div class="panel"><span class="lbl">🏋️ Entrenamiento, pasos y revisiones</span>
     <div class="field"><label>Días de entrenamiento</label><div class="chips">${WD.map((d,i)=>{const gi=(i+1)%7;return `<button type="button" class="chip ${f.dias.includes(gi)?'on':''}" onclick="fDay(${gi})">${d.slice(0,3)}</button>`}).join('')}</div></div>
-    ${grid(inp('pasosT','👟 Pasos objetivo · día de entreno','n')+inp('pasosR','👟 Pasos objetivo · día sin entreno','n')+inp('tipoEntreno','¿Qué trabaja? (tipo de entrenamiento)')+inp('diasSemana','Nº días entrena por semana','n')+sel('revFis','Día revisión físico / peso',days)+inp('lastFis','Última revisión físico','date')+sel('revEnt','Día revisión entreno',days)+inp('lastEnt','Última revisión entreno','date'))}
-    <p class="small muted" style="margin:0">El cliente ve en su Inicio el objetivo de pasos que toca según el día (entreno o descanso).</p></div>
+    ${grid(inp('pasosT','👟 Pasos objetivo · día de entreno','n')+inp('pasosR','👟 Pasos objetivo · día sin entreno','n')+inp('tipoEntreno','¿Qué trabaja? (tipo de entrenamiento)')+inp('diasSemana','Nº días entrena por semana','n')+sel('revFis','Día revisión físico / peso',days)+inp('avisoV','🔔 Aviso la víspera (hora)','time')+inp('avisoD','🔔 Aviso el día de la revisión (hora)','time')+inp('lastFis','Última revisión físico','date')+sel('revEnt','Día revisión entreno',days)+inp('lastEnt','Última revisión entreno','date'))}
+    <p class="small muted" style="margin:0">El cliente ve en su Inicio el objetivo de pasos que toca según el día (entreno o descanso). Avisos de la revisión: la víspera a las ${esc(f.avisoV||'20:00')} y el mismo día a las ${esc(f.avisoD||'06:00')} (si aún no la ha enviado).</p>
+    <div class="row"><span class="small" id="pushCnt">Dispositivos con avisos activados: …</span><button class="btn ghost sm" type="button" onclick="testPushC()">🔔 Enviar aviso de prueba</button></div></div>
   <div class="panel"><span class="lbl">Perfil clínico</span>${grid(ta('objLargo','Objetivo del cliente')+inp('patologias','Patologías diagnosticadas')+inp('alergias','Alergias')+inp('intol','Intolerancias')+inp('lesiones','Lesiones / limitaciones físicas')+inp('medicacion','Medicación actual')+inp('suplem','Suplementación actual')+inp('ciclo','Ciclo menstrual / menopausia (si aplica)')+inp('histDietas','Historial de dietas previas')+inp('prefs','Preferencias alimentarias')+inp('evitar','Alimentos a evitar')+inp('sueno','Horas de sueño habituales','n')+inp('estres','Nivel de estrés (1-10)','n')+inp('motiv','Nivel de motivación (1-10)','n'))}</div>
   <div class="panel"><span class="lbl">💊 Suplementación estructurada</span>${grid(inp('omega3','Omega-3 EPA+DHA (g/día)','n')+inp('vitD','Vitamina D (UI/día)','n')+inp('b12','Vitamina B12 (µg/día)','n')+inp('magnesio','Magnesio (mg/día)','n')+inp('vitC','Vitamina C (mg/día)','n')+inp('hierro','Hierro (mg/día)','n')+inp('calcio','Calcio (mg/día)','n')+inp('zinc','Zinc (mg/día)','n')+inp('folato','Folato (µg/día)','n')+inp('potasio','Potasio (mg/día)','n')+inp('creatina','Creatina (g/día)','n')+inp('colageno','Colágeno (g/día)','n')+inp('cafeina','Cafeína (mg/día)','n')+sel('multi','Multivitamínico',[['no','No'],['yes','Sí']])+ta('supOtros','Otros suplementos'))}</div>
   <div class="panel"><span class="lbl">🌞 Estilo de vida diario</span>${grid(inp('sal','Sal añadida (g/día)','n')+inp('sol','Exposición al sol (min/día)','n')+inp('agua','Agua (litros/día)','n')+inp('cafe','Café (tazas/día)','n')+inp('alcohol','Alcohol (UI/semana)','n')+inp('tabaco','Tabaco (cig/día)','n')+inp('aire','Tiempo al aire libre (min/día)','n')+inp('pantallas','Pantallas (h/día)','n')+ta('lifeNotas','Notas de estilo de vida'))}</div>
@@ -1150,3 +1155,32 @@ function restPreview(){if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera
     restPrev=`<div class="tbl-w"><table><thead><tr><th>Comida</th><th>Entreno</th><th>Sin entreno</th><th>Diferencia</th></tr></thead><tbody>${rows.map(x=>{const l=(R_MEALS.find(r=>r[0]===x.m)||['',x.m])[1];const r=x.R??x.T;return `<tr><td>${l}</td><td>${x.T} kcal</td><td>${r} kcal</td><td class="${r<x.T?'good':''}">${r-x.T?(r-x.T)+' kcal':'='}</td></tr>`}).join('')}<tr><td><b>Día</b></td><td><b>${TT} kcal</b></td><td><b>${RR} kcal</b></td><td><b>${RR-TT} kcal</b></td></tr></tbody></table></div><p class="small muted" style="margin:0">Kcal aproximadas de una opción tipo por comida. Solo lo ves tú: el cliente nunca ve calorías.</p>`;
     renderCoach()};
   calcPost({type:'export',opts:{mode:'td',cfg:FICHA.restCfg||{},preview:true}})}
+
+// ================= AVISOS (NOTIFICACIONES) =================
+const pushOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=()=>navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+const b64u=s=>{const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...b].map(c=>c.charCodeAt(0)))};
+let SWREG=null;
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').then(r=>SWREG=r).catch(()=>{});
+function pushState(){if(isIOS()&&!isStandalone())return 'ios-install';if(!pushOK())return 'unsupported';return Notification.permission}
+function pushCard(){if(ME.role!=='client')return '';const st=pushState();let k='';try{k=localStorage.getItem('push-hide')}catch(e){}
+  if(st==='granted'||st==='unsupported'||k)return '';
+  if(st==='ios-install')return `<div class="remind"><span class="ic">🔔</span><div><b>Activa los avisos de tu revisión</b><small>En iPhone: pulsa Compartir ⬆️ → «Añadir a pantalla de inicio», abre la app desde ese icono y vuelve aquí.</small></div><button class="btn ghost sm" type="button" onclick="pushHide()">✕</button></div>`;
+  if(st==='denied')return '';
+  return `<div class="remind soon"><span class="ic">🔔</span><div><b>Activa los avisos</b><small>Te aviso la víspera y la mañana de tu revisión semanal para que no se te pase.</small></div><button class="btn sm" type="button" onclick="pushEnable()">Activar</button></div>`}
+function pushHide(){try{localStorage.setItem('push-hide','1')}catch(e){}render()}
+function pushStatusHTML(){if(ME.role!=='client')return '<p class="small muted" style="margin:0">Vista de entrenador: los avisos los activa el cliente en su móvil.</p>';const st=pushState();
+  if(st==='granted')return `<p class="small" style="margin:0;color:var(--ok)">✓ Avisos activados en este móvil</p>`;
+  if(st==='ios-install')return `<p class="small muted" style="margin:0">En iPhone, primero añade la app a tu pantalla de inicio (Compartir → «Añadir a pantalla de inicio») y ábrela desde ahí para poder activar los avisos.</p>`;
+  if(st==='unsupported')return `<p class="small muted" style="margin:0">Este navegador no permite avisos.</p>`;
+  if(st==='denied')return `<p class="small muted" style="margin:0">Has bloqueado los avisos. Actívalos en los ajustes del móvil (Notificaciones → Yaronska) y vuelve a entrar.</p>`;
+  return `<button class="btn sm" type="button" onclick="pushEnable()">🔔 Activar avisos en este móvil</button>`}
+async function pushSubscribe(){const reg=SWREG||await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(db.VAPID)});
+  await db.savePushSub(sub.toJSON(),CUR.id);return sub}
+async function pushEnable(){if(pushState()==='ios-install'||!pushOK()){toast('Primero añade la app a tu pantalla de inicio');return}
+  try{const p=await Notification.requestPermission();if(p!=='granted'){toast('Sin permiso no te puedo avisar. Puedes activarlo en los ajustes del móvil.');render();return}
+    await pushSubscribe();toast('Avisos activados ✓');render()}catch(e){console.error(e);toast('No se han podido activar los avisos: '+(e.message||e))}}
+async function pushSilent(){try{if(pushOK()&&Notification.permission==='granted'&&CUR)await pushSubscribe()}catch(e){}}
+async function testPushC(){try{const r=await db.testPush(CUR.id);toast(r&&r.sent?`Aviso enviado a ${r.sent} dispositivo${r.sent>1?'s':''}`:'Este cliente aún no ha activado los avisos en su móvil')}catch(e){toast('No se ha podido enviar: '+authMsg(e))}}

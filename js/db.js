@@ -82,6 +82,14 @@ const db = {
   async payments() { return ok(await sb.from('payments').select('*').order('fecha')); },
   async addPayment(row) { return ok(await sb.from('payments').insert(row).select('*').single()); },
   async delPayment(id) { ok(await sb.from('payments').delete().eq('id', id)); },
+  // ---------- avisos (notificaciones push) ----------
+  VAPID: 'BP2MWoAxzbRTx-62vOiZdJYmD1dFBEouj1n-RbSIs-od7kbvc5rx_4T_QQJdXigSznboTzxsLsabF4xgZ3Qufw4',
+  async savePushSub(j, clientId) {
+    const { data: { user } } = await sb.auth.getUser();
+    ok(await sb.from('push_subs').upsert({ user_id: user.id, client_id: clientId, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: navigator.userAgent.slice(0, 200) }, { onConflict: 'endpoint' }));
+  },
+  async pushCount(clientId) { const { count } = await sb.from('push_subs').select('id', { count: 'exact', head: true }).eq('client_id', clientId); return count || 0; },
+  async testPush(clientId) { const { data, error } = await sb.functions.invoke('avisos', { body: { client_id: clientId } }); if (error) throw error; return data; },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
   // ---------- escrituras ----------

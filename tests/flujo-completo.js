@@ -51,7 +51,7 @@ await p.fill('#kg-0-0-0','40');await p.fill('#rp-0-0-0','10');await p.fill('#ri-
 await p.click('.nav >> text=Check-in');await p.fill('#m-peso','82,4');await p.fill('#m-cintura','90');
 await p.setInputFiles('.ph >> nth=0 >> input',R+'/img/recetas/0.jpg');await p.fill('#ckNota','Buena semana');await p.click('text=Enviar check-in');await wait(1200);
 await shot('t10-after-check');
-await p.click('.me');await p.fill('#pn','José Martínez López');await p.dispatchEvent('#pn','change');await p.click('.prow >> nth=3');await wait(900);
+await p.click('.me');await p.fill('#pn','José Martínez López');await p.dispatchEvent('#pn','change');await wait(900);
 st=await p.evaluate(()=>window.__mock);
 log('10 db: weights',st.weights.length,'checkins',st.checkins.length,JSON.stringify(st.checkins[0]&&st.checkins[0].data).slice(0,160),'files',Object.keys(st.files),'daily',JSON.stringify(st.daily_logs),'logs',st.workout_logs.length,'nombre',st.clients[0].ficha.nombre,'consent',st.clients[0].prefs.consent);
 log('   home after:',(await p.evaluate(()=>{go('home');return document.querySelector('.wstats')?.innerText.replace(/\n/g,' ')})));

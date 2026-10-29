@@ -1,0 +1,24 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:390,height:844}});
+await ctx.grantPermissions(['notifications'],{origin:'http://app.test'});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/?go=check');await w(300);
+await p.evaluate(async()=>{localStorage.clear();});
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');
+await p.evaluate(async()=>{await db.createClient('c@t.com',{nombre:'Cli',revFis:'Domingo'},'2026-10-01');});
+await p.click('#outBtn');await w(300);await p.click('text=Es mi primera vez: crear mi cuenta');await p.fill('#aE','c@t.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.check('#aOk');await p.click('button:text("Crear mi cuenta")');await w(300);
+await p.fill('#aE','c@t.com');await p.fill('#aP','clave1234');await p.click('button:text-is("Entrar")');await w(600);
+await p.check('#cOk');await p.click('text=Aceptar y entrar');await w(800);if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');
+await p.evaluate(()=>{window.pushState=()=>'default';render()});console.log('card:',await p.isVisible('text=Activa los avisos'),'swreg:',await p.evaluate(()=>!!SWREG));
+console.log('state:',await p.evaluate(()=>pushState()));
+await p.screenshot({path:OUT+'/push1.png'});
+console.log('ERR',errs);await b.close()})();
