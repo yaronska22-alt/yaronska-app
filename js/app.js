@@ -1022,31 +1022,52 @@ function lvlOf(r,A){const P=[[0,0],[A[0],1],[A[1],2],[A[2],3],[A[3],4],[A[4],5]]
   return Math.min(5.6,5+(r-A[4])/((A[4]-A[3])||1))}
 function tierOf(L){const x=(L-0.6)*24/5.2;const idx=Math.max(0,Math.min(24,Math.floor(x)));const frac=idx>=24?1:Math.max(0,Math.min(1,x-idx));
   const rk=idx>=24?OLIMPO:RANKS[Math.floor(idx/3)];const div=idx>=24?'':['I','II','III'][idx%3];return {idx,frac,name:rk[0]+(div?' '+div:''),base:rk[0],color:rk[1],next:idx>=24?null:(idx+1>=24?OLIMPO[0]:RANKS[Math.floor((idx+1)/3)][0]+' '+['I','II','III'][(idx+1)%3])}}
-function setScore(fam,s,bw){const kg=+s.kg||0,reps=+s.reps||0;if(!(reps>0))return 0;
-  if(fam==='load'){if(!(kg>0)||!(bw>0))return 0;return kg*(1+reps/30)/bw*Math.pow(bw/75,0.33)}
-  if(fam==='bw'){if(!(bw>0))return 0;return (bw+kg)*(1+reps/30)/bw}
-  return reps}
-function exRank(n){const P=exPattern(n);if(!P)return null;const H=S.hist[n]||[];if(!H.length)return null;
-  const W=allWeights();const bw=W.length?W[W.length-1].peso:null;if((P.fam==='load'||P.fam==='bw')&&!bw)return null;
+// ---- personalización: peso corporal del día de cada sesión, sexo y edad
+// Escala alométrica (peso^0,67): a más peso corporal, más kg absolutos pero menos kg por kilo de peso; así un cliente de 60 kg y uno de 100 kg se miden con la misma vara.
+const ALLO=bw=>Math.pow(bw/75,0.33);
+// Coeficiente de edad (tipo McCulloch) a partir de los 40 años
+const AGE_K=[[40,1],[45,1.05],[50,1.13],[55,1.21],[60,1.32],[65,1.45],[70,1.59],[75,1.75],[80,1.95]];
+function ageK(age){if(!(age>40))return 1;for(let i=1;i<AGE_K.length;i++)if(age<=AGE_K[i][0]){const[a0,k0]=AGE_K[i-1],[a1,k1]=AGE_K[i];return k0+(age-a0)/(a1-a0)*(k1-k0)}return AGE_K[AGE_K.length-1][1]}
+function bwAt(date){const W=allWeights();if(!W.length)return null;let r=null;for(const w of W){if(w.date<=date)r=w;else break}return (r||W[0]).peso}
+const curAge=()=>ageAt(FICHA.nac,iso(new Date()));
+function setScore(fam,s,bw,ak){const kg=+s.kg||0,reps=+s.reps||0;ak=ak||1;if(!(reps>0))return 0;
+  if(fam==='load'){if(!(kg>0)||!(bw>0))return 0;return kg*(1+reps/30)/bw*ALLO(bw)*ak}
+  if(fam==='bw'){if(!(bw>0))return 0;return (bw+kg)*(1+reps/30)/bw*ALLO(bw)*ak}
+  if(fam==='reps')return reps*(bw>0?ALLO(bw):1)*ak;
+  return reps*ak}
+function lvlInv(L,A){const P=[[0,0],[A[0],1],[A[1],2],[A[2],3],[A[3],4],[A[4],5]];if(L<=0)return 0;
+  for(let i=1;i<P.length;i++)if(L<=P[i][1])return P[i-1][0]+(L-P[i-1][1])*(P[i][0]-P[i-1][0]);
+  return A[4]+(L-5)*((A[4]-A[3])||1)}
+// qué necesita para el siguiente rango, con SU peso corporal actual y su edad
+function nextTarget(fam,A,idx,bw,ak,reps,n){if(idx>=24)return '';const L=(idx+1)*5.2/24+0.6+1e-6;const sc=lvlInv(L,A)/(ak||1);
+  if(fam==='load'){if(!bw)return '';const r=Math.max(1,Math.min(12,reps||5));const step=/mancuerna|\bdb\b/i.test(n)?1:2.5;const kg=Math.ceil(sc/ALLO(bw)*bw/(1+r/30)/step)*step;return `${nf(kg,1).replace(',0','')} kg × ${r}`}
+  if(fam==='bw'){if(!bw)return '';const f=sc/ALLO(bw);const r=Math.max(1,Math.min(12,reps||5));const tot=f*bw/(1+r/30);const extra=Math.ceil((tot-bw)/1.25)*1.25;
+    if(extra>0)return `+${nf(extra,2).replace(/,?0+$/,'')} kg de lastre × ${r}`;return `${Math.max(1,Math.ceil(30*(f-1)))} reps con tu peso`}
+  if(fam==='reps')return `${Math.ceil(sc/(bw?ALLO(bw):1))} reps`;
+  return `${Math.ceil(sc)} s`}
+function exRank(n){const P=exPattern(n);if(!P)return null;const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
+  const W=allWeights();const bwNow=W.length?W[W.length-1].peso:null;if((P.fam==='load'||P.fam==='bw')&&!bwNow)return null;
   const A=FICHA.sexo==='Mujer'?P.A.map(x=>x*P.fem):P.A;const lim=iso(daysAgo(56));
-  let best=0,recent=0;H.forEach(h=>{const sc=Math.max(0,...h.sets.map(s=>setScore(P.fam,s,bw)));if(sc>best)best=sc;if(h.date>=lim&&sc>recent)recent=sc});
-  const sc=Math.max(recent,best*0.85);if(!(sc>0))return null;const L=lvlOf(sc,A);
-  const re=routineEx(n);const g=(re&&MUSC_G[re.m])||P.g;return Object.assign({n,L,g},tierOf(L))}
+  let best=0,recent=0,bestReps=0;H.forEach(h=>{const bw=bwAt(h.date)||bwNow;const ak=ageK(ageAt(FICHA.nac,h.date));let hs=0,hr=0;h.sets.forEach(s=>{const v=setScore(P.fam,s,bw,ak);if(v>hs){hs=v;hr=+s.reps||0}});if(hs>best){best=hs;bestReps=hr}if(h.date>=lim&&hs>recent)recent=hs});
+  const sc=Math.max(recent,best*0.85);if(!(sc>0))return null;const L=lvlOf(sc,A);const T=tierOf(L);
+  const re=routineEx(n);const g=(re&&MUSC_G[re.m])||P.g;return Object.assign({n,L,g,goal:!T.next?'':(()=>{const need=lvlInv((T.idx+1)*5.2/24+0.6+1e-6,A);const ak=ageK(curAge());const nowBest=Math.max(0,...H.filter(h=>h.date>=lim).flatMap(h=>h.sets.map(s=>setScore(P.fam,s,bwNow,ak))));return nowBest>=need?'repite tu mejor marca con tu peso actual y subes':nextTarget(P.fam,A,T.idx,bwNow,ak,bestReps,n)})()},T)}
 function allRanks(){const ex=Object.keys(S.hist).map(exRank).filter(Boolean).sort((a,b)=>b.L-a.L);
   const groups=GROUPS.map(g=>{const xs=ex.filter(e=>e.g===g);if(!xs.length)return null;const L=xs.reduce((a,e)=>a+e.L,0)/xs.length;return Object.assign({g,count:xs.length,L},tierOf(L))}).filter(Boolean);
   const glob=ex.length>=5&&groups.length?Object.assign({L:groups.reduce((a,x)=>a+x.L,0)/groups.length},tierOf(groups.reduce((a,x)=>a+x.L,0)/groups.length)):null;
   return {ex,groups,glob}}
 function rankBadge(t,big){return `<span class="rk ${big?'big':''}" style="--rk:${t.color}"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 1l10 4v8c0 7-4.5 11.5-10 14C6.5 24.5 2 20 2 13V5z"/></svg><b>${esc(t.name)}</b></span>`}
-function rankBar(t){return `<div class="rkbar"><span style="width:${Math.round(t.frac*100)}%;background:${t.color}"></span></div><small class="muted">${t.next?'Siguiente: '+esc(t.next):'Rango máximo'}</small>`}
+function rankBar(t,noNext){return `<div class="rkbar"><span style="width:${Math.round(t.frac*100)}%;background:${t.color}"></span></div>${noNext?'':`<small class="muted">${t.next?'Siguiente: '+esc(t.next):'Rango máximo'}</small>`}`}
 function vRanks(){
   const R=allRanks();const W=allWeights();
   if(!R.ex.length)return `<div class="empty">${W.length?'Aún no hay rangos: registra tus entrenos y aquí verás tu nivel en cada ejercicio.':'Para calcular tus rangos necesitamos tu peso: llegará con tu primer check-in.'}</div>`;
-  return `${R.glob?`<section class="rkhero" style="--rk:${R.glob.color}">${rankBadge(R.glob,true)}<div><span class="lbl">Rango global</span><b>${esc(R.glob.name)}</b>${rankBar(R.glob)}</div></section>`:`<div class="band">Tu <b>rango global</b> aparece cuando tengas al menos 5 ejercicios con rango (llevas ${R.ex.length}).</div>`}
+  const bwN=W.length?W[W.length-1]:null;const ag=curAge();
+  const per=`<div class="rkper"><span class="lbl">Rangos personalizados con</span><div class="vchips"><span class="vchip">⚖️ <b>${bwN?nf(bwN.peso):'—'} kg</b> ${bwN?'· '+fdate(bwN.date):''}</span><span class="vchip">${FICHA.sexo==='Mujer'?'♀ Mujer':FICHA.sexo==='Hombre'?'♂ Hombre':'Sexo sin indicar'}</span><span class="vchip">${ag?ag+' años':'Edad sin indicar'}</span></div></div>`;
+  return `${per}${R.glob?`<section class="rkhero" style="--rk:${R.glob.color}">${rankBadge(R.glob,true)}<div><span class="lbl">Rango global</span><b>${esc(R.glob.name)}</b>${rankBar(R.glob)}</div></section>`:`<div class="band">Tu <b>rango global</b> aparece cuando tengas al menos 5 ejercicios con rango (llevas ${R.ex.length}).</div>`}
   <section class="sec-h"><h2>Por grupo muscular</h2></section>
   <div class="rkgrid">${R.groups.map(g=>`<div class="rkcard">${rankBadge(g)}<b>${esc(g.g)}</b><small class="muted">${g.count} ejercicio${g.count>1?'s':''}</small>${rankBar(g)}</div>`).join('')}</div>
   <section class="sec-h"><h2>Por ejercicio</h2></section>
-  <div class="rklist">${R.ex.map(e=>`<div class="rkrow">${rankBadge(e)}<div><b>${esc(e.n)}</b>${rankBar(e)}</div></div>`).join('')}</div>
-  <p class="small muted" style="margin:0">Rangos orientativos: comparan tu mejor marca reciente (1RM estimado con kg y reps) con tu peso corporal y tu sexo. Dominadas y fondos cuentan tu peso + lastre; flexiones y abdominales, las repeticiones; la plancha, los segundos. Si un día rindes peor, tu rango se mantiene.</p>`;
+  <div class="rklist">${R.ex.map(e=>`<div class="rkrow">${rankBadge(e)}<div><b>${esc(e.n)}</b>${rankBar(e,!!e.goal)}${e.goal?`<small class="rkgoal">🎯 Para <b>${esc(e.next)}</b>: ${esc(e.goal)}</small>`:''}</div></div>`).join('')}</div>
+  <p class="small muted" style="margin:0">Rangos hechos a tu medida: cada sesión se compara con el peso corporal que tenías ese día (el del check-in más cercano), con tu sexo y, a partir de los 40 años, con tu edad. Se usa una escala alométrica: no es lo mismo levantar 100 kg pesando 60 que pesando 100, y así cada uno se mide con su vara. El 🎯 te dice qué levantar con tu peso actual para subir al siguiente rango. Dominadas y fondos cuentan tu peso + lastre; flexiones y abdominales, las repeticiones; la plancha, los segundos. Si un día rindes peor, tu rango se mantiene.</p>`;
 }
 
 // ================= VOLUMEN SEMANAL POR MÚSCULO =================
