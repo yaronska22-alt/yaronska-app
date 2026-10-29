@@ -41,6 +41,7 @@ const db = {
     if (role === 'client') {
       const c = ok(await sb.from('clients').select('id').eq('user_id', userId).maybeSingle());
       clientId = c ? c.id : null;
+      if (!clientId) clientId = ok(await sb.rpc('link_my_client')) || null; // cuenta creada antes de tener ficha con ese email
     }
     return { role, clientId };
   },
