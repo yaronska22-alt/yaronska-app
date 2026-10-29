@@ -66,7 +66,7 @@ const db = {
       sb.from('weights').select('id,fecha,peso').eq('client_id', id).order('fecha'),
       sb.from('checkins').select('id,fecha,data,created_at').eq('client_id', id).order('fecha'),
       sb.from('daily_logs').select('fecha,data').eq('client_id', id),
-      sb.from('workout_logs').select('id,fecha,dia,ejercicio,sets,created_at').eq('client_id', id).order('fecha').order('id')
+      sb.from('workout_logs').select('id,fecha,dia,ejercicio,sets,nota,created_at').eq('client_id', id).order('fecha').order('id')
     ]).then(rs => rs.map(ok));
     const admin = withAdmin ? ok(await sb.from('client_admin').select('*').eq('client_id', id).maybeSingle()) : null;
     return { client, admin, weights, checkins, daily, logs };
