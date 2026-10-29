@@ -427,3 +427,7 @@ body.noscroll{overflow:hidden}
   body:not(.mobile-mode) #clientView .blk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   body:not(.mobile-mode) #clientView .blk>.blk-h{grid-column:1/-1}
 }
+/* iPhone con la app en la pantalla de inicio: la cabecera tapa la barra de estado y no deja huecos por los que asome el contenido */
+.top{top:0;padding-top:env(safe-area-inset-top,0px);background:#0A0907}
+.auth{padding-top:max(24px,calc(env(safe-area-inset-top,0px) + 16px))}
+.screen{scroll-margin-top:80px}
