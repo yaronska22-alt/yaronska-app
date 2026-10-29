@@ -12,7 +12,7 @@ await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error')errs.push('console: '+m.text())});
 const shot=n=>p.screenshot({path:OUT+'/'+n+'.png'});const wait=ms=>p.waitForTimeout(ms);
 const log=(...a)=>console.log(...a);
-const noPk=async()=>{if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no')};
+const noPk=async()=>{if(await p.isVisible('#cOk')){await p.check('#cOk');await p.click('text=Aceptar y entrar');await p.waitForTimeout(1200)}if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")')};
 await p.goto('http://app.test/');await wait(500);
 log('1 login visible:',await p.isVisible('#aE'));await shot('t1-login');
 await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','mal');await p.click('button:text-is("Entrar")');await wait(300);
@@ -37,9 +37,9 @@ st=await p.evaluate(()=>window.__mock);log('5 rutina dias',st.clients[0].rutina.
 await shot('t5-coach');
 // salir y registrar cliente
 await p.click('#outBtn');await wait(300);
-await p.click('text=Es mi primera vez: crear mi cuenta');await p.fill('#aE','otro@test.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.click('button:text("Crear mi cuenta")');await wait(300);
+await p.click('text=Es mi primera vez: crear mi cuenta');console.log('casilla registro:',await p.isVisible('#aOk'));await p.check('#aOk');await p.fill('#aE','otro@test.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.click('button:text("Crear mi cuenta")');await wait(300);
 log('6 no invitado:',await p.textContent('.auth-msg'));
-await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.click('button:text("Crear mi cuenta")');await wait(300);
+await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.check('#aOk');await p.click('button:text("Crear mi cuenta")');await wait(300);
 log('7 registro:',await p.textContent('.auth-msg'));
 await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.click('button:text-is("Entrar")');await wait(600);await noPk();
 await p.setViewportSize({width:420,height:900});

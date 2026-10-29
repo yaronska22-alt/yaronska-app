@@ -158,8 +158,8 @@ function showAuth(mode,msg){
     loading:`${AUTH_BRAND}<p class="muted" style="text-align:center">Cargando…</p>`,
     login:`${AUTH_BRAND}<h1>Entra en tu <em>app</em></h1>${note}<form onsubmit="doLogin(event)">${f('aE','Email','email','email')}${f('aP','Contraseña','password','current-password')}<button class="btn" type="submit">Entrar</button></form>
       ${db.passkeySupported?`<button class="btn ghost" type="button" onclick="doPasskey(this)">🔒 Entrar con Face ID / huella</button>`:''}
-      <div class="auth-links"><button type="button" onclick="showAuth('signup')">Es mi primera vez: crear mi cuenta</button><button type="button" onclick="showAuth('forgot')">He olvidado mi contraseña</button></div>`,
-    signup:`${AUTH_BRAND}<h1>Crea tu <em>cuenta</em></h1>${note}<p class="small muted">Usa el mismo email que le diste a Yaron.</p><form onsubmit="doSignup(event)">${f('aE','Email','email','email')}${f('aP','Contraseña (mín. 8 caracteres)','password','new-password')}${f('aP2','Repite la contraseña','password','new-password')}<button class="btn" type="submit">Crear mi cuenta</button></form>
+      <div class="auth-links"><button type="button" onclick="showAuth('signup')">Es mi primera vez: crear mi cuenta</button><button type="button" onclick="showAuth('forgot')">He olvidado mi contraseña</button><a href="privacidad.html" target="_blank" rel="noopener" class="small muted">Política de privacidad</a></div>`,
+    signup:`${AUTH_BRAND}<h1>Crea tu <em>cuenta</em></h1>${note}<p class="small muted">Usa el mismo email que le diste a Yaron.</p><form onsubmit="doSignup(event)">${f('aE','Email','email','email')}${f('aP','Contraseña (mín. 8 caracteres)','password','new-password')}${f('aP2','Repite la contraseña','password','new-password')}<label class="consent"><input type="checkbox" id="aOk" required> <span>He leído la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y acepto el tratamiento de mis datos, incluidos los de salud, para el seguimiento de mi programa.</span></label><button class="btn" type="submit">Crear mi cuenta</button></form>
       <div class="auth-links"><button type="button" onclick="showAuth('login')">Ya tengo cuenta: entrar</button></div>`,
     forgot:`${AUTH_BRAND}<h1>Recupera tu <em>contraseña</em></h1>${note}<form onsubmit="doForgot(event)">${f('aE','Email','email','email')}<button class="btn" type="submit">Enviarme el enlace</button></form>
       <div class="auth-links"><button type="button" onclick="showAuth('login')">Volver a entrar</button></div>`,
@@ -221,6 +221,7 @@ async function enter(user){
     }else{
       if(!ME.clientId)return showAuth('nolink');
       await loadClient(ME.clientId);
+      if(!S.profile.consent){document.getElementById('auth').hidden=false;return showConsent()}
     }
   }catch(err){console.error(err);return showAuth('error','No se han podido cargar tus datos: '+authMsg(err))}
   if(RECOVERY)return showAuth('newpass','Escribe tu contraseña nueva.');
@@ -351,7 +352,7 @@ function vPerfil(){
   <section class="pcard"><span class="lbl">Preferencias</span>
     <div class="field"><label for="pu">Unidades de peso</label><select id="pu" onchange="pSet('unid',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="kg" ${p.unid==='kg'?'selected':''}>Kilos (kg)</option><option value="lb" ${p.unid==='lb'?'selected':''}>Libras (lb)</option></select></div></section>
   <section class="pcard"><span class="lbl">Privacidad</span>
-    ${sw('consent','Acepto el tratamiento de mis datos de salud','Necesario para que Yaron pueda pautarte dieta y entreno')}
+    <label class="prow"><span>Acepto el tratamiento de mis datos de salud<small>Necesario para tu seguimiento · <a href="privacidad.html" target="_blank" rel="noopener">Política de privacidad</a></small></span><input class="sw" type="checkbox" ${p.consent?'checked':''} ${ME.role==='coach'?'disabled':''} onchange="consentToggle(this)" aria-label="Consentimiento de datos de salud"></label>
     <button class="btn ghost sm" type="button" onclick="pExport()">Descargar mis datos</button>
     <button class="btn ghost sm" type="button" onclick="window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola Yaron, quiero solicitar la baja del programa.'),'_blank')">Solicitar la baja del programa</button></section>
   <button class="btn ghost" type="button" onclick="logout()">Cerrar sesión</button>`;
@@ -1103,3 +1104,21 @@ function cBiz(){
   <div class="panel"><span class="lbl">Activos por tipo de suscripción</span><div class="kpis">${byType.map(o=>k(o.l,o.n)).join('')||'<p class="small muted">Sin datos.</p>'}</div></div>
   <p class="small muted" style="margin:0">${estN?`⚠️ ${estN} cliente${estN>1?'s':''} con cobros sin registrar: esos cobros se estiman con la fecha de alta, el tipo de suscripción y el pago actual de su Ficha. Para que todo sea exacto, registra cada cobro en su Ficha (💶 Registrar cobro).`:'Todas las cifras salen de los cobros que has registrado.'}</p>`;
 }
+
+// ---- consentimiento RGPD (datos de salud): obligatorio para usar la app
+const CONSENT_V='2026-10-29';
+function showConsent(){
+  document.getElementById('app').hidden=true;const el=document.getElementById('auth');el.hidden=false;
+  el.innerHTML=`<div class="auth-card">${AUTH_BRAND}<h1>Antes de <em>empezar</em></h1>
+    <p class="auth-msg">Para hacer tu seguimiento, Yaron necesita tratar <b>datos de salud</b>: peso, medidas, fotos de tu físico, lesiones, alergias, medicación, sueño, estrés… Solo los veis tú y él, se guardan en servidores de la Unión Europea y puedes retirar este permiso cuando quieras desde tu perfil.</p>
+    <label class="consent"><input type="checkbox" id="cOk"> <span>He leído la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y doy mi <b>consentimiento explícito</b> para el tratamiento de mis datos de salud para el seguimiento de mi programa.</span></label>
+    <button class="btn" type="button" onclick="acceptConsent(this)">Aceptar y entrar</button>
+    <div class="auth-links"><button type="button" onclick="logout()">Ahora no, salir</button></div></div>`;
+}
+async function acceptConsent(b){if(!document.getElementById('cOk').checked){toast('Marca la casilla para continuar');return}
+  b.disabled=true;S.profile.consent=true;S.profile.consentAt=new Date().toISOString();S.profile.consentV=CONSENT_V;save();
+  try{await flushSync()}catch(e){}
+  document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;document.querySelector('.seg').hidden=true;document.getElementById('outBtn').hidden=true;document.getElementById('pkBtn').hidden=true;
+  tab='home';setView('client');if(OFFER_PK){OFFER_PK=false;offerPasskey()}}
+function consentToggle(el){if(!el.checked){if(!confirm('Si retiras el consentimiento, Yaron no podrá seguir tratando tus datos de salud ni hacer tu seguimiento, y no podrás usar la app hasta que lo vuelvas a dar. ¿Retirarlo?')){el.checked=true;return}
+  S.profile.consent=false;S.profile.consentAt=new Date().toISOString();save();flushSync().then(()=>showConsent())}}

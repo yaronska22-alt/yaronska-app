@@ -394,3 +394,6 @@ body.noscroll{overflow:hidden}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px}.legend i.dash{background:none;border-top:2px dashed;height:0}
 .wstats.fat b{color:#FFB070}
 .citem.biz{border-color:rgba(255,214,10,.45);margin-bottom:6px}.citem.biz .av{background:var(--y);color:#000}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:#DDD8CF}
+.consent input{margin-top:3px;width:18px;height:18px;accent-color:var(--y);flex:none}
+.consent a{color:var(--y)}
