@@ -466,3 +466,20 @@ body.noscroll{overflow:hidden}
 .optband{border-left-color:var(--y)}
 .optmsg{display:flex;flex-direction:column;gap:4px;margin-top:8px}
 .optmsg input{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px;width:100%}
+/* Rutina (entrenador): días y ejercicios bien separados */
+.edday{background:var(--bg)!important;border:1px solid var(--line-2);border-left:6px solid var(--dc);border-radius:12px;margin-top:22px;padding:0;overflow:hidden;gap:0}
+.edday.isopt{border-left-style:dashed}
+.edday-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:color-mix(in srgb,var(--dc) 13%,var(--surface));border-bottom:2px solid var(--dc)}
+.edday-h input{color:var(--fg)}
+.daypill{background:var(--dc);color:#0A0907;font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:5px 9px;white-space:nowrap}
+.daysum{white-space:nowrap}
+.edday-b{display:flex;flex-direction:column;gap:12px;padding:14px}
+.edday .ed-ex{background:var(--surface);border:1px solid var(--line-2);border-left:4px solid var(--dc);border-radius:10px;padding:10px 12px 12px;gap:8px}
+.edday .ed-ex.inblk{border-left:4px dashed var(--dc);padding-left:12px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 35%,transparent)}
+.ed-h{display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.ed-h b{font-size:14.5px}
+.ed-h small{margin-left:auto;text-align:right}
+.exnum{min-width:30px;height:26px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1.5px solid var(--dc);color:var(--dc);font-weight:800;font-size:13px}
+.edday .warmlist{background:var(--surface);border:1px dashed var(--line-2);border-radius:10px;padding:10px 12px}
+.edday .warmlist:empty{display:none}
+@media (max-width:600px){.edday-h input{flex-basis:100%;order:-1}.ed-h{flex-wrap:wrap}.ed-h small{margin-left:0;flex-basis:100%;text-align:left}}
