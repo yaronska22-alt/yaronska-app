@@ -22,3 +22,8 @@ Las migraciones están en `supabase/migrations/`.
 
 ## Altas de clientes
 Yaron da de alta al cliente (nombre + email) desde el panel. Solo ese email puede crear cuenta; cualquier otro queda bloqueado.
+
+## Calculadora de dietas (pestaña «Dieta» del panel)
+`calc/index.html` es la Calculadora original con dos líneas añadidas (`embed.css` y `embed.js`).
+Guarda los datos de cada cliente en la tabla `diet_calc` y los alimentos personalizados en `coach_settings`.
+Para meter una versión nueva: `python3 tools/actualizar-calculadora.py "Calculadora Dietas.html"`.
