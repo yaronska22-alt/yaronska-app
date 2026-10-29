@@ -12,11 +12,12 @@ await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error')errs.push('console: '+m.text())});
 const shot=n=>p.screenshot({path:OUT+'/'+n+'.png'});const wait=ms=>p.waitForTimeout(ms);
 const log=(...a)=>console.log(...a);
+const noPk=async()=>{if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no')};
 await p.goto('http://app.test/');await wait(500);
 log('1 login visible:',await p.isVisible('#aE'));await shot('t1-login');
-await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','mal');await p.click('text=Entrar');await wait(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','mal');await p.click('button:text-is("Entrar")');await wait(300);
 log('1b msg:',await p.textContent('.auth-msg'));
-await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('text=Entrar');await wait(500);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await wait(500);await noPk();
 log('2 coach empty:',(await p.textContent('.cmain')).slice(0,80));await shot('t2-coach-empty');
 await p.click('text=+ Nuevo cliente');await p.fill('#nN','José Martínez');await p.fill('#nE','Jose@Test.com');await p.fill('#nT','+34 611 22 33 44');await p.click('text=Dar de alta');await wait(600);
 log('3 invite:',(await p.textContent('.sheet .note')).slice(0,120));await shot('t3-invite');
@@ -24,7 +25,7 @@ await p.click('.sheet >> text=Cerrar');
 // ficha: pago, tipo, pasos, dias
 await p.fill('#f-pago','180');await p.dispatchEvent('#f-pago','change');await p.selectOption('#f-tipo','quarterly');await wait(100);
 await p.fill('#f-pasosT','8000');await p.dispatchEvent('#f-pasosT','change');await p.fill('#f-pasosR','10000');await p.dispatchEvent('#f-pasosR','change');
-for(const d of ['Lun','Mié','Vie'])await p.click(`.cmain .chip:text-is("${d}")`);
+for(const d of ["Lun","Mié","Vie"]){await p.click(`.cmain .chip:text-is("${d}")`);await wait(100)}
 await p.fill('#f-alergias','Frutos secos');await p.dispatchEvent('#f-alergias','change');log('  FICHA.alergias now',await p.evaluate(()=>FICHA.alergias),await p.evaluate(()=>J(clientRow()).includes('Frutos')));
 await wait(900);
 let st=await p.evaluate(()=>window.__mock);
@@ -40,7 +41,7 @@ await p.click('text=Es mi primera vez: crear mi cuenta');await p.fill('#aE','otr
 log('6 no invitado:',await p.textContent('.auth-msg'));
 await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.fill('#aP2','clave1234');await p.click('button:text("Crear mi cuenta")');await wait(300);
 log('7 registro:',await p.textContent('.auth-msg'));
-await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.click('text=Entrar');await wait(600);
+await p.fill('#aE','jose@test.com');await p.fill('#aP','clave1234');await p.click('button:text-is("Entrar")');await wait(600);await noPk();
 await p.setViewportSize({width:420,height:900});
 log('8 hola:',await p.textContent('.hello h1'),'| seg hidden',await p.isHidden('.seg'),'| pasos:',await p.textContent('label[for=dSteps]'));await shot('t8-client-home');
 await p.fill('#dSteps','9000');await p.click('text=Dieta');await p.click('text=OK, guardar mi día');await wait(800);
@@ -59,7 +60,7 @@ log('11 S.ficha.pago visible to client:',JSON.stringify(await p.evaluate(()=>FIC
 await p.click('text=Perfil y ajustes').catch(()=>{});await p.evaluate(()=>go('perfil'));await p.click('text=Cerrar sesión');await wait(400);
 // coach otra vez
 await p.setViewportSize({width:1200,height:900});
-await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('text=Entrar');await wait(600);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await wait(600);await noPk();
 log('12 list:',(await p.textContent('.clist')).replace(/\s+/g,' '));
 await p.click('.tabs >> text=Check-ins');await shot('t12-coach-checks');await p.click('text=Ver 1');await wait(300);log('   photos:',await p.locator('.pgrid img').count());await p.click('.sheet >> text=Cerrar');
 await p.click('.tabs >> text=Sesiones');await p.fill('#nk-0','42,5');await p.fill('#nr-0','8-10');await p.click('button:text-is("Pautar") >> nth=0');await wait(800);

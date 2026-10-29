@@ -4,7 +4,7 @@ const SUPABASE_URL = 'https://gpiykjgziuxvjlmbgyds.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gQv24EzHgyXWlJdl7Lx30Q_mm6qX0nz';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, experimental: { passkey: true } }
 });
 
 const ok = ({ data, error }) => { if (error) throw error; return data; };
@@ -22,6 +22,13 @@ const db = {
   },
   async setPassword(password) { return ok(await sb.auth.updateUser({ password })); },
   async signOut() { await sb.auth.signOut(); },
+
+  // ---------- Face ID / huella (passkeys) ----------
+  passkeySupported: !!(window.PublicKeyCredential && navigator.credentials),
+  async signInPasskey() { return ok(await sb.auth.signInWithPasskey()); },
+  async registerPasskey() { return ok(await sb.auth.registerPasskey()); },
+  async listPasskeys() { return ok(await sb.auth.passkey.list()) || []; },
+  async deletePasskey(passkeyId) { ok(await sb.auth.passkey.delete({ passkeyId })); },
 
   // ---------- quién soy ----------
   async me(userId) {

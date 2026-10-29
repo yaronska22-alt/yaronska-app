@@ -66,7 +66,7 @@ let CUR=null;       // cliente cargado {id,email}
 let CL=[];          // lista de clientes (entrenador)
 let TPL_MINE=[];    // plantillas guardadas por el entrenador
 let SNAP=null;
-let RECOVERY=false; // llegó desde el email de "he olvidado mi contraseña"      // copia de lo último guardado, para enviar solo lo que cambia
+let RECOVERY=false,OFFER_PK=false; // llegó desde el email de "he olvidado mi contraseña"      // copia de lo último guardado, para enviar solo lo que cambia
 
 function fichaPublic(){const o={};Object.keys(FICHA).forEach(k=>{if(!(k in ADMIN_MAP))o[k]=FICHA[k]});return o}
 function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCase()||CUR.email,ficha:fichaPublic(),prefs:S.profile,fase:S.phase,semana:S.week,semanas_fase:S.weeksPhase,kcal:S.kcal,rest_on:S.restOn,plan:S.planOn?{auto:true,kcal:S.kcal}:null,rutina:S.routine,pautas:S.next}}
@@ -143,6 +143,7 @@ function showAuth(mode,msg){
   const V={
     loading:`${AUTH_BRAND}<p class="muted" style="text-align:center">Cargando…</p>`,
     login:`${AUTH_BRAND}<h1>Entra en tu <em>app</em></h1>${note}<form onsubmit="doLogin(event)">${f('aE','Email','email','email')}${f('aP','Contraseña','password','current-password')}<button class="btn" type="submit">Entrar</button></form>
+      ${db.passkeySupported?`<button class="btn ghost" type="button" onclick="doPasskey(this)">🔒 Entrar con Face ID / huella</button>`:''}
       <div class="auth-links"><button type="button" onclick="showAuth('signup')">Es mi primera vez: crear mi cuenta</button><button type="button" onclick="showAuth('forgot')">He olvidado mi contraseña</button></div>`,
     signup:`${AUTH_BRAND}<h1>Crea tu <em>cuenta</em></h1>${note}<p class="small muted">Usa el mismo email que le diste a Yaron.</p><form onsubmit="doSignup(event)">${f('aE','Email','email','email')}${f('aP','Contraseña (mín. 8 caracteres)','password','new-password')}${f('aP2','Repite la contraseña','password','new-password')}<button class="btn" type="submit">Crear mi cuenta</button></form>
       <div class="auth-links"><button type="button" onclick="showAuth('login')">Ya tengo cuenta: entrar</button></div>`,
@@ -155,7 +156,7 @@ function showAuth(mode,msg){
   el.innerHTML=`<div class="auth-card">${V[mode]}</div>`;const first=el.querySelector('input');if(first)first.focus();
 }
 const busy=(e,on)=>{const b=e.target.querySelector('button[type=submit]');if(b){b.disabled=on;b.dataset.t=b.dataset.t||b.textContent;b.textContent=on?'Un momento…':b.dataset.t}};
-async function doLogin(e){e.preventDefault();busy(e,true);try{const r=await db.signIn(document.getElementById('aE').value.trim(),document.getElementById('aP').value);await enter(r.user)}catch(err){showAuth('login',authMsg(err))}}
+async function doLogin(e){e.preventDefault();busy(e,true);try{const r=await db.signIn(document.getElementById('aE').value.trim(),document.getElementById('aP').value);OFFER_PK=true;await enter(r.user)}catch(err){showAuth('login',authMsg(err))}}
 async function doSignup(e){e.preventDefault();const em=document.getElementById('aE').value.trim(),p=document.getElementById('aP').value,p2=document.getElementById('aP2').value;
   if(p.length<8)return showAuth('signup','La contraseña debe tener al menos 8 caracteres.');if(p!==p2)return showAuth('signup','Las contraseñas no coinciden.');
   busy(e,true);try{const r=await db.signUp(em,p);if(r.user&&Array.isArray(r.user.identities)&&!r.user.identities.length)return showAuth('login','Ya tienes cuenta con este email: entra con tu contraseña.');
@@ -166,6 +167,36 @@ async function doNewPass(e){e.preventDefault();const p=document.getElementById('
   busy(e,true);try{const r=await db.setPassword(p);RECOVERY=false;history.replaceState(null,'',location.pathname);await enter(r.user)}catch(err){showAuth('newpass',authMsg(err))}}
 async function logout(){try{await flushSync()}catch(e){}await db.signOut();ME=null;CUR=null;SNAP=null;S=emptyS();FICHA=S.ficha;showAuth('login')}
 
+// ---- Face ID / huella (passkeys): entrar sin escribir la contraseña
+function pkMsg(e){const m=String(e&&(e.code||e.message||e.name)||'');
+  if(/NotAllowed|cancel|abort/i.test(m))return 'Cancelado. Puedes volver a intentarlo o entrar con tu contraseña.';
+  if(/credential_not_found/i.test(m))return 'Este dispositivo no tiene Face ID activado para tu cuenta. Entra con tu contraseña y actívalo en tu perfil.';
+  if(/credential_exists|InvalidState/i.test(m))return 'Este dispositivo ya tiene el Face ID activado.';
+  if(/passkey_disabled/i.test(m))return 'El acceso con Face ID todavía no está activado. Entra con tu contraseña.';
+  if(/too_many_passkeys/i.test(m))return 'Has llegado al máximo de dispositivos. Quita alguno antes de añadir otro.';
+  return authMsg(e);}
+async function doPasskey(btn){btn.disabled=true;try{const r=await db.signInPasskey();await enter(r.user)}catch(err){console.error(err);showAuth('login',pkMsg(err))}}
+async function addPasskey(after){try{await db.registerPasskey();toast('Face ID activado en este dispositivo');try{localStorage.setItem('pk-ask-'+ME.id,'done')}catch(e){}}catch(err){console.error(err);toast(pkMsg(err))}if(after)after()}
+async function delPasskey(id,after){try{await db.deletePasskey(id);toast('Dispositivo quitado')}catch(err){toast(pkMsg(err))}if(after)after()}
+async function pkListHTML(){
+  if(!db.passkeySupported)return '<p class="small muted" style="margin:0">Este navegador no permite Face ID ni huella.</p>';
+  let L=[];try{L=await db.listPasskeys()}catch(e){return '<p class="small muted" style="margin:0">No se ha podido consultar. Inténtalo más tarde.</p>'}
+  return `${L.length?L.map(k=>`<div class="prow"><span>🔒 ${esc(k.friendly_name||'Dispositivo')}<small>Activado el ${new Date(k.created_at).toLocaleDateString('es-ES')}${k.last_used_at?' · último uso '+new Date(k.last_used_at).toLocaleDateString('es-ES'):''}</small></span><button class="btn ghost sm" type="button" onclick="delPasskey('${esc(k.id)}',PK_AFTER)">Quitar</button></div>`).join(''):'<p class="small muted" style="margin:0">Aún no lo tienes activado en ningún dispositivo.</p>'}
+  <button class="btn" type="button" onclick="addPasskey(PK_AFTER)">Activar Face ID / huella en este dispositivo</button>`;
+}
+let PK_AFTER=null;
+async function fillPk(){const el=document.getElementById('pkBox');if(el)el.innerHTML=await pkListHTML()}
+function openPkSheet(){const sh=document.getElementById('sheet');PK_AFTER=openPkSheet;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Face ID"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>Face ID / huella</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div><p class="small muted" style="margin:0">Entra en la app sin escribir la contraseña. Se activa en cada móvil u ordenador por separado.</p><div id="pkBox" class="pcard"><p class="muted">Cargando…</p></div></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};fillPk()}
+async function offerPasskey(){
+  if(!db.passkeySupported)return;let k='';try{k=localStorage.getItem('pk-ask-'+ME.id)}catch(e){}if(k)return;
+  let L=[];try{L=await db.listPasskeys()}catch(e){return}if(L.length)return;
+  const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Activar Face ID"><div class="sheet-b"><h2>¿Entrar con Face ID la próxima vez?</h2><p class="small muted" style="margin:0">Así no tendrás que escribir la contraseña en este dispositivo. Lo puedes quitar cuando quieras desde tu perfil.</p>
+    <div class="row"><button class="btn" type="button" onclick="addPasskey(closeSheet)">Sí, activar</button><button class="btn ghost" type="button" onclick="try{localStorage.setItem('pk-ask-'+ME.id,'no')}catch(e){};closeSheet()">Ahora no</button></div></div></div>`;
+  sh.hidden=false;
+}
 async function enter(user){
   showAuth('loading');
   try{
@@ -181,7 +212,9 @@ async function enter(user){
   if(RECOVERY)return showAuth('newpass','Escribe tu contraseña nueva.');
   document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
+  document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
   tab='home';setView(ME.role==='coach'?'coach':'client');
+  if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
 async function boot(){
   showAuth('loading');
@@ -231,6 +264,7 @@ function render(){
   const el=document.getElementById('screen');
   el.classList.toggle('restmode',(tab==='food')&&dayType==='R');
   el.innerHTML=({home:vHome,food:vFood,train:vTrain,check:vCheck,res:vRes,perfil:vPerfil})[tab]();
+  if(tab==='perfil'){PK_AFTER=fillPk;fillPk()}
 }
 
 // ---- Aviso de revisión semanal (día que pones en la Ficha)
@@ -278,6 +312,7 @@ function vPerfil(){
     ${inp('pw1','Contraseña actual','password','')}${inp('pw2','Nueva contraseña (mín. 8 caracteres)','password','')}${inp('pw3','Repite la nueva','password','')}
     <button class="btn" type="button" onclick="pPass()">Cambiar contraseña</button>
     <button class="btn ghost sm" type="button" onclick="pForgot()">He olvidado mi contraseña</button></section>
+  <section class="pcard"><span class="lbl">Face ID / huella</span><div id="pkBox"><p class="small muted" style="margin:0">Cargando…</p></div></section>
   <section class="pcard"><span class="lbl">Recordatorios</span>
     ${sw('nCheck','Revisión semanal','El día anterior y el mismo '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Pasos, dieta, entreno y cómo te sientes')}${sw('nTrain','Días de entreno','Aviso con tu sesión del día')}
     <div class="field"><label for="ph">Hora de los avisos</label><input id="ph" type="time" value="${esc(p.hora)}" onchange="pSet('hora',this.value)"></div></section>
