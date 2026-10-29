@@ -315,3 +315,41 @@ td.wrap{white-space:normal;min-width:160px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.pgrid img{width:100%;border-radius:8px;display:block}
 input:disabled{opacity:.6}
 .btn:disabled{opacity:.6;cursor:wait}
+/* ---- móvil: sin zoom automático al escribir ni con doble toque */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body{overflow-x:hidden}
+@media (hover:none),(max-width:820px){input,select,textarea{font-size:16px!important}}
+/* ---- entreno: bloques y series detalladas */
+.blk{border:1px solid rgba(255,214,10,.35);border-left:3px solid var(--y);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;background:rgba(255,214,10,.03)}
+.blk-h b{display:block;font-family:var(--display);font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--y);font-size:14px}
+.blk-h small{color:var(--muted);font-size:12.5px;line-height:1.4;display:block}
+.setplan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.setplan li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;background:var(--surface-2);border-radius:6px;padding:6px 8px}
+.setplan .sn{font-family:var(--display);font-weight:900;color:var(--y);width:16px}
+.setplan small{flex-basis:100%;color:var(--muted);font-size:12px;padding-left:22px}
+.stag{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:3px;padding:2px 6px;background:var(--line-2);color:#fff}
+.stag.t-top{background:var(--y);color:#000}.stag.t-backoff{background:#3B6FE0}.stag.t-aprox{background:#4A4540}.stag.t-drop,.stag.t-rp,.stag.t-myo{background:#B3402F}.stag.t-amrap{background:#2E8B57}
+.sets2{grid-template-columns:34px minmax(0,1fr) 58px 50px 46px}
+.sets2 .sidx{display:flex;flex-direction:column;line-height:1.1;font-weight:700}.sets2 .sidx small{font-size:9px;color:var(--y);text-transform:uppercase;letter-spacing:.03em}
+.ed-row{grid-template-columns:1.5fr .4fr .55fr .55fr .55fr .45fr .9fr auto}
+.ed-row select,.sed-row select,.blkbar select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:7px 6px;color:var(--fg);width:100%;min-width:0}
+.ed-ex{display:flex;flex-direction:column;gap:6px;padding:6px 0;border-top:1px solid var(--line)}
+.ed-ex.inblk{border-left:3px solid var(--y);padding-left:8px}
+.acts{display:flex;gap:4px;align-items:center}
+.mini{border:1px solid var(--line-2);background:transparent;color:var(--fg);border-radius:5px;padding:5px 7px;font-size:12px;cursor:pointer;white-space:nowrap}.mini.on{border-color:var(--y);color:var(--y)}
+.setsed{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.sed-row{display:grid;grid-template-columns:40px 1fr .7fr .7fr .7fr 1.6fr;gap:6px;align-items:center}
+.sed-row input{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:7px 8px;width:100%;min-width:0}
+.blkbar{display:flex;flex-wrap:wrap;gap:10px}.blkbar label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--y);font-weight:700}
+@media (max-width:600px){.ed-row{grid-template-columns:1fr 1fr 1fr}.ed-row .nm,.ed-row .vu,.ed-row .acts{grid-column:1/-1}.sed-row{grid-template-columns:30px 1fr 1fr}.sed-row input:last-child{grid-column:2/-1}.sed-row.small{display:none}}
+/* editor de ejercicio en dos líneas, con etiqueta en cada campo */
+.ed-row{grid-template-columns:repeat(6,minmax(0,1fr)) auto;align-items:end}
+.ed-row .nm{grid-column:span 4}.ed-row .vu{grid-column:span 3}
+.ef{display:flex;flex-direction:column;gap:3px;min-width:0}.ef small{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ef input,.ef select{width:100%}
+.ed-row .acts{grid-column:6/-1;justify-content:flex-end}
+@media (max-width:600px){.ed-row{grid-template-columns:repeat(3,minmax(0,1fr))}.ed-row .nm,.ed-row .vu,.ed-row .acts{grid-column:1/-1}}
+.ed-row{grid-template-columns:repeat(5,minmax(0,1fr)) auto}
+.ed-row .nm{grid-column:1/4}.ed-row .vu{grid-column:4/-1}.ed-row .acts{grid-column:auto;align-self:end}
+@media (max-width:600px){.ed-row{grid-template-columns:repeat(3,minmax(0,1fr))}.ed-row .nm,.ed-row .vu,.ed-row .acts{grid-column:1/-1}}
+.blkbar label{white-space:nowrap}

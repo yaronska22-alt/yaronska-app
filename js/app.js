@@ -259,7 +259,9 @@ function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POST
 function setView(v){view=v;document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
 function go(t){tab=t;render();window.scrollTo(0,0)}
-function render(){
+let R_BUSY=false;
+function render(){if(R_BUSY)return void setTimeout(render);R_BUSY=true;try{_render()}finally{R_BUSY=false}}
+function _render(){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
   const el=document.getElementById('screen');
   el.classList.toggle('restmode',(tab==='food')&&dayType==='R');
@@ -408,26 +410,40 @@ function openRecipe(i){
 }
 function closeSheet(){document.getElementById('sheet').hidden=true}
 // Progresión: si la semana pasada llegó al tope de reps en todas las series → +2,5 kg; si no, mismo peso y +1 rep
-const rpeTxt=e=>{const u=[...new Set((e.sets||[{rpe:e.rir}]).map(x=>x.rpe))].filter(Boolean);return u.length>1?u[0]+' → '+u.slice(1).map(x=>x.replace('RPE ','')).join(' → '):(u[0]||e.rir)};
+// ---- series detalladas (top set, back-off…) y bloques (superseries, biseries…)
+const SET_T=[['','Normal'],['aprox','Aproximación'],['top','Top set'],['backoff','Back-off'],['drop','Drop set'],['rp','Rest-pause'],['amrap','AMRAP'],['myo','Myo-reps'],['cluster','Cluster']];
+const SET_S={aprox:'Aprox',top:'Top',backoff:'B-off',drop:'Drop',rp:'R-P',amrap:'AMRAP',myo:'Myo',cluster:'Clust'};
+const BLK_T=[['superserie','Superserie'],['biserie','Biserie'],['triserie','Triserie'],['circuito','Circuito'],['gigante','Serie gigante']];
+const BLK_L='ABCDEFGH'.split('');
+const blkName=t=>(BLK_T.find(x=>x[0]===t)||['','Bloque'])[1];
+function exSets(e){const a=[];for(let i=0;i<e.s;i++){const x=(e.sets||[])[i]||{};a.push({t:x.t||'',reps:x.reps||e.r,rpe:x.rpe||e.rir,rest:x.rest||e.rest,nota:x.nota||''})}return a}
+const detailed=e=>{const a=exSets(e);return a.some(x=>x.t||x.nota)||new Set(a.map(x=>x.reps+'|'+x.rpe+'|'+x.rest)).size>1};
+function blocksOf(ex){const out=[];let cur=null;ex.forEach((e,ei)=>{if(e.blk&&cur&&cur.letter===e.blk)cur.items.push({e,ei});else{cur={letter:e.blk||'',type:e.blkT||'',items:[{e,ei}]};out.push(cur)}});
+  let n=0;out.forEach(b=>{n++;b.items.forEach((it,k)=>{it.label=b.letter&&b.items.length>1?b.letter+(k+1):String(n)})});return out}
+const rpeTxt=e=>{const u=[...new Set(exSets(e).map(x=>x.rpe))].filter(Boolean);return u.length>1?u[0]+' → '+u.slice(1).map(x=>String(x).replace('RPE ','')).join(' → '):(u[0]||e.rir||'')};
 function suggestion(e){
   if(/ s$/.test(e.r))return null;
-  const h=(S.hist[e.n]||[]);const last=h[h.length-1];if(!last)return null;
+  const h=(S.hist[e.n]||[]);const last=h[h.length-1];if(!last||!last.sets.length)return null;
   const top=parseInt(String(e.r).split('-').pop())||10;const kg=Math.max(...last.sets.map(s=>s.kg));
   const done=last.sets.every(s=>s.reps>=top);
   return done?{kg:kg+(kg>=20?2.5:1),txt:`${e.r} reps`,why:'Llegaste al tope de repeticiones: sube peso'}:{kg,txt:`intenta +1 rep por serie`,why:'Mismo peso, busca una repetición más'};
+}
+function exCard(e,ei,label){
+  const h=S.hist[e.n]||[];const last=h[h.length-1];const det=detailed(e);const sg=det?null:suggestion(e);const SS=exSets(e);const nx=S.next[e.n];
+  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small></div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
+    ${det?`<ol class="setplan">${SS.map((x,i)=>`<li><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${esc(x.reps)}${/ s$/.test(x.reps)?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`
+      :`<div class="presc"><span>${e.s} series</span><span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
+    ${nx?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08)"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span><b style="color:var(--ok)">${[nx.kg?esc(nx.kg)+' kg':'',nx.reps?'× '+esc(nx.reps):'',nx.int?'· '+esc(nx.int):''].filter(Boolean).join(' ')}</b></div>`:sg?`<div class="target"><span>Objetivo hoy · <small class="muted">${esc(sg.why)}</small></span><b>${nf(sg.kg,1).replace(',0','')} kg · ${esc(sg.txt)}</b></div>`:''}
+    <div class="sets2"><span class="h">#</span><span class="h">Semana pasada</span><span class="h">Kg</span><span class="h">Reps</span><span class="h">RIR real</span>
+    ${SS.map((x,si)=>{const p=last&&last.sets[si];return `<span class="sidx">${si+1}${x.t&&SET_S[x.t]?`<small>${SET_S[x.t]}</small>`:''}</span><span class="prev">${p?`${nf(p.kg,1).replace(',0','')} kg × ${p.reps}<br>RIR ${p.rir??'—'}`:'—'}</span><input id="kg-${dayIdx}-${ei}-${si}" inputmode="decimal" placeholder="${p?nf(p.kg,1).replace(',0',''):'kg'}" aria-label="Kilos serie ${si+1}"><input id="rp-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="${p?p.reps:'reps'}" aria-label="Repeticiones serie ${si+1}"><input id="ri-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="RIR" aria-label="RIR real serie ${si+1}">`}).join('')}</div>
+    ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}</div>`:''}</article>`;
 }
 function vTrain(){
   const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
   <div class="daysel">${R.map((r,i)=>`<button type="button" class="chip ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${esc(r.d.split('·')[0].trim())}</button>`).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}</h2>
-  ${d.ex.map((e,ei)=>{const h=S.hist[e.n]||[];const last=h[h.length-1];const sg=suggestion(e);
-    return `<article class="ex"><div class="ex-h"><span class="ex-n">${ei+1}</span><div><b>${esc(e.n)}</b><small>${esc(e.m)}</small></div><a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a></div>
-    <div class="presc"><span>${e.s} series</span><span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>
-    ${S.next[e.n]?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08)"><span>Pautado por Yaron${S.next[e.n].nota?' · <small class="muted">'+esc(S.next[e.n].nota)+'</small>':''}</span><b style="color:var(--ok)">${[S.next[e.n].kg?esc(S.next[e.n].kg)+' kg':'',S.next[e.n].reps?'× '+esc(S.next[e.n].reps):'',S.next[e.n].int?'· '+esc(S.next[e.n].int):''].filter(Boolean).join(' ')}</b></div>`:sg?`<div class="target"><span>Objetivo hoy · <small class="muted">${esc(sg.why)}</small></span><b>${nf(sg.kg,1).replace(',0','')} kg · ${esc(sg.txt)}</b></div>`:''}
-    <div class="sets2"><span class="h">#</span><span class="h">Semana pasada</span><span class="h">Kg</span><span class="h">Reps</span><span class="h">RIR real</span>
-    ${Array.from({length:e.s},(_,si)=>{const p=last&&last.sets[si];return `<span>${si+1}</span><span class="prev">${p?`${nf(p.kg,1).replace(',0','')} kg × ${p.reps}<br>RIR ${p.rir}`:'—'}</span><input id="kg-${dayIdx}-${ei}-${si}" inputmode="decimal" placeholder="${p?nf(p.kg,1).replace(',0',''):'kg'}" aria-label="Kilos serie ${si+1}"><input id="rp-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="${p?p.reps:'reps'}" aria-label="Repeticiones serie ${si+1}"><input id="ri-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="RIR" aria-label="RIR real serie ${si+1}">`}).join('')}</div>
-    ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}</div>`:''}</article>`}).join('')}
+  ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
 }
 function saveSession(){
@@ -497,7 +513,9 @@ async function selectClient(id){
   try{await loadClient(id)}catch(e){toast('No se ha podido cargar el cliente');console.error(e)}
   renderCoach();
 }
-function renderCoach(){
+let RC_BUSY=false;
+function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=true;try{_renderCoach()}finally{RC_BUSY=false}}
+function _renderCoach(){
   const el=document.getElementById('coachView');
   const T=[['ficha','Ficha'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina'],['plan','Plan']];
   const c=CL.find(x=>CUR&&x.id===CUR.id);
@@ -600,16 +618,32 @@ function cChecks(){
   return `<div class="panel"><span class="lbl">Check-ins recibidos</span><div class="tbl-w"><table><thead><tr><th>Fecha</th>${MEAS.map(m=>`<th>${m[1]}</th>`).join('')}${SCALES.map(s=>`<th>${s.t}</th>`).join('')}<th>Orina</th><th>Fotos</th><th>Comentario</th></tr></thead><tbody>
   ${cks.map(k=>`<tr><td>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td>${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button>`:'—'}</td><td class="wrap">${esc(k.nota)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
+let openSets=new Set();
+const RX=(di,ei)=>S.routine[di].ex[ei];
+function exEdit(di,ei,k,v){const e=RX(di,ei);
+  if(k==='s'){const n=Math.max(1,Math.min(15,parseInt(v)||1));const a=exSets(e);while(a.length<n)a.push(Object.assign({},a[a.length-1]||{t:'',reps:e.r,rpe:e.rir,rest:e.rest,nota:''},{t:''}));e.s=n;e.sets=a.slice(0,n);save();renderCoach();return}
+  if(['r','rir','rest'].includes(k)){const f={r:'reps',rir:'rpe',rest:'rest'}[k];const old=e[k];e.sets=exSets(e).map(x=>(!x.t&&(x[f]===old||!x[f]))?Object.assign(x,{[f]:v}):x)}
+  e[k]=v;save()}
+function setEdit(di,ei,si,k,v){const e=RX(di,ei);e.sets=exSets(e);e.sets[si][k]=v;save();if(k==='t')renderCoach()}
+function blkEdit(di,ei,v){const d=S.routine[di];const e=d.ex[ei];e.blk=v||'';
+  if(v){const mates=d.ex.filter(x=>x.blk===v);const t=(mates.find(x=>x!==e&&x.blkT)||{}).blkT||(mates.length>=4?'circuito':mates.length===3?'triserie':'superserie');mates.forEach(x=>x.blkT=t)}else delete e.blkT;
+  save();renderCoach()}
+function blkType(di,l,v){S.routine[di].ex.forEach(x=>{if(x.blk===l)x.blkT=v});save();renderCoach()}
+function moveEx(di,ei,dir){const a=S.routine[di].ex;const j=ei+dir;if(j<0||j>=a.length)return;[a[ei],a[j]]=[a[j],a[ei]];openSets=new Set();save();renderCoach()}
+function togSets(k){openSets.has(k)?openSets.delete(k):openSets.add(k);renderCoach()}
 function cRutina(){
-  const all=TEMPLATES.concat(TPL_MINE);
+  const all=TEMPLATES.concat(TPL_MINE);const sel=(v,opts,on,lab)=>`<select onchange="${on}" aria-label="${lab}">${opts.map(([k,l])=>`<option value="${esc(k)}" ${String(v||'')===k?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
   return `<div class="panel"><span class="lbl">Asignar rutina preparada · un clic</span>
     <div class="tpl">${all.map((t,i)=>`<button type="button" class="tplc" onclick="assignTpl(${i})"><b>${esc(t.name)}</b><small>${esc(t.desc||'')} · ${t.days.length} días · ${t.days.reduce((a,d)=>a+d.ex.length,0)} ejercicios</small><span class="small y">Asignar →</span></button>`).join('')}</div>
     <p class="small muted" style="margin:0">Se copia al cliente y luego la ajustas aquí abajo sin tocar la plantilla original.</p></div>
   <div class="panel"><div class="sec-h"><span class="lbl">Rutina actual del cliente</span><div class="row"><button class="btn ghost sm" type="button" onclick="saveAsTpl()">Guardar como plantilla</button><button class="btn ghost sm" type="button" onclick="setView('client');go('train')">Ver como el cliente</button></div></div>
-  ${S.routine.map((d,di)=>`<div class="panel" style="background:var(--bg)"><div class="row"><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
-    <div class="ed-row small muted"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>RIR</span><span>Descanso</span><span>Vídeo (enlace)</span><span></span></div>
-    ${d.ex.map((e,ei)=>`<div class="ed-row"><input class="nm" id="en-${di}-${ei}" value="${esc(e.n)}" onchange="S.routine[${di}].ex[${ei}].n=this.value;save()" aria-label="Ejercicio"><input id="es-${di}-${ei}" value="${e.s}" inputmode="numeric" onchange="S.routine[${di}].ex[${ei}].s=Math.max(1,parseInt(this.value)||1);save()" aria-label="Series"><input id="er-${di}-${ei}" value="${esc(e.r)}" onchange="S.routine[${di}].ex[${ei}].r=this.value;save()" aria-label="Repeticiones"><input id="ei-${di}-${ei}" value="${esc(e.rir)}" onchange="S.routine[${di}].ex[${ei}].rir=this.value;save()" aria-label="RIR"><input id="et-${di}-${ei}" value="${esc(e.rest)}" onchange="S.routine[${di}].ex[${ei}].rest=this.value;save()" aria-label="Descanso"><input class="vu" id="ev-${di}-${ei}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="S.routine[${di}].ex[${ei}].v=this.value;save()" aria-label="Enlace del vídeo"><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);save();renderCoach()">×</button></div>`).join('')}
-    <button class="btn ghost sm" type="button" onclick="S.routine[${di}].ex.push({n:'Nuevo ejercicio',m:'',s:3,r:'10-12',rir:'2',rest:'90 s',v:''});save();renderCoach()">+ Añadir ejercicio</button></div>`).join('')}
+  <p class="small muted" style="margin:0"><b style="color:var(--fg)">Bloque:</b> pon la misma letra a ejercicios seguidos para hacer superseries, biseries o circuitos. <b style="color:var(--fg)">Series ▾:</b> detalla cada serie (top set, back-off, drop set…).</p>
+  ${S.routine.map((d,di)=>{const used=[...new Set(d.ex.map(x=>x.blk).filter(Boolean))];return `<div class="panel" style="background:var(--bg)"><div class="row"><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
+    ${used.length?`<div class="blkbar">${used.map(l=>{const t=(d.ex.find(x=>x.blk===l)||{}).blkT;return `<label>Bloque ${l} ${sel(t,BLK_T,`blkType(${di},'${l}',this.value)`,'Tipo de bloque '+l)}</label>`}).join('')}</div>`:''}
+        ${d.ex.map((e,ei)=>{const k=di+'-'+ei;const op=openSets.has(k);const det=detailed(e);return `<div class="ed-ex ${e.blk?'inblk':''}"><div class="ed-row"><label class="ef nm"><small>Ejercicio</small><input id="en-${k}" value="${esc(e.n)}" onchange="exEdit(${di},${ei},'n',this.value)"></label><label class="ef vu"><small>Vídeo (enlace)</small><input id="ev-${k}" value="${esc(e.v||'')}" placeholder="https://youtu.be/…" onchange="exEdit(${di},${ei},'v',this.value)"></label><label class="ef"><small>Series</small><input id="es-${k}" value="${e.s}" inputmode="numeric" onchange="exEdit(${di},${ei},'s',this.value)"></label><label class="ef"><small>Reps</small><input id="er-${k}" value="${esc(e.r)}" onchange="exEdit(${di},${ei},'r',this.value)"></label><label class="ef"><small>RIR / RPE</small><input id="ei-${k}" value="${esc(e.rir)}" onchange="exEdit(${di},${ei},'rir',this.value)"></label><label class="ef"><small>Descanso</small><input id="et-${k}" value="${esc(e.rest)}" onchange="exEdit(${di},${ei},'rest',this.value)"></label><label class="ef"><small>Bloque</small>${sel(e.blk,[['','—']].concat(BLK_L.map(l=>[l,l])),`blkEdit(${di},${ei},this.value)`,'Bloque')}</label>
+      <div class="acts"><button type="button" class="mini ${det?'on':''}" onclick="togSets('${k}')" aria-expanded="${op}">Series ${op?'▴':'▾'}</button><button type="button" class="mini" onclick="moveEx(${di},${ei},-1)" aria-label="Subir">↑</button><button type="button" class="mini" onclick="moveEx(${di},${ei},1)" aria-label="Bajar">↓</button><button class="x" type="button" aria-label="Quitar" onclick="S.routine[${di}].ex.splice(${ei},1);openSets=new Set();save();renderCoach()">×</button></div></div>
+      ${op?`<div class="setsed"><div class="sed-row small muted"><span>Serie</span><span>Tipo</span><span>Reps</span><span>RIR / RPE</span><span>Descanso</span><span>Nota para el cliente</span></div>${exSets(e).map((x,si)=>`<div class="sed-row"><span class="sidx">${si+1}</span>${sel(x.t,SET_T,`setEdit(${di},${ei},${si},'t',this.value)`,'Tipo de serie '+(si+1))}<input value="${esc(x.reps)}" onchange="setEdit(${di},${ei},${si},'reps',this.value)" aria-label="Reps serie ${si+1}"><input value="${esc(x.rpe)}" onchange="setEdit(${di},${ei},${si},'rpe',this.value)" aria-label="RIR o RPE serie ${si+1}"><input value="${esc(x.rest)}" onchange="setEdit(${di},${ei},${si},'rest',this.value)" aria-label="Descanso serie ${si+1}"><input value="${esc(x.nota)}" placeholder="${x.t==='backoff'?'-10 % del top set':x.t==='drop'?'Baja un 20-25 % y al fallo':''}" onchange="setEdit(${di},${ei},${si},'nota',this.value)" aria-label="Nota serie ${si+1}"></div>`).join('')}</div>`:''}</div>`}).join('')}
+    <button class="btn ghost sm" type="button" onclick="S.routine[${di}].ex.push({n:'Nuevo ejercicio',m:'',s:3,r:'10-12',rir:'RIR 2',rest:'90 s',v:''});save();renderCoach()">+ Añadir ejercicio</button></div>`}).join('')}
   <button class="btn sm" type="button" onclick="S.routine.push({d:'Día '+String.fromCharCode(65+S.routine.length)+' · nuevo',ex:[]});save();renderCoach()">+ Añadir día</button></div>`;
 }
 
@@ -623,13 +657,15 @@ function nextRenewal(f){
   if(f.renov)return f.renov;const m=SUBM[f.tipo];if(!f.alta||!m)return '';
   const d=new Date(f.alta+'T12:00');const now=new Date();while(d<=now)d.setMonth(d.getMonth()+m);return iso(d);
 }
-function fSet(k,v,t){FICHA[k]=t==='n'?(v===''?'':parseFloat(String(v).replace(',','.'))):v;save();if(['nombre','revFis','tipo','alta','renov','pago','estado','objetivo','nac','pasosT','pasosR'].includes(k))setTimeout(renderCoach)}
+const F_RERENDER=['nombre','revFis','tipo','alta','renov','pago','estado','objetivo','nac','pasosT','pasosR'];
+function fBlur(k){if(F_RERENDER.includes(k))setTimeout(renderCoach)}
+function fSet(k,v,t){FICHA[k]=t==='n'?(v===''?'':parseFloat(String(v).replace(',','.'))):v;save();if(t!=='date'&&['nombre','revFis','tipo','alta','renov','pago','estado','objetivo','nac','pasosT','pasosR'].includes(k))setTimeout(renderCoach)}
 function fDay(i){const a=FICHA.dias;const j=a.indexOf(i);if(j>=0)a.splice(j,1);else a.push(i);a.sort();FICHA.diasSemana=a.length;save();setTimeout(renderCoach)}
 function cFicha(){
   const f=FICHA;const ren=nextRenewal(f);const dleft=ren?Math.round((new Date(ren+'T12:00')-new Date())/864e5):null;
   const m=SUBM[f.tipo]||1;const age=f.nac?Math.floor((new Date()-new Date(f.nac+'T12:00'))/31557600000):null;
   let bd='';if(f.nac){const b=new Date(f.nac+'T12:00');const n=new Date();b.setFullYear(n.getFullYear());if(b<n)b.setFullYear(n.getFullYear()+1);bd=Math.round((b-n)/864e5)}
-  const inp=(k,l,t='text',ph='')=>`<div class="field"><label for="f-${k}">${l}</label><input id="f-${k}" type="${t==='n'?'number':t}" step="any" value="${esc(f[k])}" placeholder="${esc(ph)}" onchange="fSet('${k}',this.value,'${t}')"></div>`;
+  const inp=(k,l,t='text',ph='')=>`<div class="field"><label for="f-${k}">${l}</label><input id="f-${k}" type="${t==='n'?'number':t}" step="any" value="${esc(f[k])}" placeholder="${esc(ph)}" onchange="fSet('${k}',this.value,'${t}')"${t==='date'?` onblur="fBlur('${k}')"`:''}></div>`;
   const sel=(k,l,opts)=>`<div class="field"><label for="f-${k}">${l}</label><select id="f-${k}" onchange="fSet('${k}',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)">${opts.map(([v,t])=>`<option value="${esc(v)}" ${String(f[k])===String(v)?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
   const ta=(k,l)=>`<div class="field" style="grid-column:1/-1"><label for="f-${k}">${l}</label><textarea id="f-${k}" onchange="fSet('${k}',this.value)">${esc(f[k])}</textarea></div>`;
   const grid=h=>`<div class="fgrid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">${h}</div>`;
