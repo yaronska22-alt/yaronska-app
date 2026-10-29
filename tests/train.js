@@ -36,4 +36,17 @@ await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('c
 await p.screenshot({path:OUT+'/r2.png',fullPage:true});
 console.log('client blk header:',await p.textContent('.blk-h'));
 console.log('labels:',await p.evaluate(()=>[...document.querySelectorAll('.ex-n')].slice(0,5).map(x=>x.textContent).join(',')));
+// el cliente registra el entreno del día 1
+await p.fill('#kg-0-0-0','100');await p.fill('#rp-0-0-0','5');await p.fill('#ri-0-0-0','1');
+await p.fill('#kg-0-0-2','90');await p.fill('#rp-0-0-2','8');
+await p.click('text=Guardar entreno');await w(800);
+await p.setViewportSize({width:1200,height:900});await p.evaluate(()=>{setView('coach');coachTab='sesiones';renderCoach()});await w(200);
+console.log('ses tipos:',await p.evaluate(()=>[...document.querySelectorAll('.cmain table')[0].querySelectorAll('tbody tr')].map(r=>r.innerText.replace(/\s+/g,' ')).join(' | ')));
+await p.fill('#nsk-0-0','102,5');await p.fill('#nsr-0-0','5');await p.fill('#nsk-0-1','92,5');await p.fill('#nn-0','Sube el top set');
+await p.click('button:text-is("Pautar") >> nth=0');await w(800);
+await p.screenshot({path:OUT+'/s1.png',fullPage:true});
+console.log('pauta:',JSON.stringify(await p.evaluate(()=>S.next['Press máquina placas'])));
+await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('train')});await w(200);
+console.log('cliente ve:',(await p.textContent('.ex .target')).replace(/\s+/g,' '),'| placeholder s1:',await p.getAttribute('#kg-0-0-0','placeholder'));
+await p.screenshot({path:OUT+'/s2.png'});
 console.log('ERR',errs);await b.close()})();
