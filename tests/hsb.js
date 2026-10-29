@@ -1,0 +1,24 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);save();await flushSync();setView('client');go('train');trainTab='rutina';render()});
+await p.setViewportSize({width:390,height:844});await p.evaluate(()=>render());await w(300);
+console.log('bars:',await p.$$eval('.hsb',a=>a.map(b=>b.previousElementSibling.className+' '+b.firstChild.style.width)));
+await p.screenshot({path:OUT+'/h1.png'});
+await p.$eval('#clientView .tabs',e=>e.scrollLeft=200);await w(100);await p.screenshot({path:OUT+'/h2.png',clip:{x:0,y:150,width:390,height:150}});
+await p.evaluate(()=>window.scrollTo(0,600));await w(100);await p.screenshot({path:OUT+'/h3.png'});
+await p.click('#vCoach');await w(300);await p.evaluate(()=>{coachTab='diario';renderCoach()});await w(300);
+console.log('coach bars:',await p.$$eval('.hsb',a=>a.filter(b=>b.offsetParent).map(b=>b.previousElementSibling.className)));
+await p.screenshot({path:OUT+'/h4.png',fullPage:true});
+console.log('ERR',errs);await b.close()})();

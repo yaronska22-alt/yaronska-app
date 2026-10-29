@@ -1308,3 +1308,16 @@ function toggleMobile(){let m=document.body.classList.contains('mobile-mode');tr
 applyMobile();
 
 function setDayTipo(t){const k=iso(new Date());S.daily[k]=Object.assign({},S.daily[k]||{},{tipo:t});if(t==='R'&&S.daily[k].train===true)S.daily[k].train=false;dayType=t;if(today.train!==undefined&&t==='R')delete today.train;save();render()}
+
+// ---- barrita de desplazamiento horizontal (para que se intuya que se puede deslizar)
+const HS_SEL='.tabs,.tbl-w,.hscroll';
+function hsbUpd(el){const bar=el.nextElementSibling;if(!bar||!bar.classList.contains('hsb'))return;const i=bar.firstChild;const r=el.clientWidth/el.scrollWidth;i.style.width=(r*100).toFixed(1)+'%';i.style.left=(el.scrollLeft/el.scrollWidth*100).toFixed(1)+'%'}
+function hsbScan(){document.querySelectorAll(HS_SEL).forEach(el=>{let bar=el.nextElementSibling;const has=bar&&bar.classList.contains('hsb');const need=el.offsetParent&&el.scrollWidth>el.clientWidth+4;
+  if(!need){if(has)bar.remove();return}
+  if(!has){bar=document.createElement('div');bar.className='hsb';bar.setAttribute('aria-hidden','true');bar.innerHTML='<i></i>';el.after(bar)}
+  if(!el._hsb){el._hsb=1;el.addEventListener('scroll',()=>hsbUpd(el),{passive:true})}hsbUpd(el)})}
+let hsbRaf=0;const hsbQ=()=>{if(hsbRaf)return;hsbRaf=requestAnimationFrame(()=>{hsbRaf=0;hsbScan()})};
+new MutationObserver(ms=>{if(ms.some(m=>![...m.addedNodes].every(n=>n.classList&&n.classList.contains('hsb'))||m.removedNodes.length))hsbQ()}).observe(document.body,{childList:true,subtree:true});
+addEventListener('resize',hsbQ);
+// cabecera fija: el contenido empieza justo debajo
+(()=>{const h=document.querySelector('.top');if(!h||!window.ResizeObserver)return;new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',h.offsetHeight+'px')).observe(h)})();

@@ -508,3 +508,13 @@ body.noscroll{overflow:hidden}
 .rkgoal{display:block;margin-top:4px;font-size:12.5px;color:var(--muted)}
 .rkgoal b{color:var(--fg)}
 .rkper{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+/* cabecera sólida y fija, sin difuminado */
+.top{position:fixed;left:0;right:0;top:0;backdrop-filter:none;-webkit-backdrop-filter:none;background:#0A0907}
+#app{padding-top:var(--toph,64px)}
+html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
+/* barrita de desplazamiento horizontal */
+.hsb{position:relative;height:4px;border-radius:2px;background:var(--surface-2);margin-top:-2px;flex:none}
+.hsb i{position:absolute;top:0;bottom:0;left:0;border-radius:2px;background:var(--y);opacity:.85;transition:left .06s linear}
+.tabs+.hsb{margin-top:4px}
+.tbl-w{scrollbar-width:none}.tbl-w::-webkit-scrollbar{display:none}
+.hscroll{scrollbar-width:none}.hscroll::-webkit-scrollbar{display:none}
