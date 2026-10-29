@@ -288,7 +288,7 @@ function recipeHas(r,g,key){const def=SRC[g].find(x=>x[0]===key);const tag=(r.ta
 function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POSTRE/i.test(r.tags.join(' '))&&['p','f','c'].every(g=>!F[g]||recipeHas(r,g,F[g])))}
 
 // ================= VISTA CLIENTE =================
-function setView(v){view=v;setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
+function setView(v){view=v;document.getElementById('app').classList.toggle('vc',v==='client');setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
 function go(t){tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
@@ -1184,3 +1184,8 @@ async function pushEnable(){if(pushState()==='ios-install'||!pushOK()){toast('Pr
     await pushSubscribe();toast('Avisos activados ✓');render()}catch(e){console.error(e);toast('No se han podido activar los avisos: '+(e.message||e))}}
 async function pushSilent(){try{if(pushOK()&&Notification.permission==='granted'&&CUR)await pushSubscribe()}catch(e){}}
 async function testPushC(){try{const r=await db.testPush(CUR.id);toast(r&&r.sent?`Aviso enviado a ${r.sent} dispositivo${r.sent>1?'s':''}`:'Este cliente aún no ha activado los avisos en su móvil')}catch(e){toast('No se ha podido enviar: '+authMsg(e))}}
+
+// ---- ordenador: ver la app del cliente en grande o como en el móvil
+function applyMobile(){let m=false;try{m=localStorage.getItem('ys-mobile')==='1'}catch(e){}document.body.classList.toggle('mobile-mode',m);const b=document.getElementById('mobBtn');if(b)b.textContent=m?'🖥️ Ver en grande':'📱 Ver como en el móvil'}
+function toggleMobile(){let m=document.body.classList.contains('mobile-mode');try{localStorage.setItem('ys-mobile',m?'0':'1')}catch(e){}applyMobile();window.scrollTo(0,0)}
+applyMobile();

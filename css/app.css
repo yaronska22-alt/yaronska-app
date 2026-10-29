@@ -399,3 +399,31 @@ body.noscroll{overflow:hidden}
 .consent a{color:var(--y)}
 .rcfg input{width:80px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;text-align:center}
 .rcfg td,.rcfg th{white-space:nowrap}
+/* ================= ORDENADOR: vista horizontal ================= */
+#mobBtn{display:none}
+@media (min-width:900px){
+  .top-in{max-width:1400px}
+  .coach{max-width:1400px;grid-template-columns:300px 1fr}
+  /* cliente en ordenador: menú lateral + contenido ancho en dos columnas */
+  body:not(.mobile-mode) #clientView.phone{max-width:1240px;flex-direction:row;align-items:flex-start;border:0;gap:24px;padding:0 24px}
+  body:not(.mobile-mode) #clientView .nav{position:sticky;top:72px;bottom:auto;order:-1;display:flex;flex-direction:column;width:200px;flex:none;gap:4px;margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+  body:not(.mobile-mode) #clientView .nav button{flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 12px;font-size:14px;border-radius:8px}
+  body:not(.mobile-mode) #clientView .nav button.on{background:rgba(255,214,10,.1)}
+  body:not(.mobile-mode) #clientView .screen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start;padding:18px 0 40px;min-width:0}
+  body:not(.mobile-mode) #clientView .screen>*{grid-column:1/-1}
+  body:not(.mobile-mode) #clientView .screen>.wchart,body:not(.mobile-mode) #clientView .screen>.daily{grid-column:auto}
+  body:not(.mobile-mode) #clientView .screen>.pcard{grid-column:auto}
+  body:not(.mobile-mode) #clientView .screen>.hello-row{grid-column:1/-1}
+  body:not(.mobile-mode) #clientView .rgrid{grid-template-columns:repeat(4,1fr)}
+  body:not(.mobile-mode) #clientView .rkgrid{grid-template-columns:repeat(3,1fr)}
+  body:not(.mobile-mode) #clientView .hscroll{margin-inline:0;padding-inline:0}
+  body:not(.mobile-mode) #clientView .bfc{min-width:260px}
+  body:not(.mobile-mode) #clientView .ex .sets2{max-width:640px}
+  #app.vc #mobBtn{display:inline-flex}
+}
+@media (min-width:900px){
+  body:not(.mobile-mode) #clientView .screen>article.ex,body:not(.mobile-mode) #clientView .screen>article.warm{grid-column:auto}
+  body:not(.mobile-mode) #clientView .ex .sets2{max-width:none}
+  body:not(.mobile-mode) #clientView .blk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  body:not(.mobile-mode) #clientView .blk>.blk-h{grid-column:1/-1}
+}
