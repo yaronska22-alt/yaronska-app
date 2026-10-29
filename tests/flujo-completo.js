@@ -32,7 +32,7 @@ let st=await p.evaluate(()=>window.__mock);
 const c=st.clients[0];log('4 db ficha has pago?',('pago' in c.ficha),'alergias',c.ficha.alergias,'dias',JSON.stringify(c.ficha.dias),'admin',JSON.stringify(st.client_admin[0]));
 // rutina + plan
 await p.click('.tabs >> text=Rutina');await p.click('.tplc >> nth=0');await wait(200);
-await p.click('.tabs >> text=Plan');await p.fill('#pk','2000');await p.click('text=Generar y asignar plan');await wait(900);
+await p.evaluate(()=>{S.kcal=2000;S.planOn=true;save()});await wait(900);
 st=await p.evaluate(()=>window.__mock);log('5 rutina dias',st.clients[0].rutina.length,'plan',JSON.stringify(st.clients[0].plan),'kcal',st.clients[0].kcal);
 await shot('t5-coach');
 // salir y registrar cliente

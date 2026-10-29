@@ -528,6 +528,7 @@ function _renderCoach(){setTimeout(placeCalc);
   <aside class="clist" aria-label="Clientes"><span class="lbl">Tus clientes · ${CL.length}</span>
     ${CL.map(coachItem).join('')}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
+    <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
   </aside>
   <section class="cmain">
     ${!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
@@ -567,6 +568,7 @@ async function createClient(e){
 }
 function inviteMsg(id){
   const c=CL.find(x=>x.id===id);if(!c)return;const url=APP_URL;
+  if(/\.invalid$/.test(c.email)){toast('Antes, pon su email real en la Ficha (Datos generales → Email)');coachTab='ficha';if(CUR&&CUR.id===id)renderCoach();else selectClient(id);return}
   const tel=(CUR&&CUR.id===id?FICHA.tel:'').replace(/\D/g,'');
   const msg=`¡Capitán! Ya tienes lista tu app de Yaronska_Fit. Entra aquí: ${url}\n\nPulsa «Es mi primera vez: crear mi cuenta» y usa este email: ${c.email}\n\nAhí tendrás tu plan, tu rutina y tus revisiones.`;
   const sh=document.getElementById('sheet');
@@ -688,7 +690,8 @@ function cFicha(){
     <p class="small muted" style="margin:0">El cliente ve en su Inicio el objetivo de pasos que toca según el día (entreno o descanso).</p></div>
   <div class="panel"><span class="lbl">Perfil clínico</span>${grid(ta('objLargo','Objetivo del cliente')+inp('patologias','Patologías diagnosticadas')+inp('alergias','Alergias')+inp('intol','Intolerancias')+inp('lesiones','Lesiones / limitaciones físicas')+inp('medicacion','Medicación actual')+inp('suplem','Suplementación actual')+inp('ciclo','Ciclo menstrual / menopausia (si aplica)')+inp('histDietas','Historial de dietas previas')+inp('prefs','Preferencias alimentarias')+inp('evitar','Alimentos a evitar')+inp('sueno','Horas de sueño habituales','n')+inp('estres','Nivel de estrés (1-10)','n')+inp('motiv','Nivel de motivación (1-10)','n'))}</div>
   <div class="panel"><span class="lbl">💊 Suplementación estructurada</span>${grid(inp('omega3','Omega-3 EPA+DHA (g/día)','n')+inp('vitD','Vitamina D (UI/día)','n')+inp('b12','Vitamina B12 (µg/día)','n')+inp('magnesio','Magnesio (mg/día)','n')+inp('vitC','Vitamina C (mg/día)','n')+inp('hierro','Hierro (mg/día)','n')+inp('calcio','Calcio (mg/día)','n')+inp('zinc','Zinc (mg/día)','n')+inp('folato','Folato (µg/día)','n')+inp('potasio','Potasio (mg/día)','n')+inp('creatina','Creatina (g/día)','n')+inp('colageno','Colágeno (g/día)','n')+inp('cafeina','Cafeína (mg/día)','n')+sel('multi','Multivitamínico',[['no','No'],['yes','Sí']])+ta('supOtros','Otros suplementos'))}</div>
-  <div class="panel"><span class="lbl">🌞 Estilo de vida diario</span>${grid(inp('sal','Sal añadida (g/día)','n')+inp('sol','Exposición al sol (min/día)','n')+inp('agua','Agua (litros/día)','n')+inp('cafe','Café (tazas/día)','n')+inp('alcohol','Alcohol (UI/semana)','n')+inp('tabaco','Tabaco (cig/día)','n')+inp('aire','Tiempo al aire libre (min/día)','n')+inp('pantallas','Pantallas (h/día)','n')+ta('lifeNotas','Notas de estilo de vida'))}</div>`;
+  <div class="panel"><span class="lbl">🌞 Estilo de vida diario</span>${grid(inp('sal','Sal añadida (g/día)','n')+inp('sol','Exposición al sol (min/día)','n')+inp('agua','Agua (litros/día)','n')+inp('cafe','Café (tazas/día)','n')+inp('alcohol','Alcohol (UI/semana)','n')+inp('tabaco','Tabaco (cig/día)','n')+inp('aire','Tiempo al aire libre (min/día)','n')+inp('pantallas','Pantallas (h/día)','n')+ta('lifeNotas','Notas de estilo de vida'))}</div>
+  <div class="panel" style="border-color:rgba(255,107,91,.35)"><span class="lbl" style="color:var(--bad)">Zona peligrosa</span><p class="small muted" style="margin:0">Borra al cliente y todos sus datos de la app (ficha, pesos, check-ins, entrenos y dieta). No se puede deshacer. Si solo ha terminado el programa, mejor cambia su estado a «Baja».</p><button class="btn ghost sm" type="button" style="color:var(--bad);border-color:var(--bad)" onclick="delClient()">Eliminar cliente</button></div>`;
 }
 // Sesiones: ver lo que rellenó, corregirlo y pautar el siguiente entreno
 let sesSel='';
@@ -759,7 +762,7 @@ function placeCalc(){
   if(!CALC.frame){const f=document.createElement('iframe');f.src='calc/index.html?embed=1';f.title='Calculadora de dietas';f.className='calc-frame';CALC.frame=f;w.appendChild(f)}
   w.hidden=false;document.getElementById('calcWho').textContent=CLIENT.name;
   if(!CALC.full&&slot){const r=slot.getBoundingClientRect();w.style.top=(r.top+window.scrollY)+'px';w.style.left=(r.left+window.scrollX)+'px';w.style.width=r.width+'px'}
-  if(CALC.ready&&CUR&&CALC.forId!==CUR.id)calcLoad();
+  if(CALC.ready&&CUR&&CALC.forId!==CUR.id&&!CALC.busy)calcLoad();
 }
 window.addEventListener('resize',()=>{if(CALC.frame)placeCalc()});
 function calcFull(on){CALC.full=on;const w=calcWrap();w.classList.toggle('full',on);document.body.classList.toggle('noscroll',on);if(!on){setTimeout(placeCalc)}else placeCalc()}
@@ -781,7 +784,9 @@ async function calcLoad(){
 async function calcFlush(){if(CALC.pending){clearTimeout(CALC.saveT);const p=CALC.pending;CALC.pending=null;try{await db.saveDietCalc(p.id,p.client);if(p.foods)await db.setSetting('customFoods',p.foods)}catch(e){CALC.pending=p;toast('No se ha podido guardar la dieta. Lo reintento…');CALC.saveT=setTimeout(calcFlush,6000)}}}
 window.addEventListener('message',e=>{
   if(e.origin!==location.origin||!e.data||!e.data.ys||!CALC.frame||e.source!==CALC.frame.contentWindow)return;const m=e.data;
+  if(m.type==='ready'&&CALC.readyCb){const cb=CALC.readyCb;CALC.readyCb=null;CALC.ready=true;cb();return}
   if(m.type==='ready'){CALC.ready=true;const l=document.getElementById('calcLoading');if(l)l.remove();calcLoad()}
+  if(m.type==='loaded'&&CALC.loadedCb){const cb=CALC.loadedCb;CALC.loadedCb=null;cb()}
   if(m.type==='loaded'){const l=document.getElementById('calcLoading');if(l)l.remove()}
   if(m.type==='save'&&m.client&&m.client.id){CALC.pending={id:m.client.id,client:m.client,foods:m.customFoods};setSaveState('busy');clearTimeout(CALC.saveT);CALC.saveT=setTimeout(()=>calcFlush().then(()=>setSaveState('ok')),800)}
   if(m.type==='export'&&CALC.exportCb){const cb=CALC.exportCb;CALC.exportCb=null;cb(m.data)}
@@ -794,4 +799,72 @@ function calcSend(){
     toast(d.R?'Plan enviado: el cliente ya lo ve (entreno y descanso)':'Plan enviado: el cliente ya lo ve');
   };
   calcPost({type:'export'});
+}
+
+// ================= IMPORTAR CLIENTES DESDE LA CALCULADORA (coaching-data.json) =================
+let IMP=null;
+function openImport(){
+  const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Importar clientes"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>Importar de la Calculadora</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+    <p class="small muted" style="margin:0">Elige tu archivo de guardado <b style="color:var(--fg)">coaching-data.json</b> (carpeta «Copias Calculadora»). Se pasan la ficha, suscripción y pagos, el historial de pesos y medidas, la dieta completa de la Calculadora y su plan a la app del cliente. Los clientes que ya estén en la app (mismo nombre) se saltan.</p>
+    <label class="btn" style="cursor:pointer">Elegir archivo<input type="file" accept=".json,application/json" hidden onchange="readImport(this)"></label><div id="impBox"></div></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh&&!(IMP&&IMP.running))closeSheet()};
+}
+function readImport(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{
+  let d;try{d=JSON.parse(r.result)}catch(e){toast('Ese archivo no es una copia válida de la Calculadora');return}
+  if(!d||!Array.isArray(d.clients)){toast('Ese archivo no tiene clientes de la Calculadora');return}
+  const have=new Set(CL.map(c=>c.name.trim().toLowerCase()));
+  IMP={d,running:false};const ST={active:'🟢 Activo',paused:'🟠 Pausado',ended:'⚫ Baja',trial:'🔵 Prueba'};
+  document.getElementById('impBox').innerHTML=`<div class="pcard" style="margin-top:10px">${d.clients.map((c,i)=>{const dup=have.has(String(c.name||'').trim().toLowerCase());const pr=c.profile||{};return `<label class="prow"><span>${esc(c.name)}<small>${ST[pr.subStatus]||''}${c.protocol&&c.protocol.v===2?' · con protocolo':' · sin protocolo'}${dup?' · ya está en la app':''}</small></span><input class="sw" type="checkbox" data-i="${i}" ${dup?'disabled':'checked'}></label>`}).join('')}</div>
+    <button class="btn" id="impGo" type="button" onclick="runImport()">Importar seleccionados</button><p class="small muted" id="impLog" style="margin:0"></p>`;
+};r.readAsText(f)}
+const impSlug=s=>String(s||'cliente').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.|\.$/g,'')||'cliente';
+function impFicha(c){const p=c.profile||{},d=c.data||{};const n=v=>v===undefined||v===null?'':v;
+  return Object.assign({},(()=>{const o={};Object.keys(FICHA_DEF).forEach(k=>{if(!(k in ADMIN_MAP))o[k]=FICHA_DEF[k]});return o})(),{
+    nombre:c.name||'',email:'',tel:'',sexo:d.sex==='female'?'Mujer':d.sex==='male'?'Hombre':'',nac:n(p.fechaNacimiento),altura:n(d.height),objetivo:(parseFloat(d.goal)||0)>0?'ganar':'perder',
+    tipoEntreno:n(p.tipoEntreno),diasSemana:n(p.diasSemana||d.trainingDays),dias:[],pasosT:n(d.steps),pasosR:n(d.steps),
+    revFis:n(p.revFisicoDay)||'Domingo',lastFis:n(p.lastRevFisico),revEnt:n(p.revEntrenoDay),lastEnt:n(p.lastRevEntreno),
+    objLargo:n(p.objetivo),patologias:n(p.patologias),alergias:n(p.alergias),intol:n(p.intolerancias),lesiones:n(p.lesiones),medicacion:n(p.medicacion),suplem:n(p.suplementacion),ciclo:n(p.ciclo),histDietas:n(p.historialDietas),prefs:n(p.preferencias),evitar:n(p.alimentosEvitar),sueno:n(p.horasSueno),estres:n(p.estres),motiv:n(p.motivacion),
+    omega3:n(p.supOmega3),vitD:n(p.supVitD),b12:n(p.supVitB12),magnesio:n(p.supMagnesio),vitC:n(p.supVitC),hierro:n(p.supHierro),calcio:n(p.supCalcio),zinc:n(p.supZinc),folato:n(p.supFolato),potasio:n(p.supPotasio),creatina:n(p.supCreatina),colageno:n(p.supColageno),cafeina:n(p.supCafeina),multi:p.supMulti==='yes'?'yes':'no',supOtros:n(p.supOtros),
+    sal:n(p.lifeSal),sol:n(p.lifeSol),agua:n(p.lifeAgua),cafe:n(p.lifeCafe),alcohol:n(p.lifeAlcohol),tabaco:n(p.lifeTabaco),aire:n(p.lifeAire),pantallas:n(p.lifePantallas),lifeNotas:n(p.lifeNotas)})}
+function impAdmin(id,c){const p=c.profile||{};const dt=v=>/^\d{4}-\d{2}-\d{2}/.test(v||'')?String(v).slice(0,10):null;const num=v=>v===''||v==null||isNaN(+v)||+v===0?null:+v;
+  return {client_id:id,estado:['active','paused','ended','trial'].includes(p.subStatus)?p.subStatus:'active',alta:dt(p.subStartDate)||dt(c.createdAt),tipo:p.subType||null,renovacion:dt(p.subRenewalDate),pago:num(p.subPayment),cheatmeals:num(p.subCheatmeals)==null?null:Math.round(+p.subCheatmeals),pausa:dt(p.subPauseDate),baja:dt(p.subEndDate),notas:p.subNotes||null}}
+function impChecks(id,c){return (c.measurements||[]).filter(m=>m.date).map(m=>{const v=x=>x===null||x===undefined||x===''||isNaN(+x)?undefined:+x;
+  const sc=[['Energía',m.energia],['Hambre',m.hambre],['Sueño',m.sueno],['Ánimo',m.animo]].filter(x=>x[1]!=null&&x[1]!=='').map(x=>x[0]+' '+x[1]+'/10').join(' · ');
+  const data={peso:v(m.peso),cuello:v(m.cuello),torso:v(m.torso),cintura:v(m.cintura),cadera:v(m.cadera),gluteo:v(m.gluteo),biceps:v(m.brazoD),pierna:v(m.piernaD),fotos:0,r:{},importado:true,nota:[m.notas,sc,m.grasa?('Grasa estimada '+m.grasa+' %'):''].filter(Boolean).join(' — ')};
+  Object.keys(data).forEach(k=>data[k]===undefined&&delete data[k]);return {client_id:id,fecha:String(m.date).slice(0,10),data}})}
+function calcEnsure(){return new Promise(res=>{if(CALC.frame&&CALC.ready)return res();if(!CALC.frame){const f=document.createElement('iframe');f.src='calc/index.html?embed=1';f.title='Calculadora de dietas';f.className='calc-frame';CALC.frame=f;calcWrap().appendChild(f)}CALC.readyCb=res})}
+function calcExportFor(client){return new Promise((res)=>{const t=setTimeout(()=>res(null),15000);CALC.loadedCb=()=>{CALC.exportCb=d=>{clearTimeout(t);res(d)};calcPost({type:'export'})};calcPost({type:'load',client,customFoods:[],tab:'protocol'})})}
+async function runImport(){
+  if(!IMP||IMP.running)return;const sel=[...document.querySelectorAll('#impBox input[data-i]:checked')].map(x=>IMP.d.clients[+x.dataset.i]);if(!sel.length){toast('Marca al menos un cliente');return}
+  IMP.running=true;const btn=document.getElementById('impGo');btn.disabled=true;const log=document.getElementById('impLog');
+  try{await flushSync()}catch(e){}try{await calcFlush()}catch(e){}
+  CALC.busy=true;await calcEnsure();let okN=0;const fails=[];
+  if(Array.isArray(IMP.d.customFoods)&&IMP.d.customFoods.length){try{const cur=await db.getSetting('customFoods')||[];const ids=new Set(cur.map(f=>f.id));await db.setSetting('customFoods',cur.concat(IMP.d.customFoods.filter(f=>!ids.has(f.id))))}catch(e){}}
+  for(let i=0;i<sel.length;i++){const c0=sel[i];log.textContent=`Importando ${i+1} de ${sel.length}: ${c0.name}…`;
+    try{
+      const c=JSON.parse(JSON.stringify(c0));(c.measurements||[]).forEach(m=>{['photoFront','photoSide','photoBack'].forEach(k=>{if(m[k])m[k]=null})});
+      const ficha=impFicha(c);const email=`pendiente.${impSlug(c.name)}.${Math.random().toString(36).slice(2,6)}@yaronskafit.invalid`;ficha.email=email;
+      const hasProto=!!(c0.protocol&&c0.protocol.v===2);
+      const id=await db.insertClientRow({email,ficha,prefs:{},fase:0,semana:1,semanas_fase:4,kcal:1800,rest_on:true,plan:null,rutina:[],pautas:{}});
+      await db.upsertAdmin(impAdmin(id,c));
+      await db.insertMany('checkins',impChecks(id,c));
+      c.id=id;CALC.forId=id;
+      let plan=null;if(hasProto){const ex=await calcExportFor(c);if(ex&&!ex.error)plan=ex}
+      await db.saveDietCalc(id,c);
+      if(plan)await db.updateClient(id,{plan,rest_on:!!plan.R});
+      okN++;
+    }catch(e){console.error(e);fails.push(c0.name)}
+  }
+  CALC.busy=false;CALC.forId=null;IMP.running=false;
+  log.innerHTML=`<b style="color:var(--ok)">Importados: ${okN}</b>${fails.length?` · <b class="badc">Fallaron: ${esc(fails.join(', '))}</b>`:''}. Pon el email real de cada uno en su Ficha antes de invitarle.`;
+  btn.textContent='Hecho';
+  await refreshList();if(!CUR&&CL.length){coachSel=CL[0].id;await loadClient(coachSel)}renderCoach();
+}
+
+async function delClient(){
+  if(!CUR)return;const n=CLIENT.name;const t=prompt(`Para eliminar a ${n} y TODOS sus datos, escribe su nombre exactamente:`);
+  if(t===null)return;if(t.trim()!==n.trim()){toast('El nombre no coincide. No se ha borrado nada.');return}
+  try{SNAP=null;PENDING=false;CALC.pending=null;await db.deleteClient(CUR.id);toast('Cliente eliminado');CUR=null;await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{S=emptyS();FICHA=S.ficha}coachTab='ficha';renderCoach()}
+  catch(e){toast('No se ha podido eliminar: '+authMsg(e))}
 }

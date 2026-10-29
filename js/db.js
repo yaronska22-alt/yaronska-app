@@ -75,6 +75,9 @@ const db = {
   async saveDietCalc(id, data) { ok(await sb.from('diet_calc').upsert({ client_id: id, data, updated_at: new Date().toISOString() })); },
   async getSetting(key) { const r = ok(await sb.from('coach_settings').select('value').eq('key', key).maybeSingle()); return r ? r.value : null; },
   async setSetting(key, value) { ok(await sb.from('coach_settings').upsert({ key, value, updated_at: new Date().toISOString() })); },
+  async insertClientRow(row) { return ok(await sb.from('clients').insert(row).select('id').single()).id; },
+  async insertMany(table, rows) { if (rows.length) ok(await sb.from(table).insert(rows)); },
+  async deleteClient(id) { ok(await sb.from('clients').delete().eq('id', id)); },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
   // ---------- escrituras ----------
