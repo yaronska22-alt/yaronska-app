@@ -626,3 +626,11 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .soprev canvas{width:100%;max-width:380px;border-radius:12px;border:1px solid var(--line-2);background:#000}
 @media (max-width:700px){.sogrid{grid-template-columns:1fr}.soprev{position:static}}
 .bkpanel .row{flex-wrap:wrap;gap:6px}
+
+/* temporizador arriba (no tapa los campos ni se sube encima del teclado en iPhone) y deja tocar lo de debajo */
+.rtbar{top:calc(var(--toph,64px) + 6px)!important;bottom:auto!important;pointer-events:none;padding:6px 6px 6px 12px;border-radius:12px}
+.rtbar .rtbtns{pointer-events:auto}.rtbar .rtbtns button{height:34px;min-width:36px}
+.rtin b{font-size:19px}
+.rt-on .screen{padding-bottom:0}
+.rtfill{transition:width .5s linear}
+button,a,input,select,textarea,label{touch-action:manipulation}

@@ -301,6 +301,7 @@ function _render(){
   el.classList.toggle('restmode',(tab==='food')&&dayType==='R');
   el.innerHTML=({home:vHome,food:vFood,train:vTrain,check:vCheck,res:vRes,perfil:vPerfil,cuest:vCuest})[tab]();
   if(tab==='perfil'){PK_AFTER=fillPk;fillPk()}
+  if(tab==='train')draftApply();
 }
 
 // ---- Aviso de revisión semanal (día que pones en la Ficha)
@@ -524,7 +525,7 @@ function saveSession(){
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
-  rtStop();SAVED_AT=Date.now();
+  rtStop();SAVED_AT=Date.now();draftClear();
   const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
   save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
@@ -1395,8 +1396,9 @@ function hsbScan(){document.querySelectorAll(HS_SEL).forEach(el=>{let bar=el.nex
   if(!has){bar=document.createElement('div');bar.className='hsb';bar.setAttribute('aria-hidden','true');bar.innerHTML='<i></i>';el.after(bar)}
   if(!el._hsb){el._hsb=1;el.addEventListener('scroll',()=>hsbUpd(el),{passive:true})}hsbUpd(el)})}
 let hsbRaf=0;const hsbQ=()=>{if(hsbRaf)return;hsbRaf=requestAnimationFrame(()=>{hsbRaf=0;hsbScan()})};
-new MutationObserver(ms=>{if(ms.some(m=>![...m.addedNodes].every(n=>n.classList&&n.classList.contains('hsb'))||m.removedNodes.length))hsbQ()}).observe(document.body,{childList:true,subtree:true});
-addEventListener('resize',hsbQ);
+const domQuiet=n=>n&&n.nodeType===1&&(n.id==='rtBar'||n.closest&&(n.closest('#rtBar')||n.closest('.toast')||n.classList.contains('hsb')));
+let domRaf=0;new MutationObserver(ms=>{if(ms.every(m=>domQuiet(m.target)||([...m.addedNodes,...m.removedNodes].every(domQuiet)&&(m.addedNodes.length||m.removedNodes.length))))return;if(domRaf)return;domRaf=requestAnimationFrame(()=>{domRaf=0;hsbScan();vidScan()})}).observe(document.body,{childList:true,subtree:true});
+let rzT=0;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(hsbQ,200)});
 // cabecera fija: el contenido empieza justo debajo
 (()=>{const h=document.querySelector('.top');if(!h||!window.ResizeObserver)return;new ResizeObserver(()=>document.documentElement.style.setProperty('--toph',h.offsetHeight+'px')).observe(h)})();
 
@@ -1405,9 +1407,11 @@ addEventListener('resize',hsbQ);
 const EJ='ej/';let LIB=null,libQ='',libG='',libS='',libPick=null,libTo=null;
 function exVid(id){return `<div class="exvid ${/^3d\//.test(id)?'dk':''}"><video data-src="${EJ}${esc(id)}.mp4" poster="${EJ}${esc(id)}.jpg" muted loop playsinline preload="none" aria-label="Demostración del ejercicio"></video></div>`}
 // solo se reproducen los vídeos que están en pantalla
-const VIO=window.IntersectionObserver?new IntersectionObserver(es=>es.forEach(x=>{const v=x.target;if(x.isIntersecting){if(!v.src)v.src=v.dataset.src;const p=v.play();if(p&&p.catch)p.catch(()=>{})}else v.pause()}),{rootMargin:'120px'}):null;
+const typing=()=>{const a=document.activeElement;return a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)};
+const VIO=window.IntersectionObserver?new IntersectionObserver(es=>es.forEach(x=>{const v=x.target;if(x.isIntersecting&&x.intersectionRatio>=0.5&&!typing()){if(!v.src)v.src=v.dataset.src;const p=v.play();if(p&&p.catch)p.catch(()=>{})}else v.pause()}),{threshold:[0,0.5]}):null;
+document.addEventListener('focusin',e=>{if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))document.querySelectorAll('video[data-src]').forEach(v=>v.pause())});
 function vidScan(){document.querySelectorAll('video[data-src]:not([data-io])').forEach(v=>{v.dataset.io=1;if(VIO)VIO.observe(v);else{v.src=v.dataset.src;v.autoplay=true}})}
-new MutationObserver(()=>vidScan()).observe(document.body,{childList:true,subtree:true});
+
 const nrm=t=>(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ');
 const STOP=new Set(['de','con','en','el','la','los','las','a','al','y','com','na','no','do','da','e','em','para','por']);
 const toks=t=>nrm(t).split(/\s+/).filter(w=>w&&!STOP.has(w));
@@ -1537,14 +1541,17 @@ function restGo2(di,ei,si,el){if(!el||!el.value.trim()||!document.body.contains(
   if(e.blk){const mates=d.ex.map((x,i)=>({x,i})).filter(o=>o.x.blk===e.blk);if(mates.length>1&&mates[mates.length-1].i!==ei)return}
   const x=exSets(e)[si]||{};const sec=restSec(x.rest||e.rest);if(!sec)return;
   const last=si===e.s-1;const next=last?(d.ex[ei+1]?d.ex[ei+1].n:''):`Serie ${si+2} de ${e.n}`;
-  RT={end:Date.now()+sec*1000,total:sec,next,done:false};rtTick();clearInterval(RT.iv);RT.iv=setInterval(rtTick,250);try{if(window.AudioContext&&!window._ac)window._ac=new AudioContext()}catch(e){}}
+  if(RT)clearInterval(RT.iv);RT={end:Date.now()+sec*1000,total:sec,next,done:false};rtTick();RT.iv=setInterval(rtTick,500);try{if(window.AudioContext&&!window._ac)window._ac=new AudioContext()}catch(e){}}
 function rtBeep(){if(!rtSound())return;try{const ac=window._ac||new AudioContext();window._ac=ac;[0,0.25,0.5].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=i===2?1175:880;g.gain.setValueAtTime(.0001,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.4,ac.currentTime+t+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t+.2);o.connect(g).connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.22)})}catch(e){}}
-function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){el=document.createElement('div');el.id='rtBar';el.className='rtbar';document.body.appendChild(el);document.body.classList.add('rt-on')}
-  const left=Math.max(0,Math.ceil((RT.end-Date.now())/1000));const mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
-  if(left<=0&&!RT.done){RT.done=true;try{navigator.vibrate&&navigator.vibrate([300,120,300,120,500])}catch(e){}rtBeep();setTimeout(()=>{if(RT&&RT.done)rtStop()},6000)}
-  const pct=RT.total?Math.min(100,(1-left/RT.total)*100):100;
-  el.innerHTML=`<div class="rtfill" style="width:${pct}%"></div><div class="rtin">${RT.done?`<b class="go">💥 ¡A por ella!</b><small>${esc(RT.next||'Siguiente serie')}</small>`:`<b>⏱ ${mm}:${ss}</b><small>Descanso${RT.next?' · luego: '+esc(RT.next):''}</small>`}</div>
-    <div class="rtbtns">${RT.done?'':`<button type="button" onclick="rtAdd(-15)" aria-label="Quitar 15 segundos">−15</button><button type="button" onclick="rtAdd(15)" aria-label="Añadir 15 segundos">+15</button>`}<button type="button" onclick="rtSnd()" aria-label="Sonido">${rtSound()?'🔔':'🔕'}</button><button type="button" onclick="rtStop()" aria-label="Cerrar temporizador">✕</button></div>`}
+function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');
+  if(!el||el.dataset.done!==String(!!RT.done)){if(!el){el=document.createElement('div');el.id='rtBar';el.className='rtbar';document.body.appendChild(el);document.body.classList.add('rt-on')}
+    el.dataset.done=String(!!RT.done);el.innerHTML=`<div class="rtfill"></div><div class="rtin"><b class="rtt"></b><small class="rts"></small></div><div class="rtbtns">${RT.done?'':`<button type="button" onclick="rtAdd(-15)" aria-label="Quitar 15 segundos">−15</button><button type="button" onclick="rtAdd(15)" aria-label="Añadir 15 segundos">+15</button>`}<button type="button" class="snd" onclick="rtSnd()" aria-label="Sonido"></button><button type="button" onclick="rtStop()" aria-label="Cerrar temporizador">✕</button></div>`}
+  const left=Math.max(0,Math.ceil((RT.end-Date.now())/1000));
+  if(left<=0&&!RT.done){RT.done=true;try{navigator.vibrate&&navigator.vibrate([300,120,300,120,500])}catch(e){}rtBeep();setTimeout(()=>{if(RT&&RT.done)rtStop()},6000);return rtTick()}
+  const t=el.querySelector('.rtt'),sm=el.querySelector('.rts'),f=el.querySelector('.rtfill'),sn=el.querySelector('.snd');
+  const txt=RT.done?'💥 ¡A por ella!':`⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;if(t.textContent!==txt)t.textContent=txt;t.classList.toggle('go',RT.done);
+  const st=RT.done?(RT.next||'Siguiente serie'):'Descanso'+(RT.next?' · luego: '+RT.next:'');if(sm.textContent!==st)sm.textContent=st;
+  f.style.width=(RT.total?Math.min(100,(1-left/RT.total)*100):100)+'%';const si=rtSound()?'🔔':'🔕';if(sn.textContent!==si)sn.textContent=si}
 function rtAdd(s){if(!RT)return;RT.end+=s*1000;RT.total=Math.max(1,RT.total+s);rtTick()}
 function rtSnd(){try{localStorage.setItem('rtSound',rtSound()?'0':'1')}catch(e){}rtTick()}
 function rtStop(){if(RT)clearInterval(RT.iv);RT=null;const el=document.getElementById('rtBar');if(el)el.remove();document.body.classList.remove('rt-on')}
@@ -1675,3 +1682,12 @@ async function formToFicha(){const f=CUR&&formOf(CUR.id);if(!f)return;let n=0;co
   f.imported_at=new Date().toISOString();try{await db.updateForm(f.id,{imported_at:f.imported_at})}catch(e){}
   save();toast(n?`${n} dato${n>1?'s':''} pasado${n>1?'s':''} a la Ficha`:'La Ficha ya tenía esos datos');pendCount();renderCoach()}
 function formNewClient(id){const f=FORMS.find(x=>x.id===id);if(!f)return;openInvite();setTimeout(()=>{const g=k=>document.getElementById(k);if(g('nN'))g('nN').value=fAns(f,/nombre y apellidos/i)||f.nombre||'';if(g('nE'))g('nE').value=f.email||'';if(g('nT'))g('nT').value=fAns(f,/tel[eé]fono/i);if(g('nO')&&/ganar masa/i.test(fAns(f,/objetivo principal/i)))g('nO').value='ganar'},30)}
+
+// ---- borrador del entreno: lo que el cliente va apuntando se conserva aunque cambie de día, de pestaña o cierre la app sin guardar
+const DRAFT_RX=/^(kg|rp|ri)-\d+-\d+-\d+$|^nt-\d+-\d+$/;
+const draftKey=()=>CUR?`ys-draft-${CUR.id}-${iso(new Date())}`:null;
+let DRAFT=null,draftT=0;
+function draftGet(){if(DRAFT)return DRAFT;try{DRAFT=JSON.parse(localStorage.getItem(draftKey())||'{}')}catch(e){DRAFT={}}return DRAFT}
+document.addEventListener('input',e=>{const t=e.target;if(!t.id||!DRAFT_RX.test(t.id)||!CUR)return;const D=draftGet();if(t.value.trim())D[t.id]=t.value;else delete D[t.id];clearTimeout(draftT);draftT=setTimeout(()=>{try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}},400)});
+function draftApply(){const D=draftGet();Object.entries(D).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&!el.value)el.value=v})}
+function draftClear(){const k=draftKey();DRAFT={};try{localStorage.removeItem(k)}catch(e){}}
