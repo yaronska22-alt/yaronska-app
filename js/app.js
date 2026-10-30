@@ -708,10 +708,10 @@ function cDiario(){
 }
 function cChecks(){
   const cks=S.checkins.slice().reverse();
-  const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Fotos del físico</span><p class="small muted" style="margin:0">Sube tú las fotos de cualquier revisión, también las del inicio, para usarlas en la comparativa del físico.</p></div><button class="btn sm" type="button" onclick="openAddPhotos('')">📷 Añadir revisión con fotos</button></div></div>`;
+  const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Añadir o editar revisiones</span><p class="small muted" style="margin:0">Mete tú el peso, los perímetros y las fotos de cualquier revisión, también la del inicio. Cuentan para sus gráficas, el % graso y la comparativa del físico.</p></div><button class="btn sm" type="button" onclick="openAddPhotos('')">＋ Añadir revisión</button></div></div>`;
   if(!cks.length)return addBtn+'<div class="panel"><p class="small muted" style="margin:0">Todavía no hay check-ins de este cliente.</p></div>';
   return addBtn+`<div class="panel"><span class="lbl">Check-ins recibidos</span><div class="tbl-w"><table><thead><tr><th>Fecha</th>${MEAS.map(m=>`<th>${m[1]}</th>`).join('')}${SCALES.map(s=>`<th>${s.t}</th>`).join('')}<th>Orina</th><th>Fotos</th><th>Comentario</th></tr></thead><tbody>
-  ${cks.map(k=>`<tr><td>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}<button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')">${k.fotosP&&k.fotosP.length?'Cambiar':'＋ Añadir'}</button></td><td class="wrap">${esc(k.nota)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  ${cks.map(k=>`<tr><td>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}<button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')">✏️ Editar</button></td><td class="wrap">${esc(k.nota)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 let openSets=new Set();
 const RX=(di,ei)=>S.routine[di].ex[ei];
@@ -1170,29 +1170,39 @@ function vVolume(coach){
 function fatStats(F,from){const f=F[0],l=F[F.length-1],d=l.v-f.v;return `<div class="wstats fat"><div><small>% graso · ${esc(from)}</small><b>${nf(f.v)} %</b></div><div><small>% graso ahora</small><b>${nf(l.v)} %</b></div><div><small>Cambio</small><b class="${d<=0?'good':'badc'}">${d>0?'+':''}${nf(d)} %</b></div></div>`}
 
 // ---- el entrenador sube fotos a una revisión (también fotos antiguas, p. ej. las del inicio)
+const REV_M=MEAS.filter(m=>m[0]==='peso'||m[2]==='cm');
 function openAddPhotos(date){
   const c=date?S.checkins.find(x=>x.date===date):null;const sh=document.getElementById('sheet');
-  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Fotos del físico"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>📷 Fotos del físico</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+  const v=k=>c&&c[k]!=null&&c[k]!==''?String(c[k]).replace('.',','):'';
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Revisión"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>📋 ${date?'Editar revisión':'Añadir revisión'}</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
   <form class="form" onsubmit="savePhotos(event,'${date}')">
-    ${date?`<p class="small muted" style="margin:0">Revisión del <b style="color:var(--fg)">${new Date(date+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</b>. Las fotos que subas sustituyen a las de ese mismo tipo.</p>`
-      :`<div class="fgrid"><div class="field"><label for="apD">Fecha de las fotos</label><input id="apD" type="date" required max="${iso(new Date())}"></div><div class="field"><label for="apK">Peso ese día (kg, opcional)</label><input id="apK" inputmode="decimal"></div></div>
-        <p class="small muted" style="margin:0">Si ya hay una revisión en esa fecha, las fotos se añaden a ella.</p>`}
+    ${date?`<p class="small muted" style="margin:0">Revisión del <b style="color:var(--fg)">${new Date(date+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</b>. Cambia lo que quieras: las fotos nuevas sustituyen a las de ese mismo tipo.</p>`
+      :`<div class="field"><label for="apD">Fecha de la revisión</label><input id="apD" type="date" required max="${iso(new Date())}"></div>
+        <p class="small muted" style="margin:0">Si ya hay una revisión en esa fecha, se completa con lo que pongas aquí.</p>`}
+    <span class="lbl">Peso y perímetros <small class="muted" style="text-transform:none;letter-spacing:0">· todo opcional</small></span>
+    <div class="revgrid">${REV_M.map(m=>`<div class="field"><label for="apm-${m[0]}">${esc(m[1])} (${m[2]})</label><input id="apm-${m[0]}" inputmode="decimal" value="${esc(v(m[0]))}" placeholder="—"></div>`).join('')}</div>
+    <span class="lbl">Fotos del físico <small class="muted" style="text-transform:none;letter-spacing:0">· opcional</small></span>
     <div class="photos">${['Frontal','Lateral','Espalda'].map(t=>`<label class="ph" data-k="${t.toLowerCase()}"><span style="font-size:20px">＋</span>${t}<input type="file" accept="image/*" onchange="pickPhoto(this)" aria-label="Foto ${t}"></label>`).join('')}</div>
-    <button class="btn" type="submit">Guardar fotos</button></form></div></div>`;
+    <button class="btn" type="submit">Guardar revisión</button></form></div></div>`;
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};
 }
 async function savePhotos(e,date){
   e.preventDefault();const btn=e.target.querySelector('button[type=submit]');
-  const labs=[...e.target.querySelectorAll('.ph')].filter(l=>l._file);if(!labs.length){toast('Elige al menos una foto');return}
+  const labs=[...e.target.querySelectorAll('.ph')].filter(l=>l._file);
+  const vals={};let bad='';REV_M.forEach(m=>{const el=document.getElementById('apm-'+m[0]);if(!el)return;const t=el.value.trim();if(t===''){vals[m[0]]=null;return}const n=parseFloat(t.replace(',','.'));if(isNaN(n)||n<=0)bad=m[1];else vals[m[0]]=n});
+  if(bad){toast('Revisa el valor de '+bad);return}
   let d=date;if(!d){d=document.getElementById('apD').value;if(!d){toast('Pon la fecha');return}}
-  btn.disabled=true;btn.textContent='Subiendo…';
+  let c=S.checkins.find(x=>x.date===d);
+  const any=labs.length||Object.values(vals).some(x=>x!=null);
+  if(!c&&!any){toast('Pon al menos un dato o una foto');return}
+  btn.disabled=true;btn.textContent='Guardando…';
   try{
     const paths={};for(const l of labs){const k=l.dataset.k;const blob=await shrink(l._file,1600);const path=`${CUR.id}/${d}/${k}-${Date.now()}.jpg`;await db.uploadPhoto(path,blob);paths[k]=path}
-    let c=S.checkins.find(x=>x.date===d);
-    if(!c){c={date:d,r:{},fotos:0,fotosP:[],nota:'Fotos añadidas por Yaron'};const kg=parseFloat(String((document.getElementById('apK')||{}).value||'').replace(',','.'));if(!isNaN(kg))c.peso=kg;S.checkins.push(c);S.checkins.sort((a,b)=>a.date.localeCompare(b.date))}
-    const keep=(c.fotosP||[]).filter(p=>!Object.keys(paths).some(k=>p.includes('/'+k+'-')));c.fotosP=keep.concat(Object.values(paths));c.fotos=c.fotosP.length;
-    save();await flushSync();toast('Fotos guardadas');closeSheet();renderCoach();
-  }catch(err){console.error(err);toast('No se han podido subir: '+authMsg(err));btn.disabled=false;btn.textContent='Guardar fotos'}
+    if(!c){c={date:d,r:{},fotos:0,fotosP:[],nota:'Revisión añadida por Yaron'};S.checkins.push(c);S.checkins.sort((a,b)=>a.date.localeCompare(b.date))}
+    Object.entries(vals).forEach(([k,x])=>{if(x==null){if(date)delete c[k]}else c[k]=x});
+    if(labs.length){const keep=(c.fotosP||[]).filter(p=>!Object.keys(paths).some(k=>p.includes('/'+k+'-')));c.fotosP=keep.concat(Object.values(paths));c.fotos=c.fotosP.length}
+    save();await flushSync();toast('Revisión guardada');closeSheet();renderCoach();
+  }catch(err){console.error(err);toast('No se ha podido guardar: '+authMsg(err));btn.disabled=false;btn.textContent='Guardar revisión'}
 }
 
 // ================= MI NEGOCIO: facturación, ticket medio, renovaciones =================

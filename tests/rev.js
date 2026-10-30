@@ -1,0 +1,25 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5],sexo:'Hombre',altura:180,nac:'1990-01-01'},'2026-10-01');await refreshList();await loadClient(id);coachSel=id;coachTab='checkins';renderCoach()});
+await p.click('text=＋ Añadir revisión');await w(200);
+await p.fill('#apD','2026-10-01');await p.fill('#apm-peso','84,5');await p.fill('#apm-cintura','92');await p.fill('#apm-cuello','39');
+await p.screenshot({path:OUT+'/rv1.png'});
+await p.click('text=Guardar revisión');await w(900);
+console.log('ck:',await p.evaluate(()=>JSON.stringify(S.checkins)),'db:',await p.evaluate(()=>JSON.stringify(window.__mock.checkins.map(c=>c.data))));
+await p.click('text=✏️ Editar');await w(200);console.log('prefill cintura:',await p.inputValue('#apm-cintura'));
+await p.fill('#apm-cintura','90');await p.fill('#apm-cuello','');await p.click('text=Guardar revisión');await w(900);
+console.log('ck2:',await p.evaluate(()=>JSON.stringify(S.checkins)),'fat:',await p.evaluate(()=>JSON.stringify(fatSeries())));
+await p.screenshot({path:OUT+'/rv2.png'});
+console.log('ERR',errs);await b.close()})();
