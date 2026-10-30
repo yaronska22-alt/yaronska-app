@@ -551,3 +551,6 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .libprev video{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fff;border-radius:8px}
 .libprev>div{display:flex;flex-direction:column;gap:6px}
 @media (max-width:600px){.libprev{grid-template-columns:110px 1fr}.libgrid{grid-template-columns:repeat(2,1fr)}}
+.exvid.dk,.libc img.dk,.libprev video.dk{background:#2b2f33}
+.libc .cue{color:var(--y);font-size:11px;line-height:1.2}
+.libprev small{display:block}
