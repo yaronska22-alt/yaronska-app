@@ -84,7 +84,7 @@ select:focus,input:focus{border-color:var(--y)}
         <button class="btn ghost" id="bPause" type="button" disabled>❚❚ Pausa</button>
         <button class="btn red" id="bStop" type="button" disabled>■ Parar</button>
       </div>
-      <p class="hint">Con <b>Pantalla + cámara</b> tu cara sale en un círculo en la esquina del vídeo, como en Loom. Puedes compartir la pantalla completa, una ventana o una pestaña: tu cara se graba siempre. Elige la esquina y el tamaño a la derecha.</p>
+      <p class="hint">Con <b>Pantalla + cámara</b>: abre la burbuja, colócala donde quieras y al grabar comparte la <b>pantalla completa</b>. Puedes moverla mientras grabas. Si no abres la burbuja o compartes solo una ventana, tu cara va fija en la esquina que elijas.</p>
     </div>
     <div class="panel">
       <div class="field"><label class="lbl">Modo</label>
@@ -97,7 +97,7 @@ select:focus,input:focus{border-color:var(--y)}
         <label class="sw"><input type="checkbox" id="sys"><span>Grabar también el sonido del ordenador<br><span class="hint" style="margin:0">Solo si vas a enseñar un vídeo con sonido.</span></span></label>
       </div>
       <div class="field" id="camF"><label class="lbl" for="cam">Cámara</label><select id="cam"></select>
-        <div class="row" id="bubF" style="margin-top:8px;flex-wrap:nowrap"><select id="bPos" aria-label="Posición de tu cara"><option value="bl">Abajo izquierda</option><option value="br">Abajo derecha</option><option value="tl">Arriba izquierda</option><option value="tr">Arriba derecha</option></select><select id="bSize" aria-label="Tamaño de tu cara"><option value="0.22">Pequeña</option><option value="0.3" selected>Mediana</option><option value="0.4">Grande</option></select></div></div>
+        <div id="bubF"><button class="btn block" id="bBub" type="button" style="width:100%;margin-top:8px">◉ Abrir burbuja de cámara</button><p class="hint">Ábrela antes de grabar. Arrástrala a donde quieras de la pantalla y cambia su tamaño tirando del borde. Se graba si compartes la <b>pantalla completa</b>.</p><div class="row" style="margin-top:8px;flex-wrap:nowrap"><span class="hint" style="margin:0;white-space:nowrap">Si compartes solo una ventana:</span><select id="bPos" aria-label="Posición de tu cara"><option value="bl">Abajo izquierda</option><option value="br">Abajo derecha</option><option value="tl">Arriba izquierda</option><option value="tr">Arriba derecha</option></select><select id="bSize" aria-label="Tamaño de tu cara"><option value="0.22">Pequeña</option><option value="0.3" selected>Mediana</option><option value="0.4">Grande</option></select></div></div></div>
       <div class="field"><label class="lbl" for="qual">Calidad de vídeo</label>
         <select id="qual"><option value="1080">Full HD 1080p (recomendado)</option><option value="1440">2K 1440p</option><option value="720">HD 720p (archivo más ligero)</option></select></div>
       <div class="field"><label class="lbl" for="nm">Nombre del vídeo</label><input type="text" id="nm" placeholder="Ej.: Feedback Carlos semana 3" maxlength="80"></div>
@@ -121,7 +121,7 @@ else if(!navigator.mediaDevices.getDisplayMedia){$('warn').textContent='Para gra
 
 // ---------- modo
 function setMode(m){MODE=m;LS.set('mode',m);document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('camF').style.display=m==='screen'?'none':'';$('bubF').style.display=m==='both'?'':'none';$('sys').closest('.sw').style.display=m==='cam'?'none':''}
-document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{if(rec)return;setMode(b.dataset.m)});setMode(MODE);
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{if(rec)return;setMode(b.dataset.m);if(b.dataset.m!=='both')closeBubble()});setMode(MODE);
 
 // ---------- micrófonos y cámaras
 const audioC=()=>{const raw=$('raw').checked;const id=$('mic').value;return {deviceId:id?{exact:id}:undefined,echoCancellation:!raw,noiseSuppression:!raw,autoGainControl:!raw,sampleRate:{ideal:48000},sampleSize:{ideal:24},channelCount:{ideal:2},latency:{ideal:0.01}}};
@@ -167,17 +167,22 @@ async function openCam(){
 $('cam').onchange=openCam;$('qual').onchange=()=>{if(MODE==='cam')openCam()};
 
 // ---------- burbuja de cámara flotante (Picture-in-Picture)
+// ---------- burbuja flotante de la cámara (como Loom): ventana siempre encima, se mueve y se redimensiona
 async function openBubble(){
-  if(!camStream)return;
+  if(pip){toast('La burbuja ya está abierta: arrástrala donde quieras');return}
+  if(!camStream){await openCam();if(!camStream)return}
   if(window.documentPictureInPicture){
-    try{pip=await documentPictureInPicture.requestWindow({width:260,height:260});
-      const d=pip.document;d.body.style.cssText='margin:0;background:#0A0907;overflow:hidden';
-      const v=d.createElement('video');v.muted=true;v.autoplay=true;v.playsInline=true;v.srcObject=camStream;
-      v.style.cssText='position:fixed;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);object-fit:cover;border-radius:50%;border:4px solid #FFD60A;transform:scaleX(-1)';
-      d.body.appendChild(v);return}catch(e){}}
+    try{const sz=+(LS.get('bubSz')||240);pip=await documentPictureInPicture.requestWindow({width:sz,height:sz});
+      const d=pip.document;d.title='Tu cámara';
+      const st=d.createElement('style');st.textContent='html,body{margin:0;height:100%;background:#0A0907;overflow:hidden;cursor:move}video{position:fixed;left:50%;top:50%;width:min(96vw,96vh);height:min(96vw,96vh);transform:translate(-50%,-50%) scaleX(-1);object-fit:cover;border-radius:50%;box-shadow:0 0 0 4px #FFD60A;background:#000}';
+      d.head.appendChild(st);const v=d.createElement('video');v.muted=true;v.autoplay=true;v.playsInline=true;v.srcObject=camStream;d.body.appendChild(v);
+      pip.addEventListener('resize',()=>LS.set('bubSz',Math.round(Math.min(pip.innerWidth,pip.innerHeight))));
+      pip.addEventListener('pagehide',()=>{pip=null;bubUI()});bubUI();return}catch(e){console.warn(e)}}
+  // otros navegadores: imagen en imagen normal
   const v=document.createElement('video');v.muted=true;v.playsInline=true;v.srcObject=camStream;await v.play();
-  try{await v.requestPictureInPicture();pip={close:()=>document.pictureInPictureElement&&document.exitPictureInPicture()}}catch(e){toast('No se ha podido abrir la burbuja de la cámara')}}
-const closeBubble=()=>{try{pip&&pip.close()}catch(e){}pip=null};
+  try{await v.requestPictureInPicture();pip={close:()=>document.pictureInPictureElement&&document.exitPictureInPicture()};v.addEventListener('leavepictureinpicture',()=>{pip=null;bubUI()});bubUI()}catch(e){toast('No se ha podido abrir la burbuja de la cámara')}}
+function bubUI(){const b=$('bBub');if(b)b.textContent=pip?'✕ Cerrar burbuja':'◉ Abrir burbuja de cámara'}
+const closeBubble=()=>{try{pip&&pip.close()}catch(e){}pip=null;bubUI()};
 
 // ---------- tu cara dentro del vídeo (como Loom): se mezcla pantalla + cámara en cada fotograma.
 // Lo marca la cámara (30 fps constantes), así sigue funcionando aunque esta ventana quede detrás.
@@ -246,7 +251,9 @@ async function start(){
   if(sysT.length){mixCtx=new AudioContext({sampleRate:48000});const dst=mixCtx.createMediaStreamDestination();dst.channelCount=2;
     mixCtx.createMediaStreamSource(micStream).connect(dst);mixCtx.createMediaStreamSource(new MediaStream(sysT)).connect(dst);aTracks=dst.stream.getAudioTracks()}
   let vTrack=(MODE==='cam'?camStream:scrStream).getVideoTracks()[0];
-  if(MODE==='both'&&camStream){const ct=camStream.getVideoTracks()[0].clone();COMP=composite(vTrack,ct,h);const st0=COMP.stop;COMP.stop=()=>{st0();ct.stop()};vTrack=COMP.track}
+  const surf=scrStream&&scrStream.getVideoTracks()[0].getSettings().displaySurface;
+  if(MODE==='both'&&pip&&surf&&surf!=='monitor')toast('Has compartido una ventana: la burbuja no se ve ahí, así que tu cara va en la esquina del vídeo',6000);
+  if(MODE==='both'&&camStream&&!(pip&&(surf==='monitor'||!surf))){const ct=camStream.getVideoTracks()[0].clone();COMP=composite(vTrack,ct,h);const st0=COMP.stop;COMP.stop=()=>{st0();ct.stop()};vTrack=COMP.track}
   recStream=new MediaStream([vTrack,...aTracks]);
   const type=fmt();const ext=/mp4/.test(type)?'mp4':'webm';
   fileName=`${clean($('nm').value)||'Yaronska Rec'} ${stamp()}.${ext}`;
@@ -264,7 +271,7 @@ async function start(){
   document.title='● Grabando · Yaronska Rec';
 }
 function pause(){if(!rec)return;if(rec.state==='recording'){rec.pause();acc+=Date.now()-t0;$('bPause').textContent='▶ Seguir';$('badge').classList.add('paused');document.title='❚❚ En pausa · Yaronska Rec'}else{rec.resume();t0=Date.now();$('bPause').textContent='❚❚ Pausa';$('badge').classList.remove('paused');document.title='● Grabando · Yaronska Rec'}}
-function stop(){if(!rec||rec.state==='inactive')return;if(rec.state==='recording')acc+=Date.now()-t0;rec.stop();clearInterval(tick);closeBubble();if(COMP){const c=COMP;COMP=null;setTimeout(()=>c.stop(),300)}if(scrStream)scrStream.getTracks().forEach(t=>t.stop());}
+function stop(){if(!rec||rec.state==='inactive')return;if(rec.state==='recording')acc+=Date.now()-t0;rec.stop();clearInterval(tick);if(COMP){const c=COMP;COMP=null;setTimeout(()=>c.stop(),300)}if(scrStream)scrStream.getTracks().forEach(t=>t.stop());}
 async function finish(){
   const secs=Math.round(acc/1000),type=rec.mimeType;let where='';
   if(writer&&!chunks.length){try{await writer.close();where='Guardado en '+dirH.name}catch(e){where=''}}
@@ -281,6 +288,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST=e;$('b
 window.addEventListener('appinstalled',()=>{$('bInst').hidden=true;toast('✅ Instalada: la tienes en el escritorio y en el menú de aplicaciones')});
 $('bInst').onclick=async()=>{if(!INST)return;INST.prompt();await INST.userChoice;INST=null;$('bInst').hidden=true};
 if(!standalone()&&navigator.serviceWorker)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+$('bBub').onclick=()=>pip?closeBubble():openBubble();
 $('bRec').onclick=start;$('bPause').onclick=pause;$('bStop').onclick=stop;
 document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();rec?stop():start()}});
 window.addEventListener('beforeunload',e=>{if(rec){e.preventDefault();e.returnValue=''}});
