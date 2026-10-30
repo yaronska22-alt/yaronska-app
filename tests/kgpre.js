@@ -1,0 +1,22 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5],diasSemana:3},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);S.routine.push(Object.assign(clone(S.routine[0]),{d:'Día 4 · Extra',opt:true}));save();await flushSync();setView('client');go('train');trainTab='rutina';dayIdx=0;render()});
+await p.setViewportSize({width:390,height:844});await w(200);
+await w(800);if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');
+await p.evaluate(()=>{S.routine[0].ex[0].kg=40;S.routine[0].ex[1].kg='';render()});await w(200);
+console.log('vals',await p.$eval('#kg-0-0-0',e=>[e.value,e.className]),await p.$eval('#kg-0-1-0',e=>[e.value,e.placeholder]));
+await p.fill('#rp-0-0-0','10');await p.fill('#rp-0-1-0','12');await p.click('text=Guardar entreno');await w(400);
+console.log(await p.evaluate(()=>JSON.stringify(Object.entries(S.hist).map(([k,v])=>[k,v[0].sets]))));
+console.log('ERR',errs);await b.close()})();

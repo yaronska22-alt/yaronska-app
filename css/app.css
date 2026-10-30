@@ -680,3 +680,4 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .week .wd{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:3px 0;border-radius:8px}
 .week .wd.sel{background:var(--surface-2);color:var(--y)}.week .wd.sel em{border-color:var(--y)}
 .sesdate{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 -2px}.sesdate select{width:auto;min-width:150px}
+.sets input.kgpre{color:var(--muted)}
