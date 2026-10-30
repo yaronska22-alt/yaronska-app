@@ -97,6 +97,8 @@ const db = {
   async upsertAdmin(row) { ok(await sb.from('client_admin').upsert({ ...row, updated_at: new Date().toISOString() })); },
   async insert(table, row) { return ok(await sb.from(table).insert(row).select('id,created_at').single()); },
   async update(table, id, row) { ok(await sb.from(table).update(row).eq('id', id)); },
+  async del(table, id) { ok(await sb.from(table).delete().eq('id', id)); },
+  async removePhotos(paths) { if (paths && paths.length) ok(await sb.storage.from('checkins').remove(paths)); },
   async upsertDaily(row) { ok(await sb.from('daily_logs').upsert({ ...row, updated_at: new Date().toISOString() })); },
   async updateMyProfile(nombre, tel, prefs) {
     ok(await sb.rpc('update_my_profile', { p_nombre: nombre, p_email: null, p_tel: tel, p_prefs: prefs }));

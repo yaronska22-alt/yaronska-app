@@ -711,7 +711,7 @@ function cChecks(){
   const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Añadir o editar revisiones</span><p class="small muted" style="margin:0">Mete tú el peso, los perímetros y las fotos de cualquier revisión, también la del inicio. Cuentan para sus gráficas, el % graso y la comparativa del físico.</p></div><button class="btn sm" type="button" onclick="openAddPhotos('')">＋ Añadir revisión</button></div></div>`;
   if(!cks.length)return addBtn+'<div class="panel"><p class="small muted" style="margin:0">Todavía no hay check-ins de este cliente.</p></div>';
   return addBtn+`<div class="panel"><span class="lbl">Check-ins recibidos</span><div class="tbl-w"><table><thead><tr><th>Fecha</th>${MEAS.map(m=>`<th>${m[1]}</th>`).join('')}${SCALES.map(s=>`<th>${s.t}</th>`).join('')}<th>Orina</th><th>Fotos</th><th>Comentario</th></tr></thead><tbody>
-  ${cks.map(k=>`<tr><td>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}<button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')">✏️ Editar</button></td><td class="wrap">${esc(k.nota)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  ${cks.map(k=>`<tr><td>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}<button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')">✏️ Editar</button><button class="btn ghost sm del" type="button" onclick="askDelCheck('${k.date}')" aria-label="Borrar revisión">🗑</button></td><td class="wrap">${esc(k.nota)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 let openSets=new Set();
 const RX=(di,ei)=>S.routine[di].ex[ei];
@@ -1170,6 +1170,17 @@ function vVolume(coach){
 function fatStats(F,from){const f=F[0],l=F[F.length-1],d=l.v-f.v;return `<div class="wstats fat"><div><small>% graso · ${esc(from)}</small><b>${nf(f.v)} %</b></div><div><small>% graso ahora</small><b>${nf(l.v)} %</b></div><div><small>Cambio</small><b class="${d<=0?'good':'badc'}">${d>0?'+':''}${nf(d)} %</b></div></div>`}
 
 // ---- el entrenador sube fotos a una revisión (también fotos antiguas, p. ej. las del inicio)
+function askDelCheck(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;const sh=document.getElementById('sheet');
+  const det=[c.peso?nf(c.peso)+' kg':'',MEAS.filter(m=>m[2]==='cm'&&c[m[0]]).length?MEAS.filter(m=>m[2]==='cm'&&c[m[0]]).length+' perímetros':'',c.fotosP&&c.fotosP.length?c.fotosP.length+' fotos':''].filter(Boolean).join(' · ');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Borrar revisión"><div class="sheet-b"><h2>🗑 ¿Borrar esta revisión?</h2>
+    <p style="margin:0">Revisión del <b>${new Date(date+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</b>${det?` · <span class="muted">${esc(det)}</span>`:''}</p>
+    <p class="small muted" style="margin:0">Se borra entera: peso, perímetros, respuestas y fotos. Desaparece de sus gráficas y no se puede deshacer.</p>
+    <div class="row"><button class="btn danger" type="button" id="delCkBtn" onclick="delCheck('${date}')">Sí, borrar</button><button class="btn ghost" type="button" onclick="closeSheet()">Cancelar</button></div></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
+async function delCheck(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;const b=document.getElementById('delCkBtn');if(b){b.disabled=true;b.textContent='Borrando…'}
+  try{await flushSync();if(c.id){await db.del('checkins',c.id);delete SNAP.c[c.id]}try{await db.removePhotos(c.fotosP||[])}catch(e){console.warn(e)}
+    S.checkins=S.checkins.filter(x=>x!==c);closeSheet();toast('Revisión borrada');renderCoach()}
+  catch(e){console.error(e);toast('No se ha podido borrar: '+authMsg(e));if(b){b.disabled=false;b.textContent='Sí, borrar'}}}
 const REV_M=MEAS.filter(m=>m[0]==='peso'||m[2]==='cm');
 function openAddPhotos(date){
   const c=date?S.checkins.find(x=>x.date===date):null;const sh=document.getElementById('sheet');

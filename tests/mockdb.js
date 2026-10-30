@@ -47,6 +47,8 @@ window.db={
   async templates(){if(!isCoach())deny('tpl');return st.templates},
   async updateClient(id,row){if(!isCoach())deny('updateClient');Object.assign(st.clients.find(c=>c.id===id),JSON.parse(JSON.stringify(row)));window.__writes=(window.__writes||0)+1;persist()},
   async upsertAdmin(row){if(!isCoach())deny('admin');const a=st.client_admin.find(a=>a.client_id===row.client_id);if(a)Object.assign(a,row);else st.client_admin.push(row);persist()},
+  async del(t,id){const r=st[t].find(x=>x.id===id);if(!r||!can(r.client_id))deny('del '+t);st[t]=st[t].filter(x=>x.id!==id);persist()},
+  async removePhotos(paths){(paths||[]).forEach(x=>delete st.files[x]);persist()},
   async insert(t,row){if(t==='templates'){if(!isCoach())deny('tpl')}else if(!can(row.client_id))deny('insert '+t);const r={id:nid(),created_at:now(),...JSON.parse(JSON.stringify(row))};st[t].push(r);persist();return {id:r.id,created_at:r.created_at}},
   async update(t,id,row){const r=st[t].find(x=>x.id===id);if(!can(r.client_id))deny('update');Object.assign(r,JSON.parse(JSON.stringify(row)));persist()},
   async upsertDaily(row){if(!can(row.client_id))deny('daily');const r=st.daily_logs.find(x=>x.client_id===row.client_id&&x.fecha===row.fecha);if(r)Object.assign(r,row);else st.daily_logs.push(row);persist()},
