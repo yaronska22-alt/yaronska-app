@@ -283,10 +283,17 @@ async function finish(){
   const L=$('last');L.innerHTML=`<label class="lbl">Última grabación</label><div class="list"><div class="item"><div><b>${fileName.replace(/</g,'')}</b><br><small>${Math.floor(secs/60)} min ${secs%60} s · ${where}</small></div></div></div>`+(dirH?'<p class="hint">Cuando Google Drive termine de subirlo: clic derecho en el archivo → Compartir → Copiar enlace.</p>':'');
   toast('✅ Vídeo listo · '+where,5000)}
 // ---------- instalar como programa (Chrome / Edge)
-let INST=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST=e;$('bInst').hidden=false});
-window.addEventListener('appinstalled',()=>{$('bInst').hidden=true;toast('✅ Instalada: la tienes en el escritorio y en el menú de aplicaciones')});
-$('bInst').onclick=async()=>{if(!INST)return;INST.prompt();await INST.userChoice;INST=null;$('bInst').hidden=true};
+let INST=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches;
+if(!standalone())$('bInst').hidden=false;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST=e});
+window.addEventListener('appinstalled',()=>{$('bInst').hidden=true;INST=null;toast('✅ Instalada: la tienes en el escritorio y en el menú de aplicaciones',6000)});
+function instHelp(){const edge=/Edg\//.test(navigator.userAgent),mac=/Mac/.test(navigator.platform);
+  const t=edge?'En Edge: pulsa los tres puntos «…» arriba a la derecha → Aplicaciones → «Instalar Yaronska Rec».'
+    :/Chrome\//.test(navigator.userAgent)?'En Chrome: pulsa los tres puntos ⋮ arriba a la derecha → «Enviar, guardar y compartir» (o «Guardar y compartir») → «Instalar página como aplicación…» → Instalar.'
+    :'Abre esta página en Google Chrome o Microsoft Edge para instalarla.';
+  $('warn').innerHTML='<b>Cómo instalarla en el '+(mac?'Mac':'ordenador')+'</b><br>'+t+'<br>Después la tendrás '+(mac?'en Launchpad y puedes arrastrarla al Dock.':'en el escritorio y en el menú Inicio, y puedes anclarla a la barra de tareas.');
+  $('warn').classList.add('on');$('warn').scrollIntoView({block:'start',behavior:'smooth'})}
+$('bInst').onclick=async()=>{if(INST){try{INST.prompt();const r=await INST.userChoice;INST=null;if(r.outcome!=='accepted')return;return}catch(e){INST=null}}instHelp()};
 if(!standalone()&&navigator.serviceWorker)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 $('bBub').onclick=()=>pip?closeBubble():openBubble();
 $('bRec').onclick=start;$('bPause').onclick=pause;$('bStop').onclick=stop;
