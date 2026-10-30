@@ -365,7 +365,6 @@ function vHome(){
   const ph=phOf(FICHA,S.phase);const pct=Math.round(S.week/S.weeksPhase*100);
   const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
-  ${cuestCard()}
   ${revCard()}
   ${vRemind()}
   ${pushCard()}
@@ -664,7 +663,7 @@ async function createClient(e){
     try{await flushSync()}catch(x){}
     const f={};Object.keys(FICHA_DEF).forEach(k=>{if(!(k in ADMIN_MAP))f[k]=FICHA_DEF[k]});Object.assign(f,{nombre,email,tel,objetivo});
     const id=await db.createClient(email,f,iso(new Date()));
-    await refreshList();coachSel=id;await loadClient(id);coachTab='ficha';renderCoach();inviteMsg(id);
+    await refreshList();await loadForms();coachSel=id;await loadClient(id);coachTab='ficha';renderCoach();inviteMsg(id);
   }catch(err){console.error(err);b.disabled=false;b.textContent='Dar de alta';toast('No se ha podido crear: '+authMsg(err))}
 }
 function inviteMsg(id){
@@ -805,7 +804,7 @@ function cFicha(){
     <div class="kpi"><small>Pago · ${esc((SUBT.find(x=>x[0]===f.tipo)||['','—'])[1])}</small><b>${f.pago?nf(f.pago,0)+' €':'—'}</b><small>${f.pago&&SUBM[f.tipo]?nf(f.pago/m,0)+' €/mes':''}</small></div>
     <div class="kpi"><small>Próxima renovación</small><b class="${dleft!=null&&dleft<=7?'badc':dleft!=null&&dleft<=21?'':'good'}" style="${dleft!=null&&dleft>7&&dleft<=21?'color:var(--warn)':''}">${ren?new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'—'}</b><small>${dleft!=null?(dleft>=0?'en '+dleft+' días':'vencida hace '+(-dleft)+' días'):''}</small></div>
     <div class="kpi"><small>Edad</small><b>${age!=null?age+' años':'—'}</b><small>${bd!==''?'🎂 cumple en '+bd+' días':''}</small></div></div>
-  ${cuestPanel()}
+  ${formPanel()}
   <div class="panel"><span class="lbl">Datos generales</span>${grid(inp('nombre','Nombre')+inp('email','Email','email')+inp('tel','Teléfono / WhatsApp','tel')+sel('sexo','Sexo',[['Hombre','Hombre'],['Mujer','Mujer']])+inp('nac','Fecha de nacimiento','date')+(FICHA.nac?'':inp('edad','Edad (si no tienes la fecha)','n'))+inp('altura','Altura (cm)','n')+sel('objetivo','Objetivo',[['perder','Perder grasa'],['ganar','Ganar músculo']]))}</div>
   <div class="panel"><span class="lbl">📅 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}
     <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div>
@@ -1485,7 +1484,7 @@ function revHistory(){const L=S.checkins.filter(x=>x.rev&&(x.rev.txt||x.rev.url)
 
 // ================= PENDIENTES DE HOY =================
 let PEND=null,PEND_N=0;
-async function loadPend(){try{PEND=await db.pending(iso(daysAgo(21)));pendCount()}catch(e){console.error(e)}}
+async function loadPend(){try{PEND=await db.pending(iso(daysAgo(21)));await loadForms();pendCount()}catch(e){console.error(e)}}
 const activeCL=()=>CL.filter(c=>!['paused','ended'].includes(c.estado));
 function pendData(){const P=PEND||{ck:[],wl:[]};const A=new Set(activeCL().map(c=>c.id));const nm=id=>(CL.find(c=>c.id===id)||{}).name||'—';const lim7=iso(daysAgo(7));
   const rev=P.ck.filter(x=>!x.rev&&A.has(x.client_id)).map(x=>({id:x.client_id,n:nm(x.client_id),date:x.fecha}));
@@ -1496,7 +1495,7 @@ function pendData(){const P=PEND||{ck:[],wl:[]};const A=new Set(activeCL().map(c
   const t=iso(new Date()),t7=iso(new Date(Date.now()+7*864e5));const ren=activeCL().filter(c=>c.renov&&c.renov<=t7).map(c=>({id:c.id,n:c.name,date:c.renov,late:c.renov<t})).sort((a,b)=>a.date.localeCompare(b.date));
   const late=activeCL().filter(c=>c.linked&&c.st==='bad').map(c=>({id:c.id,n:c.name,t:c.t}));
   return {rev,notes,inact,noLink,ren,late}}
-function pendCount(){const d=pendData();PEND_N=d.rev.length+d.notes.length;const el=document.querySelector('.pendbtn');if(el){let b=el.querySelector('.pendn');if(PEND_N){if(!b){b=document.createElement('span');b.className='pendn';el.appendChild(b)}b.textContent=PEND_N}else if(b)b.remove()}}
+function pendCount(){const d=pendData();PEND_N=d.rev.length+d.notes.length+FORMS.filter(f=>!f.imported_at).length;const el=document.querySelector('.pendbtn');if(el){let b=el.querySelector('.pendn');if(PEND_N){if(!b){b=document.createElement('span');b.className='pendn';el.appendChild(b)}b.textContent=PEND_N}else if(b)b.remove()}}
 function pendMark(id,date){if(!PEND)return;const k=PEND.ck.find(x=>x.client_id===id&&x.fecha===date);if(k)k.rev={at:new Date().toISOString()};pendCount()}
 async function openPend(){try{await flushSync()}catch(e){}coachSel='__pend';const m=document.querySelector('.cmain');if(m)m.innerHTML='<p class="muted">Cargando…</p>';await Promise.all([refreshList(),loadPend()]);renderCoach()}
 async function goCl(id,tab,fn){await selectClient(id);coachSel=id;coachTab=tab;renderCoach();if(fn)setTimeout(fn,60)}
@@ -1510,6 +1509,7 @@ function cPend(){const d=pendData();const fd=x=>new Date(x+'T12:00').toLocaleDat
   ${box('😴','Clientes poco activos',d.inact,'Todos activos esta semana 💪',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"diario")'><b>${esc(x.n)}</b><small>${x.noApp?'App: '+seenTxt(x.seen).t.toLowerCase():'Entra en la app'} · ${x.tr?'último entreno '+fd(x.tr):'sin entrenos registrados en 3 semanas'}</small></button>`)}
   ${box('⏰','Revisiones atrasadas',d.late,'Nadie lleva más de 15 días sin revisión.',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"checkins")'><b>${esc(x.n)}</b><small>${esc(x.t)}</small></button>`)}
   ${box('🔁','Renovaciones · próximos 7 días',d.ren,'Ninguna renovación esta semana.',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"ficha")'><b>${esc(x.n)}</b><small class="${x.late?'badc':''}">${x.late?'Vencida el ':'Renueva el '}${fd(x.date)}</small></button>`)}
+  ${(()=>{const L=FORMS.filter(f=>!f.imported_at);return L.length?box('🆕','Formularios de onboarding nuevos',L,'',x=>{const c=x.client_id&&CL.find(k=>k.id===x.client_id);return `<button type="button" class="pitem" onclick='${c?`goCl(${nmq(x.client_id)},"ficha")`:`formNewClient(${x.id})`}'><b>${esc(x.nombre||x.email||'Sin nombre')}</b><small>${fd((x.submitted_at||x.created_at).slice(0,10))} · ${esc(x.email||'sin email')}</small><span class="y">${c?'Ver y pasar a la Ficha →':'Aún no es cliente · darle de alta →'}</span></button>`}):''})()}
   ${!BK.last||Date.now()-Date.parse(BK.last)>48*3600e3?`<div class="panel pendbox"><div class="sec-h"><span class="lbl">💾 Copia de seguridad</span><span class="pcount on">!</span></div><button type="button" class="pitem" onclick="openBiz()"><b>${BK.last?'Última copia: '+esc(seenTxt(BK.last).t.toLowerCase()):'Aún no has hecho ninguna copia'}</b><small>${BK.dir?'Pulsa para hacerla ahora':'Elige la carpeta de Google Drive en «Mi negocio»'}</small></button></div>`:''}
   ${d.noLink.length?box('✉️','Sin activar la cuenta',d.noLink,'',x=>`<button type="button" class="pitem" onclick='inviteMsg(${nmq(x.id)})'><b>${esc(x.n)}</b><small>Aún no ha creado su cuenta · reenviar invitación</small></button>`):''}
   </div>`}
@@ -1639,3 +1639,39 @@ async function bkRun(silent){if(BK.busy)return;BK.busy=true;if(!silent&&coachSel
   finally{BK.busy=false;if(coachSel==='__biz')renderCoach()}}
 async function bkDownload(){try{toast('Preparando la copia…');const data=await bkData();const b=new Blob([JSON.stringify(data)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`yaronska-copia-${iso(new Date())}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
   if(!BK.dir){BK.last=new Date().toISOString();await idb.set('last',BK.last)}}catch(e){console.error(e);toast('No se ha podido preparar la copia')}}
+
+// ================= FORMULARIO DE ONBOARDING (Google Forms) =================
+// Las respuestas llegan solas (Apps Script → función «formulario») y se asocian al cliente por su email.
+let FORMS=[];
+async function loadForms(){try{FORMS=await db.formResponses()}catch(e){FORMS=[];return}
+  for(const f of FORMS){if(f.client_id||!f.email)continue;const c=CL.find(k=>(k.email||'').toLowerCase()===f.email||((k.ficha||{}).email||'').toLowerCase()===f.email);if(c){f.client_id=c.id;try{await db.updateForm(f.id,{client_id:c.id})}catch(e){}}}}
+const formOf=id=>FORMS.find(f=>f.client_id===id);
+const fAns=(f,re)=>{const x=(f.answers||[]).find(a=>re.test(a.q));return x&&x.a&&!/^\s*$/.test(x.a)?x.a.trim():''};
+function formPanel(){const f=CUR&&formOf(CUR.id);
+  if(!f){const free=FORMS.filter(x=>!x.client_id);return `<div class="panel"><span class="lbl">📋 Formulario de onboarding</span><p class="small muted" style="margin:0">Aún no ha llegado su formulario. Se enlaza solo cuando lo rellene con el mismo email que tiene en su Ficha (${esc(FICHA.email||CUR.email||'—')}).</p>
+    ${free.length?`<div class="field"><label for="fLink">¿Lo rellenó con otro email? Enlázalo a mano</label><div class="row"><select id="fLink" style="flex:1">${free.map(x=>`<option value="${x.id}">${esc((x.nombre||'Sin nombre')+' · '+(x.email||'sin email')+' · '+fdate((x.submitted_at||x.created_at).slice(0,10)))}</option>`).join('')}</select><button class="btn sm" type="button" onclick="formLink()">Enlazar</button></div></div>`:''}</div>`}
+  const secs=[];(f.answers||[]).forEach(a=>{if(!a.a||!String(a.a).trim())return;let s=secs.find(x=>x.s===a.s);if(!s){s={s:a.s,L:[]};secs.push(s)}s.L.push(a)});
+  return `<div class="panel"><div class="sec-h"><span class="lbl">📋 Formulario de onboarding · ${new Date(f.submitted_at||f.created_at).toLocaleDateString('es-ES')}${f.imported_at?' · ✅ pasado a la Ficha':''}</span><div class="row"><button class="btn sm" type="button" onclick="formToFicha()">⇩ Pasar datos a la Ficha</button></div></div>
+    ${secs.map((x,i)=>`<details class="cqsec" ${i<2?'open':''}><summary>${esc(x.s||'Respuestas')} <small class="muted">· ${x.L.length}</small></summary><dl>${x.L.map(a=>`<dt>${esc(a.q)}</dt><dd>${esc(a.a)}</dd>`).join('')}</dl></details>`).join('')}
+    <p class="small muted" style="margin:0">«Pasar datos a la Ficha» rellena solo los campos vacíos (nombre, edad, sexo, altura, teléfono, salud, alergias, suplementos, tabaco, alcohol, sueño, alimentos, objetivo, días de entreno…) y añade su peso como revisión inicial si aún no tiene ninguno. No pisa nada de lo que ya hayas escrito.</p></div>`}
+async function formLink(){const id=+document.getElementById('fLink').value;const f=FORMS.find(x=>x.id===id);if(!f)return;f.client_id=CUR.id;try{await db.updateForm(id,{client_id:CUR.id})}catch(e){toast('No se ha podido enlazar');return}toast('Formulario enlazado');pendCount();renderCoach()}
+function formNum(t,min,max){const m=String(t||'').replace(/(\d),(\d)/g,'$1.$2').match(/\d+(?:\.\d+)?/g)||[];for(const x of m){const n=+x;if(n>=min&&n<=max)return n}return null}
+async function formToFicha(){const f=CUR&&formOf(CUR.id);if(!f)return;let n=0;const set=(k,v)=>{if(v===''||v==null)return;if(FICHA[k]===''||FICHA[k]==null||(Array.isArray(FICHA[k])&&!FICHA[k].length)){FICHA[k]=v;n++}};
+  set('nombre',fAns(f,/nombre y apellidos/i));
+  const ed=formNum(fAns(f,/^\W*\d*\.?\s*edad\b/i),10,99);if(ed)set('edad',String(ed));
+  const sp=fAns(f,/sexo y peso/i);if(/mujer|femen|chica/i.test(sp))set('sexo','Mujer');else if(/hombre|mascul|chico|var[oó]n/i.test(sp))set('sexo','Hombre');
+  let al=formNum(fAns(f,/^\W*\d*\.?\s*altura/i),1,250);if(al&&al<3)al=Math.round(al*100);if(al)set('altura',String(al));
+  set('tel',fAns(f,/tel[eé]fono/i));
+  set('patologias',[fAns(f,/patolog/i),(()=>{const x=fAns(f,/anal[ií]tica/i);return x&&!/^no\b/i.test(x)?'Analíticas: '+x:''})()].filter(Boolean).join(' · '));
+  set('medicacion',fAns(f,/medi.?aci[oó]n|medicaci/i));set('lesiones',fAns(f,/lesi[oó]n|limitaci[oó]n f[ií]sica/i));
+  set('alergias',fAns(f,/alergias/i));set('suplem',fAns(f,/suplement/i));set('tabaco',fAns(f,/fumas/i));set('alcohol',fAns(f,/alcohol/i));set('sueno',fAns(f,/horas duermes/i));
+  set('prefs',fAns(f,/alimentos que te gustan/i));set('evitar',fAns(f,/alimentos que no te gustan/i));
+  const ob=fAns(f,/objetivo principal/i);if(/ganar masa/i.test(ob)&&FICHA.objetivo!=='ganar'&&!FICHA._objSet){FICHA.objetivo='ganar';n++}
+  set('objLargo',[fAns(f,/meta espec[ií]fica/i),(()=>{const x=fAns(f,/en cu[aá]nto tiempo/i);return x?'Plazo: '+x:''})()].filter(Boolean).join(' · '));
+  const dsem=formNum(fAns(f,/cu[aá]ntos d[ií]as por semana puedes entrenar/i),1,7);if(dsem)set('diasSemana',String(dsem));
+  const dd=fAns(f,/qu[eé] d[ií]as de la semana/i);if(dd){const D=['domingo','lunes','martes','mi[eé]rcoles','jueves','viernes','s[aá]bado'];const arr=D.map((x,i)=>new RegExp(x,'i').test(dd)?i:-1).filter(i=>i>=0);if(arr.length&&!(FICHA.dias||[]).length){FICHA.dias=arr;n++}}
+  set('tipoEntreno',fAns(f,/si haces ejercicio/i));
+  const pe=formNum(sp,30,300);if(pe&&!allWeights().length){S.checkins.push({date:(f.submitted_at||f.created_at).slice(0,10),r:{},fotos:0,fotosP:[],nota:'Peso del formulario de onboarding',peso:pe});S.checkins.sort((a,b)=>a.date.localeCompare(b.date));n++}
+  f.imported_at=new Date().toISOString();try{await db.updateForm(f.id,{imported_at:f.imported_at})}catch(e){}
+  save();toast(n?`${n} dato${n>1?'s':''} pasado${n>1?'s':''} a la Ficha`:'La Ficha ya tenía esos datos');pendCount();renderCoach()}
+function formNewClient(id){const f=FORMS.find(x=>x.id===id);if(!f)return;openInvite();setTimeout(()=>{const g=k=>document.getElementById(k);if(g('nN'))g('nN').value=fAns(f,/nombre y apellidos/i)||f.nombre||'';if(g('nE'))g('nE').value=f.email||'';if(g('nT'))g('nT').value=fAns(f,/tel[eé]fono/i);if(g('nO')&&/ganar masa/i.test(fAns(f,/objetivo principal/i)))g('nO').value='ganar'},30)}

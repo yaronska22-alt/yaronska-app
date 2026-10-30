@@ -112,6 +112,8 @@ const db = {
     out._photos = files; return out;
   },
   async photoBlob(path) { return ok(await sb.storage.from('checkins').download(path)); },
+  async formResponses() { return ok(await sb.from('form_responses').select('*').order('created_at', { ascending: false }).limit(300)); },
+  async updateForm(id, row) { ok(await sb.from('form_responses').update(row).eq('id', id)); },
   async touchSeen() { try { await sb.rpc('touch_seen'); } catch (e) {} },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
