@@ -375,6 +375,7 @@ function vHome(){
       return F.length?`${fatStats(F,FICHA.wFrom?'Desde '+fdate(F[0].date):'Inicio')}${dualChart(P,F.map(x=>({d:x.date,v:x.v})),{color:ok?'#7CE38B':'#FFD60A'})}`:lineChart(P,{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})})()}
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
+  ${streakCard()}
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
     <div class="phase-top"><span class="lbl">${PROG().w} ${Math.min(S.phase,PH().length-1)+1} de ${PH().length}</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
@@ -483,7 +484,7 @@ function exCard(e,ei,label){
     ${nx&&nx.sets?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08);flex-direction:column;align-items:stretch;gap:4px"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span>${nx.sets.map((x,i)=>x.kg||x.reps||x.int?`<b style="color:var(--ok);font-size:13px">Serie ${i+1}${SS[i]&&SS[i].t?' · '+esc(SET_S[SS[i].t]||''):''}: ${[x.kg?esc(x.kg)+' kg':'',x.reps?'× '+esc(x.reps):'',x.int?'· '+esc(x.int):''].filter(Boolean).join(' ')}</b>`:'').join('')}</div>`
     :nx?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08)"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span><b style="color:var(--ok)">${[nx.kg?esc(nx.kg)+' kg':'',nx.reps?'× '+esc(nx.reps):'',nx.int?'· '+esc(nx.int):''].filter(Boolean).join(' ')}</b></div>`:sg?`<div class="target"><span>Objetivo hoy · <small class="muted">${esc(sg.why)}</small></span><b>${nf(sg.kg,1).replace(',0','')} kg · ${esc(sg.txt)}</b></div>`:''}
     <div class="sets2"><span class="h">#</span><span class="h">Semana pasada</span><span class="h">Kg</span><span class="h">Reps</span><span class="h">RIR real</span>
-    ${SS.map((x,si)=>{const p=lastS&&(lastS.sets.find(z=>z.i===si)||(lastS.sets[si]&&lastS.sets[si].i===undefined?lastS.sets[si]:null));return `<span class="sidx">${si+1}${x.t&&SET_S[x.t]?`<small>${SET_S[x.t]}</small>`:''}</span><span class="prev">${p?`${nf(p.kg,1).replace(',0','')} kg × ${p.reps}<br>RIR ${p.rir??'—'}`:'—'}</span><input id="kg-${dayIdx}-${ei}-${si}" inputmode="decimal" placeholder="${nx&&nx.sets&&nx.sets[si]&&nx.sets[si].kg?esc(nx.sets[si].kg):nx&&nx.kg?esc(nx.kg):x.kg?esc(String(x.kg).replace('.',',')):p?nf(p.kg,1).replace(',0',''):'kg'}" aria-label="Kilos serie ${si+1}"><input id="rp-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="${p?p.reps:'reps'}" aria-label="Repeticiones serie ${si+1}"><input id="ri-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="RIR" aria-label="RIR real serie ${si+1}">`}).join('')}</div>
+    ${SS.map((x,si)=>{const p=lastS&&(lastS.sets.find(z=>z.i===si)||(lastS.sets[si]&&lastS.sets[si].i===undefined?lastS.sets[si]:null));return `<span class="sidx">${si+1}${x.t&&SET_S[x.t]?`<small>${SET_S[x.t]}</small>`:''}</span><span class="prev">${p?`${nf(p.kg,1).replace(',0','')} kg × ${p.reps}<br>RIR ${p.rir??'—'}`:'—'}</span><input id="kg-${dayIdx}-${ei}-${si}" inputmode="decimal" placeholder="${nx&&nx.sets&&nx.sets[si]&&nx.sets[si].kg?esc(nx.sets[si].kg):nx&&nx.kg?esc(nx.kg):x.kg?esc(String(x.kg).replace('.',',')):p?nf(p.kg,1).replace(',0',''):'kg'}" aria-label="Kilos serie ${si+1}"><input id="rp-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="${p?p.reps:'reps'}" aria-label="Repeticiones serie ${si+1}" onchange="restGo(${dayIdx},${ei},${si},this)"><input id="ri-${dayIdx}-${ei}-${si}" inputmode="numeric" placeholder="RIR" aria-label="RIR real serie ${si+1}">`}).join('')}</div>
     <details class="exnote"><summary>💬 Nota para Yaron <small class="muted">· cambio, dolor, molestia…</small></summary><textarea id="nt-${dayIdx}-${ei}" rows="2" placeholder="Ej.: molestia en el hombro derecho en la última serie / cambié a mancuernas porque la máquina estaba ocupada"></textarea><small class="muted">Se envía al guardar el entreno. Si hoy no has podido hacerlo, puedes guardar solo la nota.</small></details>
     ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}${last.nota?` · <span class="y">tu nota: «${esc(last.nota)}»</span>`:''}</div>`:''}</article>`;
 }
@@ -517,19 +518,26 @@ function vTrain(){
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
 }
 function saveSession(){
-  const d=S.routine[dayIdx];let any=false;const date=iso(new Date());
+  const d=S.routine[dayIdx];let any=false;const date=iso(new Date());const PRS=[];
   d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');const kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`)),reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`)),rir=parseInt(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
+    if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
   const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
-  save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d);else toast('Nota enviada a Yaron');
+  save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
-function doneSheet(d){const T=wkTrain();const sh=document.getElementById('sheet');
+// ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
+function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
+  const val=s=>s.kg>0?e1rm(s):s.reps;const prev=Math.max(...H.flatMap(h=>h.sets.map(val)));const best=sets.reduce((b,s)=>val(s)>val(b)?s:b,sets[0]);const now=val(best);
+  if(!(now>prev+(best.kg>0?0.25:0)))return null;
+  return {n,kg:best.kg,reps:best.reps,bw:!(best.kg>0),now,prev,up:best.kg>0?now-prev:now-prev}}
+function prHTML(P){return P&&P.length?`<div class="prbox"><b>🏆 ${P.length>1?P.length+' récords nuevos':'¡Récord nuevo!'}</b>${P.map(x=>`<span><b>${esc(x.n)}</b>: ${x.bw?x.reps+' reps (+'+nf(x.up,0)+')':nf(x.kg,1).replace(',0','')+' kg × '+x.reps+` <small class="muted">· 1RM est. ${nf(x.now,1).replace(',0','')} kg (+${nf(x.up,1).replace(',0','')})</small>`}</span>`).join('')}</div>`:''}
+function doneSheet(d,PRS){const T=wkTrain();const sh=document.getElementById('sheet');
   const msg=d.opt?'Sesión opcional hecha: esto es un extra 🔥':T.left?`Te ${T.left===1?'queda':'quedan'} <b>${T.left}</b> entreno${T.left===1?'':'s'} esta semana.`:'¡Has completado todos los entrenos de la semana! 💪';
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Entreno hecho"><div class="sheet-b donesh"><div class="donebig">✅</div><h2>¡Entreno hecho!</h2><p class="muted" style="margin:0">${esc(d.d)}</p>
     <div class="wkdots big">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</div>
-    <p style="margin:0;font-size:16px"><b>${T.done} de ${T.target}</b> esta semana${T.opt?` · + ${T.opt} opcional`:''}</p><p style="margin:0">${msg}</p>
+    <p style="margin:0;font-size:16px"><b>${T.done} de ${T.target}</b> esta semana${T.opt?` · + ${T.opt} opcional`:''}</p><p style="margin:0">${msg}</p>${prHTML(PRS)}
     <button class="btn" type="button" onclick="closeSheet();window.scrollTo({top:0,behavior:'smooth'})">Genial</button></div></div>`;
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 function vCheck(){
@@ -1500,3 +1508,37 @@ function cPend(){const d=pendData();const fd=x=>new Date(x+'T12:00').toLocaleDat
   ${box('🔁','Renovaciones · próximos 7 días',d.ren,'Ninguna renovación esta semana.',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"ficha")'><b>${esc(x.n)}</b><small class="${x.late?'badc':''}">${x.late?'Vencida el ':'Renueva el '}${fd(x.date)}</small></button>`)}
   ${d.noLink.length?box('✉️','Sin activar la cuenta',d.noLink,'',x=>`<button type="button" class="prow" onclick='inviteMsg(${nmq(x.id)})'><b>${esc(x.n)}</b><small>Aún no ha creado su cuenta · reenviar invitación</small></button>`):''}
   </div>`}
+
+// ================= RACHAS =================
+function dayStreak(){const ok=d=>d&&d.diet===true&&d.stepsOk===true;let n=0,i=ok(S.daily[iso(new Date())])?0:1;
+  for(;i<400;i++){if(ok(S.daily[iso(daysAgo(i))]))n++;else break}
+  let best=0,cur=0;Object.keys(S.daily).sort().forEach((k,j,a)=>{const prevOk=j&&((new Date(k+'T12:00')-new Date(a[j-1]+'T12:00'))/864e5===1);if(ok(S.daily[k])){cur=prevOk&&cur?cur+1:1;best=Math.max(best,cur)}else cur=0});return {n,best:Math.max(best,n)}}
+function weekStreak(){const optN=new Set(S.routine.filter(d=>d.opt).map(d=>d.d));const nReq=S.routine.filter(d=>!d.opt).length;const target=Math.max(1,+FICHA.diasSemana||nReq||1);
+  const cnt=off=>{const W=volWeek(off);const ses=new Set();Object.values(S.hist).forEach(a=>a.forEach(h=>{if(h.date>=W.a&&h.date<=W.b&&h.sets&&h.sets.length&&!optN.has(h.day))ses.add(h.date+'|'+h.day)}));return ses.size};
+  let n=0;const cur=cnt(0)>=target;for(let o=-1;o>-60;o--){if(cnt(o)>=target)n++;else break}return {n:n+(cur?1:0),cur}}
+function streakCard(){if(view!=='client'&&!S)return '';const D=dayStreak(),W=weekStreak();if(D.n<2&&W.n<1)return '';
+  return `<section class="streaks">${D.n>=2?`<div class="stk1"><span class="fire">🔥</span><div><b>${D.n} días seguidos</b><small>cumpliendo dieta y pasos${D.best>D.n?` · tu mejor racha: ${D.best}`:''}</small></div></div>`:''}${W.n>=1?`<div class="stk1"><span class="fire">💪</span><div><b>${W.n} semana${W.n>1?'s':''} seguida${W.n>1?'s':''}</b><small>completando todos tus entrenos</small></div></div>`:''}</section>`}
+
+// ================= TEMPORIZADOR DE DESCANSO =================
+function restSec(t){t=String(t||'').toLowerCase().replace(',','.');let m;
+  if((m=/(\d+):(\d{1,2})/.exec(t)))return +m[1]*60+ +m[2];
+  if((m=/(\d+(?:\.\d+)?)\s*(?:-\s*\d+(?:\.\d+)?)?\s*(min|m\b|')/.exec(t)))return Math.round(+m[1]*60);
+  if((m=/(\d+)\s*(?:-\s*\d+)?\s*(s|seg|")/.exec(t)))return +m[1];
+  if((m=/^\s*(\d+)\s*$/.exec(t)))return +m[1]>10?+m[1]:+m[1]*60;return 0}
+let RT=null;
+const rtSound=()=>{try{return localStorage.getItem('rtSound')!=='0'}catch(e){return true}};
+function restGo(di,ei,si,el){if(!el||!el.value.trim())return;const d=S.routine[di];if(!d)return;const e=d.ex[ei];if(!e)return;
+  if(e.blk){const mates=d.ex.map((x,i)=>({x,i})).filter(o=>o.x.blk===e.blk);if(mates.length>1&&mates[mates.length-1].i!==ei)return}
+  const x=exSets(e)[si]||{};const sec=restSec(x.rest||e.rest);if(!sec)return;
+  const last=si===e.s-1;const next=last?(d.ex[ei+1]?d.ex[ei+1].n:''):`Serie ${si+2} de ${e.n}`;
+  RT={end:Date.now()+sec*1000,total:sec,next,done:false};rtTick();clearInterval(RT.iv);RT.iv=setInterval(rtTick,250);try{if(window.AudioContext&&!window._ac)window._ac=new AudioContext()}catch(e){}}
+function rtBeep(){if(!rtSound())return;try{const ac=window._ac||new AudioContext();window._ac=ac;[0,0.25,0.5].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=i===2?1175:880;g.gain.setValueAtTime(.0001,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.4,ac.currentTime+t+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t+.2);o.connect(g).connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.22)})}catch(e){}}
+function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){el=document.createElement('div');el.id='rtBar';el.className='rtbar';document.body.appendChild(el)}
+  const left=Math.max(0,Math.ceil((RT.end-Date.now())/1000));const mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
+  if(left<=0&&!RT.done){RT.done=true;try{navigator.vibrate&&navigator.vibrate([300,120,300,120,500])}catch(e){}rtBeep();setTimeout(()=>{if(RT&&RT.done)rtStop()},6000)}
+  const pct=RT.total?Math.min(100,(1-left/RT.total)*100):100;
+  el.innerHTML=`<div class="rtfill" style="width:${pct}%"></div><div class="rtin">${RT.done?`<b class="go">💥 ¡A por ella!</b><small>${esc(RT.next||'Siguiente serie')}</small>`:`<b>⏱ ${mm}:${ss}</b><small>Descanso${RT.next?' · luego: '+esc(RT.next):''}</small>`}</div>
+    <div class="rtbtns">${RT.done?'':`<button type="button" onclick="rtAdd(-15)" aria-label="Quitar 15 segundos">−15</button><button type="button" onclick="rtAdd(15)" aria-label="Añadir 15 segundos">+15</button>`}<button type="button" onclick="rtSnd()" aria-label="Sonido">${rtSound()?'🔔':'🔕'}</button><button type="button" onclick="rtStop()" aria-label="Cerrar temporizador">✕</button></div>`}
+function rtAdd(s){if(!RT)return;RT.end+=s*1000;RT.total=Math.max(1,RT.total+s);rtTick()}
+function rtSnd(){try{localStorage.setItem('rtSound',rtSound()?'0':'1')}catch(e){}rtTick()}
+function rtStop(){if(RT)clearInterval(RT.iv);RT=null;const el=document.getElementById('rtBar');if(el)el.remove()}

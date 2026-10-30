@@ -593,3 +593,18 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .revlist{display:flex;flex-direction:column;gap:6px}
 .revitem{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px}
 .revitem summary{cursor:pointer}
+/* récords y rachas */
+.prbox{display:flex;flex-direction:column;gap:4px;background:rgba(255,214,10,.1);border:1px solid var(--y);border-radius:10px;padding:10px 12px;text-align:left;width:100%}
+.prbox>b{color:var(--y);font-size:15px}
+.streaks{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.stk1{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:10px 12px}
+.stk1 .fire{font-size:24px}.stk1 b{display:block;font-size:15px}.stk1 small{color:var(--muted);font-size:12px}
+/* temporizador de descanso */
+.rtbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:65;width:min(440px,calc(100% - 20px));display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--y);border-radius:14px;padding:10px 10px 10px 14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.rtfill{position:absolute;left:0;top:0;bottom:0;background:rgba(255,214,10,.14);transition:width .25s linear}
+.rtin{position:relative;display:flex;flex-direction:column;flex:1;min-width:0}
+.rtin b{font-size:22px;font-variant-numeric:tabular-nums;font-family:var(--display)}.rtin b.go{color:var(--ok);font-size:18px}
+.rtin small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtbtns{position:relative;display:flex;gap:4px}
+.rtbtns button{min-width:40px;height:38px;border-radius:8px;border:1px solid var(--line-2);background:var(--bg);color:var(--fg);font-weight:700;font-size:13px}
+@media (min-width:901px){body:not(.mobile-mode) .rtbar{bottom:24px}}
