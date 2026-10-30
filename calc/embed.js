@@ -64,6 +64,28 @@
     if(opts.preview)return {sum,done};
     return {source:'calc',mode:opts.mode||'auto',fecha:new Date().toISOString().slice(0,10),T:{plan:planOf(T),ing:ingOf(T)},R:R?{plan:planOf(R),ing:ingOf(R)}:null,sum};
   };
+  // Lista de la compra → app del cliente (misma lista que el PDF, con las opciones elegidas en la ventana)
+  function shopForApp(){
+    const v=id=>{const e=document.getElementById(id);return e?e.value:''};
+    const source=v('slSource')||'meals',days=parseInt(v('slWeeks'))||7,margin=parseFloat(v('slMargin'))||1,supl=v('slSupl')==='yes',dist=v('slDist')||'even';
+    const {sections,total}=buildShoppingList(days,margin,supl,source,dist);if(!total)return null;
+    const out=[];
+    SHOPPING_SECTIONS_ORDER.forEach(sec=>{const list=sections[sec];if(!list||!list.length)return;const notes=sec==='Notas del protocolo';
+      out.push({s:sec,notes:notes||undefined,items:list.map(item=>{if(notes)return {n:String(item.name)};
+        let pk='',raw='',hint='';
+        if(item.note&&!item.grams){pk=item.note}
+        else{raw=formatShoppingQty(item.grams,item.unit||'g');const info=getSalesUnitInfo(item.matchName||item.name,item.grams,item.unit||'g');
+          if(item.packOverride)pk=item.packOverride;else if(info&&info.packsLabel!==raw){pk=info.packsLabel;hint=info.hint||''}else{pk=raw;raw=''}
+          if(pk===raw)raw=''}
+        const o={n:String(item.name),q:pk};if(raw)o.r=raw;if(hint)o.h=hint;return o})})});
+    const sel=document.getElementById('slDist');const modo=source==='protocol'?(sel&&sel.selectedOptions[0]?sel.selectedOptions[0].textContent.replace(/^⭐\s*/,''):''):'Día tipo del constructor';
+    return {at:new Date().toISOString(),periodo:days===7?'1 semana':days===14?'2 semanas':'4 semanas',modo,margen:margin>1?'+'+Math.round((margin-1)*100)+'% de margen':'',sections:out};
+  }
+  function addShopBtn(){const m=document.querySelector('#shoppingListModal .modal-actions');if(!m||document.getElementById('ysShopApp'))return;
+    const b=document.createElement('button');b.id='ysShopApp';b.className='btn';b.style.cssText='background:#FFD60A;color:#000;';b.textContent='📲 Enviar a su app';
+    b.onclick=()=>{const d=shopForApp();if(!d){alert('La lista está vacía.');return}send({type:'shop',data:d});b.textContent='✅ Enviada a su app';setTimeout(()=>{b.textContent='📲 Enviar a su app'},2500)};
+    m.insertBefore(b,m.firstChild.nextSibling)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addShopBtn);else addShopBtn();
   // Mensajes de la app
   window.addEventListener('message',e=>{
     if(e.origin!==ORIGIN||!e.data||!e.data.ys)return;const m=e.data;

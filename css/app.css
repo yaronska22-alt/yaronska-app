@@ -703,3 +703,7 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .tline,.ptips{display:flex;flex-direction:column;gap:6px}
 .tline div{display:grid;grid-template-columns:44px 1fr;gap:10px;font-size:14px}.tline b{color:var(--y);font-family:var(--display)}
 .ptips div{background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:8px 11px;font-size:13.5px}.ptips b{display:block}.ptips span{color:var(--muted)}
+.shn{flex:1;min-width:0}.shn small{display:block;color:var(--muted);font-size:11.5px}
+.shq{text-align:right;white-space:nowrap}.shq b{display:block;font-family:var(--display);font-size:14px}.shq small{display:block;color:var(--muted);font-size:11px}
+.shi.done .shq{text-decoration:line-through}
+.shmeta{display:flex;flex-wrap:wrap;gap:6px}.shmeta span{font-size:11.5px;border:1px solid var(--line-2);border-radius:20px;padding:2px 9px;color:var(--muted)}.shmeta span:first-child{border-color:var(--y);color:var(--y)}

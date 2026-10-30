@@ -90,7 +90,7 @@ let SNAP=null;
 let RECOVERY=false,OFFER_PK=false; // llegó desde el email de "he olvidado mi contraseña"      // copia de lo último guardado, para enviar solo lo que cambia
 
 function fichaPublic(){const o={};Object.keys(FICHA).forEach(k=>{if(!(k in ADMIN_MAP))o[k]=FICHA[k]});return o}
-function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCase()||CUR.email,ficha:fichaPublic(),prefs:S.profile,fase:S.phase,semana:S.week,semanas_fase:S.weeksPhase,kcal:S.kcal,rest_on:S.restOn,plan:S.planCalc?S.planCalc:S.planOn?{auto:true,kcal:S.kcal}:null,rutina:S.routine,pautas:S.next}}
+function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCase()||CUR.email,ficha:fichaPublic(),prefs:S.profile,fase:S.phase,semana:S.week,semanas_fase:S.weeksPhase,kcal:S.kcal,rest_on:S.restOn,plan:S.planCalc?(S.shopList?Object.assign({},S.planCalc,{shop:S.shopList}):S.planCalc):S.planOn?(S.shopList?{auto:true,kcal:S.kcal,shop:S.shopList}:{auto:true,kcal:S.kcal}):null,rutina:S.routine,pautas:S.next}}
 function adminRow(){const r={client_id:CUR.id};Object.entries(ADMIN_MAP).forEach(([k,col])=>{let v=FICHA[k];if(v===''||v==null)v=null;if(col==='pago'&&v!=null)v=+v;if(col==='cheatmeals'&&v!=null)v=Math.round(+v);r[col]=v});if(!r.estado)r.estado='active';return r}
 const wBody=w=>({client_id:CUR.id,fecha:w.date,peso:w.peso});
 const cBody=c=>{const {id,date,...data}=c;return {client_id:CUR.id,fecha:date,data}};
@@ -103,7 +103,7 @@ function fromDb(d){
   if(d.admin)Object.entries(ADMIN_MAP).forEach(([k,col])=>{S.ficha[k]=d.admin[col]==null?'':d.admin[col]});
   if(!S.ficha.email)S.ficha.email=c.email;
   S.profile=Object.assign(clone(PROFILE_DEF),c.prefs||{});
-  S.phase=c.fase;S.week=c.semana;S.weeksPhase=c.semanas_fase;S.kcal=c.kcal;S.restOn=c.rest_on;S.planOn=!!c.plan;S.planCalc=c.plan&&c.plan.source==='calc'?c.plan:null;S.routine=c.rutina||[];
+  S.phase=c.fase;S.week=c.semana;S.weeksPhase=c.semanas_fase;S.kcal=c.kcal;S.restOn=c.rest_on;S.planOn=!!c.plan;S.shopList=c.plan&&c.plan.shop||null;S.planCalc=c.plan&&c.plan.source==='calc'?c.plan:null;if(S.planCalc&&S.planCalc.shop){S.planCalc=Object.assign({},S.planCalc);delete S.planCalc.shop}S.routine=c.rutina||[];
   S.weights=d.weights.map(w=>({id:w.id,date:w.fecha,peso:+w.peso}));
   S.checkins=d.checkins.map(x=>Object.assign({r:{}},x.data,{id:x.id,date:x.fecha}));
   d.daily.forEach(x=>{S.daily[x.fecha]=x.data});
@@ -912,7 +912,8 @@ function cDieta(){
   const pl=S.planCalc?`Enviado el ${new Date(S.planCalc.fecha+'T12:00').toLocaleDateString('es-ES')}${S.planCalc.R?' · con días sin entreno':''}`:S.planOn?`Plan antiguo (automático)`:'Ninguno todavía';
   return `<div class="panel"><div class="sec-h"><div><span class="lbl">Plan que ve el cliente en su app</span><b style="display:block;font-size:15px">${esc(pl)}</b></div>
     <div class="row"><button class="btn sm" type="button" onclick="calcSend()">📲 Enviar plan a la app</button><button class="btn ghost sm" type="button" onclick="calcFull(true)">⛶ Pantalla completa</button><button class="btn ghost sm" type="button" onclick="setView('client');go('food')">Ver como el cliente</button></div></div>
-    <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p></div>
+    <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p>
+    <p class="small muted" style="margin:0">🛒 Lista de la compra: ábrela en el Protocolo, elige periodo, modo y margen y pulsa <b style="color:var(--fg)">📲 Enviar a su app</b>. ${S.shopList?`<span class="good">Enviada el ${esc(new Date(S.shopList.at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}))} · ${esc(S.shopList.periodo||'')}</span>`:'Aún no le has enviado ninguna.'}</p></div>
   ${restPanel()}
   <div id="calcSlot" class="calc-slot"><p class="muted" id="calcLoading">Cargando la Calculadora…</p></div>`;
 }
@@ -951,6 +952,7 @@ window.addEventListener('message',e=>{
   if(m.type==='loaded'){const l=document.getElementById('calcLoading');if(l)l.remove()}
   if(m.type==='save'&&m.client&&m.client.id){CALC.pending={id:m.client.id,client:m.client,foods:m.customFoods};setSaveState('busy');clearTimeout(CALC.saveT);CALC.saveT=setTimeout(()=>calcFlush().then(()=>setSaveState('ok')),800)}
   if(m.type==='export'&&CALC.exportCb){const cb=CALC.exportCb;CALC.exportCb=null;cb(m.data)}
+  if(m.type==='shop'&&m.data&&CUR&&CALC.forId===CUR.id){if(!S.planOn){toast('Primero envía el plan a la app');return}S.shopList=m.data;save();toast('🛒 Lista de la compra enviada a la app de '+(CLIENT.name||'tu cliente').split(' ')[0]);renderCoach()}
 });
 function calcSend(){
   if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
@@ -1841,7 +1843,22 @@ function shopData(){const out={};const add=(g,str)=>foodAlts(str).forEach(n=>{co
     (P.breakfast||[]).forEach(o=>(o.items||[]).forEach(x=>add('Desayunos y tentempiés',x)))});
   const G=['Proteínas','Hidratos','Verduras','Fruta','Grasas','Desayunos y tentempiés'];return G.filter(g=>out[g]).map(g=>({g,items:[...out[g].entries()].map(([k,n])=>({k,n}))}))}
 const SHOP=()=>{const c=S.profile.compra=S.profile.compra||{};c.done=c.done||[];c.hide=c.hide||[];c.extra=c.extra||[];return c};
-function vShop(){const C=SHOP();const D=shopData();const hid=new Set(C.hide),done=new Set(C.done);
+function vShop(){const C=SHOP();const L=S.shopList;
+  if(L&&L.sections&&L.sections.length){if(C.listAt!==L.at){C.listAt=L.at;C.done=[];C.hide=[]}
+    const done=new Set(C.done),hid=new Set(C.hide);
+    const row=(k,it,own)=>`<div class="shi ${done.has(k)?'done':''}"><button type="button" class="shc" onclick="shopTog(${esc(JSON.stringify(k))})" aria-pressed="${done.has(k)}"><i>${done.has(k)?'✓':''}</i><span class="shn">${esc(it.n)}${it.h?`<small>${esc(it.h)}</small>`:''}</span>${it.q?`<span class="shq"><b>${esc(it.q)}</b>${it.r?`<small>${esc(it.r)}</small>`:''}</span>`:''}</button><button type="button" class="shx" onclick="shopDel(${esc(JSON.stringify(k))},${own?1:0})" aria-label="Quitar ${esc(it.n)} de la lista">✕</button></div>`;
+    const G=L.sections.map(g=>({s:g.s,notes:g.notes,items:g.items.map(it=>Object.assign({k:'y|'+g.s+'|'+it.n},it)).filter(it=>g.notes||!hid.has(it.k))})).filter(g=>g.items.length);
+    const all=G.filter(g=>!g.notes).reduce((a,g)=>a+g.items.length,0)+C.extra.length,nDone=C.done.filter(k=>!hid.has(k)).length;
+    return `<div class="panel shop">
+    <div class="sec-h"><h2>Lista de la compra</h2><span class="small muted">${nDone} de ${all}</span></div>
+    <div class="shmeta"><span>Preparada por Yaron</span><span>${esc(L.periodo||'')}</span>${L.margen?`<span>${esc(L.margen)}</span>`:''}<span>${esc(new Date(L.at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}))}</span></div>
+    <p class="small muted" style="margin:0">Cantidades totales ya sumadas. Toca lo que ya tienes o vas metiendo en el carro para tacharlo. Con ✕ lo quitas si no lo vas a comprar.</p>
+    <form class="row shadd" onsubmit="shopAdd(event)"><input id="shNew" maxlength="60" placeholder="Añadir algo (ej. papel de horno)" aria-label="Añadir a la lista"><button class="btn sm" type="submit">Añadir</button></form>
+    ${C.extra.length?`<div class="shg"><span class="lbl">Añadido por ti</span>${C.extra.map(n=>row('+'+n.toLowerCase(),{n},true)).join('')}</div>`:''}
+    ${G.map(g=>`<div class="shg"><span class="lbl">${esc(g.s)}</span>${g.notes?g.items.map(it=>`<p class="small muted" style="margin:0">${esc(it.n)}</p>`).join(''):g.items.map(it=>row(it.k,it)).join('')}</div>`).join('')}
+    <div class="row" style="justify-content:space-between;margin-top:6px">${nDone?`<button class="btn sm" type="button" onclick="shopReset()">🧾 Nueva compra (destachar todo)</button>`:'<span></span>'}${C.hide.length?`<button class="btn ghost sm" type="button" onclick="shopRestore()">↺ Recuperar ${C.hide.length} quitado${C.hide.length>1?'s':''}</button>`:''}</div>
+  </div>`}
+  const D=shopData();const hid=new Set(C.hide),done=new Set(C.done);
   const row=(k,n,own)=>`<div class="shi ${done.has(k)?'done':''}"><button type="button" class="shc" onclick="shopTog(${esc(JSON.stringify(k))})" aria-pressed="${done.has(k)}"><i>${done.has(k)?'✓':''}</i><span>${esc(n)}</span></button><button type="button" class="shx" onclick="shopDel(${esc(JSON.stringify(k))},${own?1:0})" aria-label="Quitar ${esc(n)} de la lista">✕</button></div>`;
   const groups=D.map(G=>({g:G.g,items:G.items.filter(x=>!hid.has(x.k))})).filter(G=>G.items.length);
   const nAll=groups.reduce((a,G)=>a+G.items.length,0)+C.extra.length,nDone=[...done].filter(k=>!hid.has(k)).length;
