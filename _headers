@@ -43,3 +43,6 @@
   ! Permissions-Policy
   Permissions-Policy: camera=(self), microphone=(self), display-capture=(self), geolocation=()
   Cache-Control: no-cache
+
+/rec.webmanifest
+  Cache-Control: no-cache

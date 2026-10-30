@@ -1,0 +1,16 @@
+{
+  "id": "/rec.html",
+  "name": "Yaronska Rec",
+  "short_name": "Yaronska Rec",
+  "description": "Grabador de pantalla y cámara para los feedbacks de Yaronska_Fit",
+  "start_url": "/rec.html",
+  "scope": "/rec",
+  "display": "standalone",
+  "background_color": "#0A0907",
+  "theme_color": "#0A0907",
+  "lang": "es",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

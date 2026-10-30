@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0A0907">
 <link rel="icon" href="img/icon-192.png">
+<link rel="manifest" href="rec.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@600;800;900&family=Onest:wght@400;500;600&display=swap">
@@ -68,7 +69,7 @@ select:focus,input:focus{border-color:var(--y)}
 </head>
 <body>
 <div class="wrap">
-  <header><div class="brand">YARONSKA<b>_FIT</b> · REC</div><span class="lbl" id="ver">Grabador de feedback</span></header>
+  <header><div class="brand">YARONSKA<b>_FIT</b> · REC</div><span class="row"><button class="btn sm" id="bInst" type="button" hidden>⬇ Instalar en el ordenador</button><span class="lbl" id="ver">Grabador de feedback</span></span></header>
   <div class="warn" id="warn"></div>
   <div class="grid">
     <div>
@@ -242,6 +243,12 @@ async function finish(){
   if(camStream&&MODE!=='screen')$('pv').srcObject=camStream;else{$('pv').srcObject=null;$('ph').style.display=''}
   const L=$('last');L.innerHTML=`<label class="lbl">Última grabación</label><div class="list"><div class="item"><div><b>${fileName.replace(/</g,'')}</b><br><small>${Math.floor(secs/60)} min ${secs%60} s · ${where}</small></div></div></div>`+(dirH?'<p class="hint">Cuando Google Drive termine de subirlo: clic derecho en el archivo → Compartir → Copiar enlace.</p>':'');
   toast('✅ Vídeo listo · '+where,5000)}
+// ---------- instalar como programa (Chrome / Edge)
+let INST=null;const standalone=()=>matchMedia('(display-mode: standalone)').matches;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST=e;$('bInst').hidden=false});
+window.addEventListener('appinstalled',()=>{$('bInst').hidden=true;toast('✅ Instalada: la tienes en el escritorio y en el menú de aplicaciones')});
+$('bInst').onclick=async()=>{if(!INST)return;INST.prompt();await INST.userChoice;INST=null;$('bInst').hidden=true};
+if(!standalone()&&navigator.serviceWorker)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 $('bRec').onclick=start;$('bPause').onclick=pause;$('bStop').onclick=stop;
 document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();rec?stop():start()}});
 window.addEventListener('beforeunload',e=>{if(rec){e.preventDefault();e.returnValue=''}});
