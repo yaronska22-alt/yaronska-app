@@ -23,10 +23,10 @@ await p.click('text=+ Nuevo cliente');await p.fill('#nN','José Martínez');awai
 log('3 invite:',(await p.textContent('.sheet .note')).slice(0,120));await shot('t3-invite');
 await p.click('.sheet >> text=Cerrar');
 // ficha: pago, tipo, pasos, dias
-await p.fill('#f-pago','180');await p.dispatchEvent('#f-pago','change');await p.selectOption('#f-tipo','quarterly');await wait(100);
-await p.fill('#f-pasosT','8000');await p.dispatchEvent('#f-pasosT','change');await p.fill('#f-pasosR','10000');await p.dispatchEvent('#f-pasosR','change');
+await p.evaluate(()=>{fichaTab='subs';renderCoach()});await wait(100);await p.fill('#f-pago','180');await p.dispatchEvent('#f-pago','change');await p.selectOption('#f-tipo','quarterly');await wait(100);
+await p.evaluate(()=>{fichaTab='entreno';renderCoach()});await wait(100);await p.fill('#f-pasosT','8000');await p.dispatchEvent('#f-pasosT','change');await p.fill('#f-pasosR','10000');await p.dispatchEvent('#f-pasosR','change');
 for(const d of ["Lun","Mié","Vie"]){await p.click(`.cmain .chip:text-is("${d}")`);await wait(100)}
-await p.fill('#f-alergias','Frutos secos');await p.dispatchEvent('#f-alergias','change');log('  FICHA.alergias now',await p.evaluate(()=>FICHA.alergias),await p.evaluate(()=>J(clientRow()).includes('Frutos')));
+await p.evaluate(()=>{fichaTab='salud';renderCoach()});await wait(100);await p.fill('#f-alergias','Frutos secos');await p.dispatchEvent('#f-alergias','change');log('  FICHA.alergias now',await p.evaluate(()=>FICHA.alergias),await p.evaluate(()=>J(clientRow()).includes('Frutos')));
 await wait(900);
 let st=await p.evaluate(()=>window.__mock);
 const c=st.clients[0];log('4 db ficha has pago?',('pago' in c.ficha),'alergias',c.ficha.alergias,'dias',JSON.stringify(c.ficha.dias),'admin',JSON.stringify(st.client_admin[0]));

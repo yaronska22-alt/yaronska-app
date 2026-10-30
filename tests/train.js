@@ -12,7 +12,7 @@ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.messag
 await p.goto('http://app.test/');await w(300);
 await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
 if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
-await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);save();await flushSync();coachSel=id;coachTab='ficha';renderCoach()});
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);save();await flushSync();coachSel=id;coachTab='ficha';fichaTab='datos';renderCoach()});
 // fecha de nacimiento escribiendo
 await p.click('#f-nac');await p.keyboard.type('12031994');await p.keyboard.press('Tab');await w(400);
 console.log('nac:',await p.evaluate(()=>FICHA.nac),await p.evaluate(()=>document.activeElement.id),await p.evaluate(()=>{renderCoach();return document.querySelector('.kpis').innerText.replace(/\s+/g,' ')}),'| kpi edad:',(await p.textContent('.kpis')).replace(/\s+/g,' ').match(/Edad.{0,40}/)[0]);

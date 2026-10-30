@@ -19,14 +19,19 @@ await p.evaluate(async()=>{const st=window.__mock;st.form_responses=[{id:1,creat
  {s:'Sección 3 - Salud',q:'4. ¿Tienes alergias o intolerancias alimentarias?',a:'Lactosa'},{s:'Sección 3 - Salud',q:'5. ¿Te has hecho analíticas en los últimos 12 meses? Si sí, algún valor alterado?',a:'Ferritina baja'},
  {s:'Sección 6',q:'5. Alimentos que te gustan (escribe todos los que quieras, sin filtro)',a:'Arroz, pollo, fresas'},{s:'Sección 6',q:'6. Alimentos que NO te gustan / no quieres comer',a:'Brócoli'},
  {s:'Sección 8',q:'1. ¿Cuántos días por semana puedes entrenar de forma realista?',a:'4'},{s:'Sección 8',q:'2. ¿Qué días de la semana tienes más disponibilidad?',a:'Lunes, Miércoles, Viernes, Sábado'},
- {s:'Sección 9',q:'1. ¿Cuál es tu objetivo principal?',a:'Perder Grasa'},{s:'Sección 9',q:'2. ¿Tienes una meta específica en mente?',a:'Perder 8 kg'},{s:'Sección 9',q:'3. ¿En cuánto tiempo te gustaría lograrlo, siendo realista?',a:'5 meses'}]}];localStorage.setItem('mockdb',JSON.stringify(st));await openPend()});
+ {s:'Sección 2',q:'5. ¿Cuántas horas duermes por noche, en promedio?',a:'5 horas y media'},{s:'Sección 2',q:'6. ¿Cómo valorarías tu nivel de estrés actual? (1 bajo - 5 muy alto)',a:'4'},{s:'Sección 2',q:'3. ¿Tienes turnos? (sí, mañana / tarde / noche / rotativo / no)',a:'Rotativo'},
+ {s:'Sección 3',q:'7. ¿Fumas? Si sí, ¿Cuántos cigarros al día?',a:'No'},{s:'Sección 3',q:'8. ¿Bebes alcohol? ¿Cuántas unidades a la semana? (1 caña / 1 copa / 1 cerveza = 1 unidad)',a:'6 unidades'},
+ {s:'Sección 5',q:'3. Cuántas veces a la semana sueles tener un atracón (comer mucho más de lo habitual con sensación de descontrol)?',a:'2 - 3'},{s:'Sección 5',q:'7. ¿Has usado alguna vez estrategias compensatorias después de comer mucho? (vómito provocado / ejercicio compulsivo / laxantes / ayuno largo)',a:'No'},
+ {s:'Sección 4',q:'6. ¿Cómo describirías tu relación con tu cuerpo del 1 al 10? (1 muy mala - 10 muy buena)',a:'4'},{s:'Sección 6',q:'7. ¿Cuántas comidas semanales sueles hacer fuera de casa (eventos, amigos, trabajo)?',a:'4'},
+ {s:'Sección 7',q:'5. Cuando has dejado de entrenar / hacer dieta en el pasado, ¿Qué te ha pasado?',a:'Recuperaba todo'},{s:'Sección 10',q:'1. ¿Estás dispuesto a seguir un plan de entrenamiento y nutrición personalizado durante al menos 3 meses?',a:'Sí'},
+ {s:'Sección 9',q:'1. ¿Cuál es tu objetivo principal?',a:'Perder Grasa'},{s:'Sección 9',q:'2. ¿Tienes una meta específica en mente?',a:'Perder 8 kg'},{s:'Sección 9',q:'3. ¿En cuánto tiempo te gustaría lograrlo, siendo realista?',a:'2 meses'}]}];localStorage.setItem('mockdb',JSON.stringify(st));await openPend()});
 await w(500);console.log('pend:',(await p.textContent('.pendgrid')).replace(/\s+/g,' ').slice(0,200));
 await p.click('text=Aún no es cliente · darle de alta →');await w(300);console.log('invite:',await p.inputValue('#nN'),await p.inputValue('#nE'),await p.inputValue('#nT'));
 await p.click('button:text("Dar de alta")');await w(1200);if(await p.isVisible('text=Cerrar'))await p.click('.sheet >> text=Cerrar');
-await p.evaluate(()=>{coachTab='ficha';renderCoach()});await w(300);
+await p.evaluate(()=>{coachTab='ficha';fichaTab='form';renderCoach()});await w(300);
 console.log('panel:',(await p.textContent('.cqsec')).replace(/\s+/g,' ').slice(0,120));
 await p.click('text=⇩ Pasar datos a la Ficha');await w(600);
 console.log('ficha:',await p.evaluate(()=>JSON.stringify({n:FICHA.nombre,ed:FICHA.edad,sx:FICHA.sexo,al:FICHA.altura,tel:FICHA.tel,pat:FICHA.patologias,med:FICHA.medicacion,ale:FICHA.alergias,pr:FICHA.prefs,ev:FICHA.evitar,ds:FICHA.diasSemana,dias:FICHA.dias,obj:FICHA.objLargo,w:allWeights()})));
-await p.screenshot({path:OUT+'/f1.png'});
+await w(300);await p.screenshot({path:OUT+'/f1.png',fullPage:true});console.log('valor:',(await p.textContent('.vacts')).replace(/\s+/g,' ').slice(0,500));for(const t of ['datos','salud','nutri','psico','entreno','obj','subs']){await p.evaluate(t=>{fichaTab=t;renderCoach()},t);await w(100)}await p.evaluate(()=>{fichaTab='psico';renderCoach()});await p.screenshot({path:OUT+'/f2.png',fullPage:true});
 console.log('imported:',await p.evaluate(()=>window.__mock.form_responses[0].imported_at?1:0),'client:',await p.evaluate(()=>window.__mock.form_responses[0].client_id));
 console.log('ERR',errs);await b.close()})();
