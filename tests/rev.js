@@ -18,9 +18,9 @@ await p.fill('#apD','2026-10-01');await p.fill('#apm-peso','84,5');await p.fill(
 await p.screenshot({path:OUT+'/rv1.png'});
 await p.click('text=Guardar revisión');await w(900);
 console.log('ck:',await p.evaluate(()=>JSON.stringify(S.checkins)),'db:',await p.evaluate(()=>JSON.stringify(window.__mock.checkins.map(c=>c.data))));
-await p.click('text=✏️ Editar');await w(200);console.log('prefill cintura:',await p.inputValue('#apm-cintura'));
+await p.click('text=✏️ Editar >> nth=0');await w(200);console.log('prefill cintura:',await p.inputValue('#apm-cintura'));
 await p.fill('#apm-cintura','90');await p.fill('#apm-cuello','');await p.click('text=Guardar revisión');await w(900);
 console.log('ck2:',await p.evaluate(()=>JSON.stringify(S.checkins)),'fat:',await p.evaluate(()=>JSON.stringify(fatSeries())));
 await p.screenshot({path:OUT+'/rv2.png'});
-await p.click('text=＋ Añadir revisión');await w(200);await p.fill('#apD','2026-10-02');await p.fill('#apm-peso','84');await p.click('text=Guardar revisión');await w(900);console.log('antes',await p.evaluate(()=>window.__mock.checkins.length));await p.click('button[aria-label="Borrar revisión"] >> nth=0');await w(200);await p.screenshot({path:OUT+'/rv3.png'});await p.click('#delCkBtn');await w(800);console.log('después',await p.evaluate(()=>[window.__mock.checkins.length,S.checkins.map(c=>c.date).join()]));await p.evaluate(async()=>{await loadClient(CUR.id)});console.log('recarga',await p.evaluate(()=>S.checkins.map(c=>c.date).join()));
+await p.click('text=＋ Añadir revisión');await w(200);await p.fill('#apD','2026-10-02');await p.fill('#apm-peso','84');await p.click('text=Guardar revisión');await w(900);console.log('antes',await p.evaluate(()=>window.__mock.checkins.length));await p.screenshot({path:OUT+'/rv4.png'});await p.click('button[aria-label="Borrar revisión"] >> nth=0');await w(200);await p.screenshot({path:OUT+'/rv3.png'});await p.click('#delCkBtn');await w(800);console.log('después',await p.evaluate(()=>[window.__mock.checkins.length,S.checkins.map(c=>c.date).join()]));await p.evaluate(async()=>{await loadClient(CUR.id)});console.log('recarga',await p.evaluate(()=>S.checkins.map(c=>c.date).join()));
 console.log('ERR',errs);await b.close()})();

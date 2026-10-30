@@ -560,3 +560,9 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .revgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}.btn.del{color:var(--bad);margin-left:4px}
 .updbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--y);border-radius:12px;padding:10px 12px 10px 16px;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap}
+/* tabla de check-ins: fecha y acciones fijas a la izquierda */
+.cktbl td,.cktbl th{vertical-align:middle}
+.cktbl .stk{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:1px 0 0 var(--line)}
+.ckd{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ckacts{display:flex;gap:4px;white-space:nowrap}
+.ckcom{min-width:240px;white-space:normal}
