@@ -98,6 +98,20 @@ const db = {
     ]).then(rs => rs.map(ok));
     return { ck, wl };
   },
+  async exportAll() {
+    const T = ['clients', 'client_admin', 'weights', 'checkins', 'daily_logs', 'workout_logs', 'templates', 'diet_calc', 'coach_settings', 'payments'];
+    const out = {};
+    for (const t of T) {
+      const rows = []; let from = 0;
+      for (;;) { const r = ok(await sb.from(t).select('*').range(from, from + 999)); rows.push(...r); if (r.length < 1000) break; from += 1000; }
+      out[t] = rows;
+    }
+    const files = []; const { data: dirs } = await sb.storage.from('checkins').list('', { limit: 1000 });
+    for (const d of dirs || []) { const { data: days } = await sb.storage.from('checkins').list(d.name, { limit: 1000 });
+      for (const dd of days || []) { const { data: fs } = await sb.storage.from('checkins').list(d.name + '/' + dd.name, { limit: 1000 }); (fs || []).forEach(f => files.push(d.name + '/' + dd.name + '/' + f.name)); } }
+    out._photos = files; return out;
+  },
+  async photoBlob(path) { return ok(await sb.storage.from('checkins').download(path)); },
   async touchSeen() { try { await sb.rpc('touch_seen'); } catch (e) {} },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 

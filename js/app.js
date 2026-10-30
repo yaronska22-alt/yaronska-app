@@ -219,7 +219,7 @@ async function enter(user){
     ME=Object.assign({id:user.id,email:user.email},await db.me(user.id));
     if(ME.role==='coach'){
       TPL_MINE=(await db.templates()).map(t=>({id:t.id,name:t.nombre,desc:t.descr||'',days:t.days}));
-      await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{CUR=null;SNAP=null}loadPend().then(()=>{pendCount()});
+      await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{CUR=null;SNAP=null}loadPend().then(()=>{pendCount()});bkInit();
     }else{
       if(!ME.clientId)return showAuth('nolink');
       await loadClient(ME.clientId);
@@ -1299,6 +1299,7 @@ function cBiz(){
   const estN=B.filter(x=>x.est).length;
   const k=(l,v,s,cls)=>`<div class="kpi"><small>${l}</small><b class="${cls||''}">${v}</b>${s?`<small>${s}</small>`:''}</div>`;
   return `<div class="chead"><div><span class="lbl">Panel general</span><h1>Mi negocio</h1></div></div>
+  ${bkPanel()}
   <div class="kpis">${k('Facturado este mes',nf(month,0)+' €',new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'}))}${k('Ingreso recurrente mensual',nf(mrr,0)+' €/mes','Lo que generan tus activos al mes')}${k('Ticket medio',nf(tickA,0)+' €',`por cobro (${nf(tick,0)} € de media histórica)`)}${k('Valor medio por cliente',nf(ltv,0)+' €','Total cobrado ÷ clientes')}</div>
   <div class="kpis">${k('Clientes activos',act.length,`${pau.length} pausados · ${end.length} bajas · ${B.length} en total`)}${k('Duración media',nf(avgDur,1)+' meses','Desde el alta hasta hoy o hasta la baja')}${k('Renovaciones',totalRen,'Cobros de renovación en total')}${k('% de renovación',rate==null?'—':nf(rate,0)+' %',`${renewed.length} de ${elig.length} clientes renovaron al menos una vez`,rate==null?'':rate>=60?'good':rate>=40?'':'badc')}</div>
   <div class="panel"><span class="lbl">Facturación de los últimos 12 meses</span>${bars}</div>
@@ -1509,6 +1510,7 @@ function cPend(){const d=pendData();const fd=x=>new Date(x+'T12:00').toLocaleDat
   ${box('😴','Clientes poco activos',d.inact,'Todos activos esta semana 💪',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"diario")'><b>${esc(x.n)}</b><small>${x.noApp?'App: '+seenTxt(x.seen).t.toLowerCase():'Entra en la app'} · ${x.tr?'último entreno '+fd(x.tr):'sin entrenos registrados en 3 semanas'}</small></button>`)}
   ${box('⏰','Revisiones atrasadas',d.late,'Nadie lleva más de 15 días sin revisión.',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"checkins")'><b>${esc(x.n)}</b><small>${esc(x.t)}</small></button>`)}
   ${box('🔁','Renovaciones · próximos 7 días',d.ren,'Ninguna renovación esta semana.',x=>`<button type="button" class="pitem" onclick='goCl(${nmq(x.id)},"ficha")'><b>${esc(x.n)}</b><small class="${x.late?'badc':''}">${x.late?'Vencida el ':'Renueva el '}${fd(x.date)}</small></button>`)}
+  ${!BK.last||Date.now()-Date.parse(BK.last)>48*3600e3?`<div class="panel pendbox"><div class="sec-h"><span class="lbl">💾 Copia de seguridad</span><span class="pcount on">!</span></div><button type="button" class="pitem" onclick="openBiz()"><b>${BK.last?'Última copia: '+esc(seenTxt(BK.last).t.toLowerCase()):'Aún no has hecho ninguna copia'}</b><small>${BK.dir?'Pulsa para hacerla ahora':'Elige la carpeta de Google Drive en «Mi negocio»'}</small></button></div>`:''}
   ${d.noLink.length?box('✉️','Sin activar la cuenta',d.noLink,'',x=>`<button type="button" class="pitem" onclick='inviteMsg(${nmq(x.id)})'><b>${esc(x.n)}</b><small>Aún no ha creado su cuenta · reenviar invitación</small></button>`):''}
   </div>`}
 
@@ -1605,3 +1607,35 @@ function cuestToFicha(){const c=(S.profile||{}).cuest;if(!c)return;const a=c.a;l
     if(FICHA[f]===''||FICHA[f]==null){FICHA[f]=v;n++}}));
   const pe=parseFloat(String(a.peso||'').replace(',','.'));if(pe>0&&!allWeights().length){S.checkins.push({date:(c.at||new Date().toISOString()).slice(0,10),r:{},fotos:0,fotosP:[],nota:'Peso del cuestionario inicial',peso:pe});S.checkins.sort((x,y)=>x.date.localeCompare(y.date));n++}
   save();toast(n?`${n} dato${n>1?'s':''} pasado${n>1?'s':''} a la Ficha`:'La Ficha ya tenía esos datos');renderCoach()}
+
+// ================= COPIAS DE SEGURIDAD =================
+// Se guardan en una carpeta del ordenador del entrenador (p. ej. dentro de Google Drive para ordenador, que la sube sola a Drive).
+const BK={dir:null,last:null,busy:false,msg:''};
+const idb=(()=>{let P=null;const open=()=>P||(P=new Promise((r,j)=>{const q=indexedDB.open('yaronska-bk',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)}));
+  return {get:async k=>{const d=await open();return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})},
+    set:async(k,v)=>{const d=await open();return new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r()})}}})();
+const bkFS=()=>!!window.showDirectoryPicker;
+async function bkInit(){try{BK.dir=await idb.get('dir');BK.last=await idb.get('last')}catch(e){}
+  if(BK.dir&&(!BK.last||Date.now()-Date.parse(BK.last)>20*3600e3)){try{if(await BK.dir.queryPermission({mode:'readwrite'})==='granted')await bkRun(true)}catch(e){console.warn(e)}}}
+function bkPanel(){const ago=BK.last?seenTxt(BK.last).t.replace('Activo ahora','Hace un momento'):'Nunca';const due=!BK.last||Date.now()-Date.parse(BK.last)>26*3600e3;
+  return `<div class="panel bkpanel"><div class="sec-h"><div><span class="lbl">💾 Copias de seguridad</span><p class="small muted" style="margin:0">Última copia: <b class="${due?'badc':'good'}">${esc(ago)}</b>${BK.dir?` · carpeta «${esc(BK.dir.name)}»`:''}</p></div>
+    <div class="row">${bkFS()?`<button class="btn ${BK.dir?'ghost':''} sm" type="button" onclick="bkPick()">${BK.dir?'Cambiar carpeta':'📁 Elegir carpeta de Google Drive'}</button>`:''}${BK.dir?`<button class="btn sm" type="button" onclick="bkRun()" ${BK.busy?'disabled':''}>${BK.busy?'Guardando…':'Hacer copia ahora'}</button>`:''}<button class="btn ghost sm" type="button" onclick="bkDownload()">⬇️ Descargar copia</button></div></div>
+    ${BK.msg?`<p class="small" style="margin:0">${esc(BK.msg)}</p>`:''}
+    <p class="small muted" style="margin:0">${bkFS()?`Elige una carpeta dentro de <b>Google Drive</b> de tu ordenador (p. ej. «Mi unidad\\Copias Yaronska App»). Cada día que abras la app como entrenador se guarda sola una copia con todos los datos (clientes, fichas, dietas, rutinas, revisiones, entrenos, cobros) y las fotos nuevas, y Google Drive la sube a la nube. Se guardan las copias de los últimos 30 días.`:'Tu navegador no permite guardar en una carpeta automáticamente (usa Chrome o Edge en el ordenador). Mientras, puedes descargar la copia y guardarla en Google Drive.'}</p></div>`}
+async function bkPick(){try{const d=await window.showDirectoryPicker({id:'yaronska-bk',mode:'readwrite'});BK.dir=d;await idb.set('dir',d);await bkRun()}catch(e){if(e.name!=='AbortError')toast('No se ha podido usar esa carpeta')}}
+async function bkData(){const d=await db.exportAll();return {app:'Yaronska App',version:1,fecha:new Date().toISOString(),tablas:d}}
+async function bkRun(silent){if(BK.busy)return;BK.busy=true;if(!silent&&coachSel==='__biz')renderCoach();
+  try{const dir=BK.dir;if((await dir.queryPermission({mode:'readwrite'}))!=='granted'&&(await dir.requestPermission({mode:'readwrite'}))!=='granted')throw new Error('Sin permiso para la carpeta');
+    const data=await bkData();const name=`yaronska-copia-${iso(new Date())}.json`;
+    const fh=await dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(JSON.stringify(data));await w.close();
+    // fotos: solo las que aún no estén guardadas
+    const pd=await dir.getDirectoryHandle('fotos',{create:true});let nf2=0;
+    for(const pth of data.tablas._photos||[]){const fname=pth.replace(/\//g,'__');try{await pd.getFileHandle(fname);continue}catch(e){}
+      try{const b=await db.photoBlob(pth);const h=await pd.getFileHandle(fname,{create:true});const ww=await h.createWritable();await ww.write(b);await ww.close();nf2++}catch(e){console.warn('foto',pth,e)}}
+    // borrar copias de más de 30 días
+    const lim=iso(daysAgo(30));for await(const [n,h] of dir.entries()){const m=/^yaronska-copia-(\d{4}-\d{2}-\d{2})\.json$/.exec(n);if(m&&m[1]<lim){try{await dir.removeEntry(n)}catch(e){}}}
+    BK.last=new Date().toISOString();await idb.set('last',BK.last);BK.msg=`✅ Copia guardada: ${name}${nf2?` · ${nf2} foto${nf2>1?'s':''} nueva${nf2>1?'s':''}`:''}`;if(!silent)toast('Copia de seguridad guardada')}
+  catch(e){console.error(e);BK.msg='⚠️ No se ha podido hacer la copia: '+(e.message||e);if(!silent)toast('No se ha podido hacer la copia')}
+  finally{BK.busy=false;if(coachSel==='__biz')renderCoach()}}
+async function bkDownload(){try{toast('Preparando la copia…');const data=await bkData();const b=new Blob([JSON.stringify(data)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`yaronska-copia-${iso(new Date())}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  if(!BK.dir){BK.last=new Date().toISOString();await idb.set('last',BK.last)}}catch(e){console.error(e);toast('No se ha podido preparar la copia')}}
