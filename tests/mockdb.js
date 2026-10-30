@@ -47,6 +47,7 @@ window.db={
   async templates(){if(!isCoach())deny('tpl');return st.templates},
   async updateClient(id,row){if(!isCoach())deny('updateClient');Object.assign(st.clients.find(c=>c.id===id),JSON.parse(JSON.stringify(row)));window.__writes=(window.__writes||0)+1;persist()},
   async upsertAdmin(row){if(!isCoach())deny('admin');const a=st.client_admin.find(a=>a.client_id===row.client_id);if(a)Object.assign(a,row);else st.client_admin.push(row);persist()},
+  async touchSeen(){const c=st.clients.find(c=>st.session&&c.user_id===st.session);if(c){c.last_seen=now();persist()}},
   async del(t,id){const r=st[t].find(x=>x.id===id);if(!r||!can(r.client_id))deny('del '+t);st[t]=st[t].filter(x=>x.id!==id);persist()},
   async removePhotos(paths){(paths||[]).forEach(x=>delete st.files[x]);persist()},
   async insert(t,row){if(t==='templates'){if(!isCoach())deny('tpl')}else if(!can(row.client_id))deny('insert '+t);const r={id:nid(),created_at:now(),...JSON.parse(JSON.stringify(row))};st[t].push(r);persist();return {id:r.id,created_at:r.created_at}},

@@ -231,7 +231,7 @@ async function enter(user){
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
   document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
   const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:'home';if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
-  if(ME.role==='client')pushSilent();
+  if(ME.role==='client'){pushSilent();seenStart()}
   if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
 async function boot(){
@@ -558,8 +558,25 @@ async function sendCheck(e){
   try{for(let i=0;i<labs.length;i++){const blob=await shrink(labs[i]._file,1600);const path=`${CUR.id}/${date}/${['frontal','lateral','espalda'][[...document.querySelectorAll('.ph')].indexOf(labs[i])]||i}-${Date.now()}.jpg`;await db.uploadPhoto(path,blob);paths.push(path)}}
   catch(err){btn.disabled=false;btn.textContent='Enviar check-in';toast('No se han podido subir las fotos. Revisa tu conexión e inténtalo de nuevo.');return}
   S.checkins.push(Object.assign({date,fotos:paths.length,fotosP:paths,nota:document.getElementById('ckNota').value,r:Object.assign({},ck)},m));
-  save();ck={};toast('Check-in enviado a Yaron');go('home');
+  save();ck={};go('home');ckDoneSheet(date);
 }
+function ckDoneSheet(date){const sh=document.getElementById('sheet');const nm=(FICHA.nombre||'').trim().split(' ')[0];
+  const msg=`¡Hola Yaron! 👋 Ya está todo preparado ✅ Te acabo de enviar mi revisión ${date===iso(new Date())?'de hoy':'del '+fdate(date)} por la app.${nm?' — '+nm:''}`;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Revisión enviada"><div class="sheet-b donesh"><div class="donebig">✅</div><h2>¡Revisión enviada!</h2>
+    <p style="margin:0">Yaron ya tiene tus medidas, fotos y respuestas en la app.</p><p class="muted small" style="margin:0">Avísale para que la revise cuanto antes:</p>
+    <a class="btn wa" href="https://wa.me/${WA}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" onclick="setTimeout(closeSheet,400)">💬 Avisar a Yaron por WhatsApp</a>
+    <button class="btn ghost" type="button" onclick="closeSheet()">Ahora no</button></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
+// ---- última conexión del cliente (para que el entrenador vea quién está activo)
+setInterval(async()=>{if(!ME||ME.role!=='coach'||document.hidden)return;try{await refreshList();CL.forEach(c=>{const el=document.getElementById('seen-'+c.id);if(el)el.innerHTML=seenBadge(c.seen)})}catch(e){}},90000);
+let seenT=0;function seenPing(){if(!ME||ME.role!=='client'||document.hidden)return;const n=Date.now();if(n-seenT<60000)return;seenT=n;db.touchSeen()}
+let seenOn=false;function seenStart(){if(seenOn){seenPing();return}seenOn=true;seenPing();setInterval(seenPing,120000);document.addEventListener('visibilitychange',seenPing);['click','keydown','touchstart'].forEach(ev=>addEventListener(ev,seenPing,{passive:true}))}
+function seenTxt(ts){if(!ts)return {t:'Nunca ha entrado',c:'never'};const m=(Date.now()-Date.parse(ts))/60000;
+  if(m<5)return {t:'Activo ahora',c:'now'};if(m<60)return {t:'Hace '+Math.round(m)+' min',c:'recent'};const h=m/60;
+  const d=new Date(ts);const hh=d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  if(iso(d)===iso(new Date()))return {t:'Hoy a las '+hh,c:'recent'};if(iso(d)===iso(daysAgo(1)))return {t:'Ayer a las '+hh,c:'old'};
+  const dd=Math.floor(h/24);return {t:dd<7?'Hace '+dd+' días':'Hace '+(dd<30?Math.round(dd/7)+' sem.':Math.round(dd/30)+' meses'),c:dd>=7?'away':'old'}}
+const seenBadge=ts=>{const x=seenTxt(ts);return `<span class="seen ${x.c}" title="${ts?new Date(ts).toLocaleString('es-ES'):''}">${x.c==='now'?'🟢 ':''}${esc(x.t)}</span>`};
 function shrink(file,max){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('foto')),'image/jpeg',.85);URL.revokeObjectURL(im.src)};im.onerror=rej;im.src=URL.createObjectURL(file)})}
 function vRes(){
   return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>guías</em></h1></div>
@@ -576,12 +593,12 @@ async function refreshList(){
   const A={};admin.forEach(a=>A[a.client_id]=a);const L={};checkins.forEach(c=>{if(!L[c.client_id])L[c.client_id]=c.fecha});
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
     return {id:c.id,email:c.email,ficha:f,adm:a,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
-      renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',...statusOf(L[c.id])}});
+      renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',seen:c.last_seen||null,...statusOf(L[c.id])}});
 }
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
   if(CUR&&id===CUR.id&&coachSel!=='__biz')return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
@@ -604,7 +621,7 @@ function _renderCoach(){setTimeout(placeCalc);
   </aside>
   <section class="cmain">
     ${coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
-    <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
+    <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${c.linked?`<small class="muted">Última vez en la app: ${seenBadge(c.seen)}</small>`:''}${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
     <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
       <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
       <div class="field" style="flex:2"><label for="phS">${PROG().w}</label><select id="phS" onchange="S.phase=+this.value;save();setTimeout(renderCoach)">${PH().map((p,i)=>`<option value="${i}" ${S.phase===i?'selected':''}>${PROG().w} ${i+1} · ${esc(p.n)}</option>`).join('')}</select></div>
@@ -1293,7 +1310,7 @@ function showConsent(){
 async function acceptConsent(b){if(!document.getElementById('cOk').checked){toast('Marca la casilla para continuar');return}
   b.disabled=true;S.profile.consent=true;S.profile.consentAt=new Date().toISOString();S.profile.consentV=CONSENT_V;save();
   try{await flushSync()}catch(e){}
-  document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;document.querySelector('.seg').hidden=true;document.getElementById('outBtn').hidden=true;document.getElementById('pkBtn').hidden=true;
+  document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;document.querySelector('.seg').hidden=true;document.getElementById('outBtn').hidden=true;document.getElementById('pkBtn').hidden=true;seenStart();
   tab='home';setView('client');if(OFFER_PK){OFFER_PK=false;offerPasskey()}}
 function consentToggle(el){if(!el.checked){if(!confirm('Si retiras el consentimiento, Yaron no podrá seguir tratando tus datos de salud ni hacer tu seguimiento, y no podrás usar la app hasta que lo vuelvas a dar. ¿Retirarlo?')){el.checked=true;return}
   S.profile.consent=false;S.profile.consentAt=new Date().toISOString();save();flushSync().then(()=>showConsent())}}

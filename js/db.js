@@ -48,7 +48,7 @@ const db = {
 
   // ---------- entrenador: lista de clientes ----------
   async listClients() {
-    const clients = ok(await sb.from('clients').select('id,email,user_id,ficha,prefs,fase,semana,semanas_fase').order('created_at'));
+    const clients = ok(await sb.from('clients').select('id,email,user_id,ficha,prefs,fase,semana,semanas_fase,last_seen').order('created_at'));
     const admin = ok(await sb.from('client_admin').select('*'));
     const cks = ok(await sb.from('checkins').select('client_id,fecha').order('fecha', { ascending: false }));
     return { clients, admin, checkins: cks };
@@ -90,6 +90,7 @@ const db = {
   },
   async pushCount(clientId) { const { count } = await sb.from('push_subs').select('id', { count: 'exact', head: true }).eq('client_id', clientId); return count || 0; },
   async testPush(clientId) { const { data, error } = await sb.functions.invoke('avisos', { body: { client_id: clientId } }); if (error) throw error; return data; },
+  async touchSeen() { try { await sb.rpc('touch_seen'); } catch (e) {} },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 
   // ---------- escrituras ----------

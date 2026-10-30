@@ -566,3 +566,10 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .ckd{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .ckacts{display:flex;gap:4px;white-space:nowrap}
 .ckcom{min-width:240px;white-space:normal}
+/* última conexión */
+.seen{font-size:11.5px;color:var(--muted)}
+.seen.now{color:var(--ok);font-weight:700}
+.seen.recent{color:#CFE9D3}
+.seen.away{color:var(--warn)}
+.seen.never{color:var(--dim)}
+.btn.wa{background:#25D366;border-color:#25D366;color:#06210d;text-align:center;text-decoration:none}
