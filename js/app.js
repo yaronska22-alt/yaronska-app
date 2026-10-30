@@ -1410,3 +1410,9 @@ function libRes(){return LIB.map(x=>({x,sc:libScore(x,libQ)})).filter(r=>r.sc>0&
 function libList(){const res=libRes();const el=document.getElementById('libGrid');if(el)el.innerHTML=libGrid(res);const c=document.getElementById('libCount');if(c)c.textContent=res.length+(res.length>=150?'+':'')+' vídeos';document.querySelectorAll('.libsheet .mtabs.libgrp .chip').forEach(c=>c.classList.toggle('on',c.dataset.g===libG));document.querySelectorAll('.libsheet .mtabs.libfmt .chip').forEach(c=>c.classList.toggle('on',c.dataset.s===libS))}
 function libUse(){const e=RX(libTo[0],libTo[1]);e.vid=libPick;save();closeSheet();renderCoach();toast('Vídeo asignado')}
 function libClear(){const e=RX(libTo[0],libTo[1]);delete e.vid;libPick=null;save();closeSheet();renderCoach();toast('Vídeo quitado')}
+
+// ---- aviso de versión nueva: si se ha publicado una actualización, ofrece recargar
+(()=>{let base=null;const sig=async()=>{try{const rs=await Promise.all(['js/app.js','css/app.css'].map(u=>fetch(u,{method:'HEAD',cache:'no-store'})));return rs.map(r=>r.headers.get('etag')||r.headers.get('last-modified')||'').join('|')}catch(e){return null}};
+  const show=()=>{if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.className='updbar';d.innerHTML='<span>Hay una versión nueva de la app</span><button class="btn sm" type="button">Actualizar</button>';d.querySelector('button').onclick=async()=>{try{await flushSync()}catch(e){}location.reload()};document.body.appendChild(d)};
+  const check=async()=>{const s=await sig();if(!s||s==='|')return;if(base===null){base=s;return}if(s!==base)show()};
+  check();setInterval(check,5*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});})();

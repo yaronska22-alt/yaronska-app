@@ -20,3 +20,15 @@
 
 /ej/index.json
   Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/data/*
+  Cache-Control: public, max-age=0, must-revalidate
