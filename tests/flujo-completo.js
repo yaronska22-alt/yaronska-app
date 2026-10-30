@@ -49,7 +49,7 @@ await p.click('.nav >> text=Comidas');await shot('t9-food');log('9 food has opts
 await p.click('.nav >> text=Entreno');
 await p.fill('#kg-0-0-0','40');await p.fill('#rp-0-0-0','10');await p.fill('#ri-0-0-0','2');await p.click('text=Guardar entreno');await p.waitForTimeout(250);if(await p.isVisible('#sheet button:text-is("Genial")'))await p.click('#sheet button:text-is("Genial")');await wait(800);
 await p.click('.nav >> text=Check-in');await p.fill('#m-peso','82,4');await p.fill('#m-cintura','90');
-await p.setInputFiles('.ph >> nth=0 >> input',R+'/img/recetas/0.jpg');await p.fill('#ckNota','Buena semana');await p.click('text=Enviar check-in');await wait(1200);
+await p.setInputFiles('.ph >> nth=0 >> input',R+'/img/recetas/0.jpg');await p.fill('#ckNota','Buena semana');await p.click('text=Enviar check-in');await wait(1200);console.log('wa:',await p.getAttribute('#sheet a.wa','href').catch(()=>null));if(await p.isVisible('#sheet >> text=Ahora no'))await p.click('#sheet >> text=Ahora no');
 await shot('t10-after-check');
 await p.click('.me');await p.fill('#pn','José Martínez López');await p.dispatchEvent('#pn','change');await wait(900);
 st=await p.evaluate(()=>window.__mock);
