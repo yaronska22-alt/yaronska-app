@@ -668,3 +668,7 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .fine .dragging{cursor:grabbing;user-select:none}
 .fine .dragging *{pointer-events:none}
 .fine .tbl-w input,.fine .tbl-w select{cursor:auto}
+.pwrap{position:relative;display:flex}.pwrap .pitem{flex:1;padding-right:40px}
+.pskip{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--muted);font-size:13px;cursor:pointer;line-height:1}
+.pskip:hover{color:var(--fg);border-color:var(--y)}
+.pacts{display:flex;align-items:center;gap:10px;flex-shrink:0}.pacts .btn{white-space:nowrap}.pendbox .sec-h{align-items:center;gap:8px}
