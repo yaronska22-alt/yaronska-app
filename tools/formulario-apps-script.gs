@@ -3,20 +3,35 @@
 const URL_APP = 'https://gpiykjgziuxvjlmbgyds.supabase.co/functions/v1/formulario';
 const SECRETO = 'PEGAR_AQUI_EL_CODIGO_SECRETO';
 
+// Sirve tanto si el script está en el FORMULARIO como en la HOJA de respuestas
+function form_() {
+  let f = null; try { f = FormApp.getActiveForm(); } catch (e) {}
+  if (!f) { const url = SpreadsheetApp.getActiveSpreadsheet().getFormUrl(); if (url) f = FormApp.openByUrl(url); }
+  if (!f) throw new Error('No encuentro el formulario: pega el script desde el propio formulario (⋮ → Editor de secuencias de comandos).');
+  return f;
+}
+
+// 1) Ejecuta PRIMERO esta: comprueba que la app recibe datos
+function probarConexion() {
+  const res = UrlFetchApp.fetch(URL_APP, { method: 'post', contentType: 'application/json', headers: { 'x-form-secret': SECRETO }, payload: JSON.stringify({ test: true }), muteHttpExceptions: true });
+  const ok = res.getResponseCode() === 200;
+  Logger.log(ok ? '✅ CONEXIÓN OK con la app · formulario: ' + form_().getTitle() : '❌ ERROR ' + res.getResponseCode() + ' ' + res.getContentText());
+}
+
 // Se ejecuta sola cada vez que alguien envía el formulario
 function enviarRespuesta(e) { enviar_([fila_(e.response)]); }
 
-// Ejecútala UNA vez: activa el envío automático
+// 2) Ejecuta después esta UNA vez: activa el envío automático
 function instalar() {
-  const f = FormApp.getActiveForm();
+  const f = form_();
   ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() === 'enviarRespuesta') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('enviarRespuesta').forForm(f).onFormSubmit().create();
-  Logger.log('Listo: cada respuesta nueva llegará a la app.');
+  Logger.log('✅ Listo: cada respuesta nueva de «' + f.getTitle() + '» llegará a la app.');
 }
 
-// Opcional: manda a la app TODAS las respuestas que ya tienes (las repetidas se ignoran)
+// 3) Opcional: manda a la app TODAS las respuestas que ya tienes (las repetidas se ignoran)
 function enviarTodasLasRespuestas() {
-  const L = FormApp.getActiveForm().getResponses().map(fila_);
+  const L = form_().getResponses().map(fila_);
   for (let i = 0; i < L.length; i += 40) enviar_(L.slice(i, i + 40));
   Logger.log('Enviadas ' + L.length + ' respuestas.');
 }
@@ -25,7 +40,7 @@ let SECCION_ = null;
 function secciones_() {
   if (SECCION_) return SECCION_;
   SECCION_ = {}; let s = '';
-  FormApp.getActiveForm().getItems().forEach(it => {
+  form_().getItems().forEach(it => {
     if (it.getType() === FormApp.ItemType.PAGE_BREAK) s = it.getTitle(); else SECCION_[it.getId()] = s;
   });
   return SECCION_;

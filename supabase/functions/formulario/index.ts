@@ -10,6 +10,7 @@ Deno.serve(async (req) => {
   const { data: sec } = await db.from("app_secrets").select("value").eq("key", "form_secret").maybeSingle();
   if (!sec || req.headers.get("x-form-secret") !== sec.value) return json({ error: "no autorizado" }, 401);
   const body = await req.json().catch(() => null);
+  if (body?.test) { const { count } = await db.from("form_responses").select("id", { count: "exact", head: true }); return json({ ok: true, test: true, guardadas: count || 0 }); }
   const list = Array.isArray(body?.responses) ? body.responses : body ? [body] : [];
   let saved = 0;
   for (const r of list.slice(0, 500)) {
