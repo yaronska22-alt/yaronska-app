@@ -416,8 +416,8 @@ function vFood(){
   if(!S.restOn)dayType='T';
   return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div>
   ${S.restOn?`<div class="daytype" role="radiogroup" aria-label="Tipo de día"><button type="button" class="t ${dayType==='T'?'on':''}" onclick="dayType='T';render()" aria-pressed="${dayType==='T'}"><b>🏋️ Día de entreno</b><small>Comes un poco más</small></button><button type="button" class="r ${dayType==='R'?'on':''}" onclick="dayType='R';render()" aria-pressed="${dayType==='R'}"><b>🏠 Día de descanso</b><small>Comes un poco menos</small></button></div>`:''}
-  <div class="tabs" role="tablist"><button type="button" class="${foodTab==='plan'?'on':''}" onclick="foodTab='plan';render()">Mi plan</button><button type="button" class="${foodTab==='recetas'?'on':''}" onclick="foodTab='recetas';render()">Recetas</button></div>
-  ${foodTab==='plan'?vPlan():vRecipes()}`;
+  <div class="tabs" role="tablist"><button type="button" class="${foodTab==='plan'?'on':''}" onclick="foodTab='plan';render()">Mi plan</button><button type="button" class="${foodTab==='recetas'?'on':''}" onclick="foodTab='recetas';render()">Recetas</button><button type="button" class="${foodTab==='compra'?'on':''}" onclick="foodTab='compra';render()">Compra</button><button type="button" class="${foodTab==='prep'?'on':''}" onclick="foodTab='prep';render()">Meal prep</button></div>
+  ${foodTab==='plan'?vPlan():foodTab==='compra'?vShop():foodTab==='prep'?vPrep():vRecipes()}`;
 }
 const nearK=k=>Math.min(3200,Math.max(1300,Math.round(k/50)*50));
 const kT=()=>S.kcal,kR=()=>S.restOn?S.kcal-250:S.kcal;
@@ -1828,3 +1828,70 @@ function valorHTML(V){const {B,glob,acts}=V;const noData=!B.some(b=>b.has&&b.k!=
   // rueda: en filas de pestañas/chips mueve en horizontal; en tablas solo con Mayús (para no bloquear el scroll de la página)
   document.addEventListener('wheel',e=>{const el=e.target.closest('.tabs,.mtabs,.daysel,.hscroll,.chips');if(!over(el)||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;const max=el.scrollWidth-el.clientWidth;const nx=Math.max(0,Math.min(max,el.scrollLeft+e.deltaY));if(nx===el.scrollLeft)return;el.scrollLeft=nx;e.preventDefault()},{passive:false});
 })();
+
+// ================= LISTA DE LA COMPRA (sale del plan del cliente) =================
+const FOOD_UNIT=/^\s*(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l|ud|uds|unidades?)?\.?\s+(?:de\s+)?/i;
+function foodName(t){let x=String(t).replace(/\(.*?\)/g,'').replace(FOOD_UNIT,'').replace(/^\d+\s+/,'').trim();x=x.replace(/^(huevos?)$/i,'Huevos');return x?x[0].toUpperCase()+x.slice(1):''}
+const foodAlts=str=>String(str).split(/\s+o\s+|\s*\/\s*|\s+\+\s+/).map(foodName).filter(Boolean);
+function shopData(){const out={};const add=(g,str)=>foodAlts(str).forEach(n=>{const k=n.toLowerCase();if(!Object.values(out).some(L=>L.has(k)))(out[g]=out[g]||new Map()).set(k,n)});
+  const PLs=[];try{const keep=dayType;['T','R'].forEach(t=>{if(t==='R'&&!S.restOn)return;dayType=t;PLs.push(PLAN())});dayType=keep}catch(e){}
+  const mOf=v=>v&&!Array.isArray(v)?v:null;
+  PLs.forEach(P=>{['lunch','dinner'].forEach(m=>{const M=P[m];if(!M)return;(M.protein||[]).forEach(x=>add('Proteínas',x));(M.carb||[]).forEach(x=>add('Hidratos',x));(M.vegs||[]).forEach(x=>add('Verduras',x));(M.fruit||[]).forEach(x=>add('Fruta',x));(M.fat||[]).forEach(x=>add('Grasas',x))});
+    [P.midmorning,P.snack].map(mOf).filter(Boolean).forEach(M=>(M.options||[]).forEach(o=>(o.items||[]).forEach(x=>add('Desayunos y tentempiés',x))));
+    (P.breakfast||[]).forEach(o=>(o.items||[]).forEach(x=>add('Desayunos y tentempiés',x)))});
+  const G=['Proteínas','Hidratos','Verduras','Fruta','Grasas','Desayunos y tentempiés'];return G.filter(g=>out[g]).map(g=>({g,items:[...out[g].entries()].map(([k,n])=>({k,n}))}))}
+const SHOP=()=>{const c=S.profile.compra=S.profile.compra||{};c.done=c.done||[];c.hide=c.hide||[];c.extra=c.extra||[];return c};
+function vShop(){const C=SHOP();const D=shopData();const hid=new Set(C.hide),done=new Set(C.done);
+  const row=(k,n,own)=>`<div class="shi ${done.has(k)?'done':''}"><button type="button" class="shc" onclick="shopTog(${esc(JSON.stringify(k))})" aria-pressed="${done.has(k)}"><i>${done.has(k)?'✓':''}</i><span>${esc(n)}</span></button><button type="button" class="shx" onclick="shopDel(${esc(JSON.stringify(k))},${own?1:0})" aria-label="Quitar ${esc(n)} de la lista">✕</button></div>`;
+  const groups=D.map(G=>({g:G.g,items:G.items.filter(x=>!hid.has(x.k))})).filter(G=>G.items.length);
+  const nAll=groups.reduce((a,G)=>a+G.items.length,0)+C.extra.length,nDone=[...done].filter(k=>!hid.has(k)).length;
+  return `<div class="panel shop">
+    <div class="sec-h"><h2>Lista de la compra</h2><span class="small muted">${nDone} de ${nAll}</span></div>
+    <p class="small muted" style="margin:0">Sale de tu plan. Toca lo que ya tienes o vas metiendo en el carro para tacharlo. Con ✕ lo quitas de tu lista si no lo compras nunca.</p>
+    <form class="row shadd" onsubmit="shopAdd(event)"><input id="shNew" maxlength="60" placeholder="Añadir algo (ej. papel de horno)" aria-label="Añadir a la lista"><button class="btn sm" type="submit">Añadir</button></form>
+    ${C.extra.length?`<div class="shg"><span class="lbl">Añadido por ti</span>${C.extra.map(n=>row('+'+n.toLowerCase(),n,true)).join('')}</div>`:''}
+    ${groups.map(G=>`<div class="shg"><span class="lbl">${esc(G.g)}</span>${G.items.map(x=>row(x.k,x.n)).join('')}</div>`).join('')}
+    <div class="row" style="justify-content:space-between;margin-top:6px">${nDone?`<button class="btn sm" type="button" onclick="shopReset()">🧾 Nueva compra (destachar todo)</button>`:'<span></span>'}${C.hide.length?`<button class="btn ghost sm" type="button" onclick="shopRestore()">↺ Recuperar ${C.hide.length} quitado${C.hide.length>1?'s':''}</button>`:''}</div>
+  </div>`}
+function shopTog(k){const C=SHOP();const i=C.done.indexOf(k);if(i>=0)C.done.splice(i,1);else C.done.push(k);save();render()}
+function shopDel(k,own){const C=SHOP();C.done=C.done.filter(x=>x!==k);if(own)C.extra=C.extra.filter(n=>'+'+n.toLowerCase()!==k);else if(!C.hide.includes(k))C.hide.push(k);save();render()}
+function shopAdd(e){e.preventDefault();const el=document.getElementById('shNew');const n=el.value.trim().slice(0,60);if(!n)return;const C=SHOP();if(!C.extra.some(x=>x.toLowerCase()===n.toLowerCase()))C.extra.unshift(n);save();render();setTimeout(()=>{const i=document.getElementById('shNew');if(i)i.focus()},30)}
+function shopReset(){SHOP().done=[];save();render();toast('Lista lista para la próxima compra')}
+function shopRestore(){SHOP().hide=[];save();render()}
+
+// ================= MEAL PREP =================
+let PREP={p:[],c:[],d:4};
+function prepOpts(kind){const P=PLAN();const seen=new Map();['lunch','dinner'].forEach(m=>{const M=P[m];if(!M)return;(M[kind]||[]).forEach((str,oi)=>String(str).split(/\s+o\s+|\s*\/\s*/).forEach(a=>{const mm=a.trim().match(/^(\d+(?:[.,]\d+)?)\s*(g|ml)\s+(.+)$/i);if(!mm||/\+/.test(a))return;const n=foodName(a);const k=n.toLowerCase();const o=seen.get(k)||{k,n,i:oi,cooked:/cocid/i.test(a),g:{}};o.g[m]=parseFloat(mm[1].replace(',','.'));o.u=mm[2].toLowerCase();seen.set(k,o)}))});return [...seen.values()]}
+function vPrep(){const PO=prepOpts('protein'),CO=prepOpts('carb');
+  PREP.p=PREP.p.filter(k=>PO.some(o=>o.k===k));PREP.c=PREP.c.filter(k=>CO.some(o=>o.k===k));
+  const two=L=>{const u=new Set(),r=[];L.forEach(o=>{if(r.length<2&&!u.has(o.i)){u.add(o.i);r.push(o.k)}});return r};
+  if(!PREP.p.length)PREP.p=two(PO.filter(o=>!/salm|merluz|bacal|pesc|at[uú]n|caball|sardin/i.test(o.n)));if(!PREP.c.length)PREP.c=two(CO.filter(o=>!/pan|tortilla|gnocchi|prefrit/i.test(o.n)));
+  const chips=(L,sel,kind)=>`<div class="chips">${L.map(o=>`<button type="button" class="chip ${sel.includes(o.k)?'on':''}" onclick="prepTog('${kind}',${esc(JSON.stringify(o.k))})">${esc(o.n)}</button>`).join('')}</div>`;
+  const tot=(L,sel)=>{const S_=L.filter(o=>sel.includes(o.k));if(!S_.length)return '';return S_.map(o=>{const per=PREP.d/S_.length;const g=(o.g.lunch||o.g.dinner||0)*per+(o.g.dinner||o.g.lunch||0)*per;const r=g>=1000?nf(Math.round(g/50)*50/1000,2).replace(/,?0+$/,'')+' kg':Math.round(g/10)*10+' '+o.u;return `<div class="prept"><b>${esc(r)}</b><span>${esc(o.n)}${o.cooked?' <small>(cocido, de bote)</small>':' <small>(peso en crudo)</small>'}</span><small>${nf(per,per%1?1:0)} comidas + ${nf(per,per%1?1:0)} cenas</small></div>`}).join('')};
+  const tp=PREP.d*2;
+  return `<div class="panel prep">
+    <div class="sec-h"><h2>Tu meal prep</h2></div>
+    <p class="small muted" style="margin:0">Cocina una vez y ten la comida y la cena listas varios días. Elige qué vas a preparar y te digo cuánto comprar y cocinar, con las cantidades de tu plan.</p>
+    <div class="field"><label>¿Para cuántos días?</label><div class="chips">${[2,3,4].map(n=>`<button type="button" class="chip ${PREP.d===n?'on':''}" onclick="PREP.d=${n};render()">${n} días · ${n*2} táperes</button>`).join('')}</div></div>
+    <div class="field"><label>Proteínas (elige 2)</label>${chips(PO,PREP.p,'p')}</div>
+    <div class="field"><label>Hidratos (elige 2)</label>${chips(CO,PREP.c,'c')}</div>
+    <div class="prepres"><span class="lbl">Lo que tienes que cocinar para ${tp} táperes</span>${tot(PO,PREP.p)}${tot(CO,PREP.c)}<div class="prept"><b>1-2 bandejas</b><span>Verdura al horno o salteada</span><small>calabacín, pimiento, cebolla, brócoli, judías…</small></div>
+      <p class="small muted" style="margin:6px 0 0">Pesa el total en crudo, cocina y reparte a ojo entre los táperes. La grasa (aceite, aguacate, queso, frutos secos) y la fruta, al servir.</p></div>
+  </div>
+  <div class="panel prep"><div class="sec-h"><h2>El método en 5 pasos</h2></div><ol class="psteps">
+    <li><b>Elige 2 proteínas y 2 hidratos</b>De tu plan. Con dos de cada no te aburres y la compra es corta.</li>
+    <li><b>Calcula el total en crudo</b>Arriba lo tienes hecho: ración de tu plan × número de táperes.</li>
+    <li><b>Cocina todo a la vez</b>Horno y fuegos trabajando a la vez (mira el cronograma).</li>
+    <li><b>Reparte a partes iguales</b>Ya pesaste en crudo: divide lo cocinado a ojo. No hace falta volver a pesar.</li>
+    <li><b>Enfría y a la nevera</b>Destapado hasta que deje de humear y a la nevera en menos de 2 horas. Lo que pase del día 4, al congelador.</li></ol>
+    <p class="small muted" style="margin:0">Dos sesiones cortas a la semana (por ejemplo domingo y miércoles) mejor que una de 7 días.</p></div>
+  <div class="panel prep"><div class="sec-h"><h2>Una sesión de 90 minutos</h2></div><div class="tline">
+    ${[['0:00','Horno a 200 °C. Corta la verdura y la patata en trozos iguales.'],['0:10','Bandeja 1: patata. Bandeja 2: verdura. Las dos al horno (35-40 min).'],['0:15','Arroz a cocer. Mientras, sazona el pollo.'],['0:30','Pollo al horno o a la plancha. Ternera a la sartén o en salsa de tomate.'],['0:50','Escurre el arroz y extiéndelo en una bandeja para que enfríe rápido.'],['1:00','Saca todo del horno. Deja enfriar destapado.'],['1:20','Reparte en los táperes: proteína + hidrato + verdura. Etiqueta el día.'],['1:30','A la nevera. Del día 5 en adelante, al congelador.']].map(x=>`<div><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div></div>
+  <div class="panel prep"><div class="sec-h"><h2>Cuánto aguanta</h2></div><div class="tbl-w"><table><thead><tr><th>Cocinado</th><th>Nevera</th><th>Congelador</th><th>Recalentar</th></tr></thead><tbody>
+    ${[['Pollo, pavo, ternera, cerdo','3-4 días','2-3 meses','Microondas tapado, con una cucharada de agua'],['Pescado','1-2 días','2-3 meses','Media potencia, poco tiempo'],['Arroz','3-4 días','1 mes','Muy caliente por dentro, una sola vez'],['Pasta, patata, boniato','3-4 días','1-2 meses','Microondas o sartén'],['Legumbres','3-4 días','2-3 meses','Microondas'],['Verdura cocinada','3-4 días','1-2 meses','Microondas o sartén']].map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <p class="small muted" style="margin:0">Días 1 a 4, a la nevera. Del 5 en adelante, al congelador, y lo pasas a la nevera la noche anterior.</p></div>
+  <div class="panel prep"><div class="sec-h"><h2>Trucos por alimento</h2></div><div class="ptips">
+    ${[['Pollo y pavo','Horno 200 °C, 20-25 min, o plancha. En tiras o dados: se reparte más fácil.'],['Ternera y picada','Sartén o en salsa de tomate. La salsa evita que se reseque al recalentar.'],['Lomo y solomillo','Horno 180 °C, 20-25 min. Córtalo cuando enfríe.'],['Pescado','Horno 200 °C, 12-15 min. Cómelo los 2 primeros días o congélalo.'],['Huevos','No van al táper. Cocidos (10 min) aguantan la semana con cáscara.'],['Arroz','Cuécelo, escúrrelo y extiéndelo en bandeja para enfriarlo rápido.'],['Pasta','Al dente (1-2 min menos): al recalentar termina de hacerse.'],['Patata y boniato','Al horno en dados (200 °C, 35-40 min) o enteros al microondas (8-10 min).'],['Legumbres','De bote, enjuagadas. Solo repartir.'],['Hojas, tomate, pepino','Al momento o en un recipiente aparte.']].map(x=>`<div><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div></div>
+  <div class="panel prep"><div class="sec-h"><h2>Errores que te hacen abandonar</h2></div><div class="ptips">
+    <div><b>Preparar 7 días de golpe</b><span>El día 6 ya no apetece. Mejor dos sesiones cortas.</span></div><div><b>Una sola proteína</b><span>Al tercer día de pollo buscas excusas. Mínimo dos.</span></div><div><b>Pesar cada táper</b><span>Pesa el total en crudo y reparte a ojo.</span></div><div><b>Echar la grasa al cocinar</b><span>Pierdes el control de la cantidad. El aceite, al servir.</span></div></div></div>`}
+function prepTog(kind,k){const L=PREP[kind];const i=L.indexOf(k);if(i>=0)L.splice(i,1);else{L.push(k);if(L.length>3)L.shift()}render()}

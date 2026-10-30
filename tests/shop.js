@@ -1,0 +1,25 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.planOn=true;S.kcal=1800;S.restOn=true;save();await flushSync();setView('client');go('food');foodTab='compra';render()});
+await p.setViewportSize({width:390,height:844});await w(800);if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');
+console.log('groups',await p.$$eval('.shg',a=>a.map(g=>g.querySelector('.lbl').textContent+':'+g.querySelectorAll('.shi').length)));
+console.log('sample',await p.$$eval('.shc span',a=>a.slice(0,40).map(x=>x.textContent).join(' | ')));
+await p.click('.shc >> nth=0');await p.click('.shx >> nth=2');await p.fill('#shNew','Papel de horno');await p.click('text=Añadir');await w(200);
+console.log('state',await p.evaluate(()=>JSON.stringify(S.profile.compra)),await p.textContent('.shop .sec-h'));
+await p.screenshot({path:OUT+'/shop1.png'});
+await p.evaluate(()=>{foodTab='prep';render()});await w(200);
+console.log('prep',(await p.textContent('.prepres')).replace(/\s+/g,' '));
+await p.screenshot({path:OUT+'/prep1.png',fullPage:false});
+console.log('ERR',errs);await b.close()})();
