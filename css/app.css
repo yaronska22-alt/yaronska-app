@@ -609,3 +609,12 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .rtbtns button{min-width:40px;height:38px;border-radius:8px;border:1px solid var(--line-2);background:var(--bg);color:var(--fg);font-weight:700;font-size:13px}
 @media (min-width:901px){body:not(.mobile-mode) .rtbar{bottom:24px}}
 .rt-on .screen{padding-bottom:110px}
+/* cuestionario inicial */
+.cuestcard{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--y);border-radius:12px;padding:14px}
+.cuestcard>div{display:flex;flex-direction:column;gap:3px}.cuestcard b{font-size:16px}.cuestcard small{color:var(--muted);font-size:12.5px}
+.cqbar{display:flex;gap:4px}.cqbar i{flex:1;height:5px;border-radius:3px;background:var(--surface-2)}.cqbar i.done{background:var(--ok)}.cqbar i.on{background:var(--y)}
+.scale10{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}.scale10 button{height:40px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font-weight:700}.scale10 button.on{background:var(--y);color:#000;border-color:var(--y)}
+.form textarea{width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;font:inherit;font-size:16px;color:var(--fg);resize:vertical}
+.cqnav{justify-content:space-between}
+.cqsec{border-top:1px solid var(--line);padding:8px 0}.cqsec summary{cursor:pointer;font-weight:700}
+.cqsec dl{margin:8px 0 0;display:grid;gap:2px}.cqsec dt{color:var(--muted);font-size:12.5px;margin-top:6px}.cqsec dd{margin:0;white-space:pre-line}

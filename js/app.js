@@ -299,7 +299,7 @@ function _render(){
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
   const el=document.getElementById('screen');
   el.classList.toggle('restmode',(tab==='food')&&dayType==='R');
-  el.innerHTML=({home:vHome,food:vFood,train:vTrain,check:vCheck,res:vRes,perfil:vPerfil})[tab]();
+  el.innerHTML=({home:vHome,food:vFood,train:vTrain,check:vCheck,res:vRes,perfil:vPerfil,cuest:vCuest})[tab]();
   if(tab==='perfil'){PK_AFTER=fillPk;fillPk()}
 }
 
@@ -365,6 +365,7 @@ function vHome(){
   const ph=phOf(FICHA,S.phase);const pct=Math.round(S.week/S.weeksPhase*100);
   const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
+  ${cuestCard()}
   ${revCard()}
   ${vRemind()}
   ${pushCard()}
@@ -804,6 +805,7 @@ function cFicha(){
     <div class="kpi"><small>Pago · ${esc((SUBT.find(x=>x[0]===f.tipo)||['','—'])[1])}</small><b>${f.pago?nf(f.pago,0)+' €':'—'}</b><small>${f.pago&&SUBM[f.tipo]?nf(f.pago/m,0)+' €/mes':''}</small></div>
     <div class="kpi"><small>Próxima renovación</small><b class="${dleft!=null&&dleft<=7?'badc':dleft!=null&&dleft<=21?'':'good'}" style="${dleft!=null&&dleft>7&&dleft<=21?'color:var(--warn)':''}">${ren?new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}):'—'}</b><small>${dleft!=null?(dleft>=0?'en '+dleft+' días':'vencida hace '+(-dleft)+' días'):''}</small></div>
     <div class="kpi"><small>Edad</small><b>${age!=null?age+' años':'—'}</b><small>${bd!==''?'🎂 cumple en '+bd+' días':''}</small></div></div>
+  ${cuestPanel()}
   <div class="panel"><span class="lbl">Datos generales</span>${grid(inp('nombre','Nombre')+inp('email','Email','email')+inp('tel','Teléfono / WhatsApp','tel')+sel('sexo','Sexo',[['Hombre','Hombre'],['Mujer','Mujer']])+inp('nac','Fecha de nacimiento','date')+(FICHA.nac?'':inp('edad','Edad (si no tienes la fecha)','n'))+inp('altura','Altura (cm)','n')+sel('objetivo','Objetivo',[['perder','Perder grasa'],['ganar','Ganar músculo']]))}</div>
   <div class="panel"><span class="lbl">📅 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}
     <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div>
@@ -1544,3 +1546,62 @@ function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){
 function rtAdd(s){if(!RT)return;RT.end+=s*1000;RT.total=Math.max(1,RT.total+s);rtTick()}
 function rtSnd(){try{localStorage.setItem('rtSound',rtSound()?'0':'1')}catch(e){}rtTick()}
 function rtStop(){if(RT)clearInterval(RT.iv);RT=null;const el=document.getElementById('rtBar');if(el)el.remove();document.body.classList.remove('rt-on')}
+
+// ================= CUESTIONARIO INICIAL =================
+// [clave, pregunta, tipo, opciones, campo de la Ficha al que se pasa]
+const CUEST=[
+ {t:'Datos personales y físicos',ico:'👤',q:[
+  ['nombre','Nombre completo','text',null,'nombre'],['nac','Fecha de nacimiento','date',null,'nac'],['genero','Género','choice',['Hombre','Mujer','Prefiero no decir'],'sexo'],
+  ['altura','Altura (cm)','num',null,'altura'],['peso','Peso actual (kg)','num'],['pesoObj','Peso objetivo (kg)','num'],['grasa','% de grasa estimado (si lo sabes)','num'],
+  ['trabajo','Ocupación / trabajo','text'],['ciudad','Ciudad','text'],['tel','Teléfono / Instagram','text',null,'tel'],['origen','¿Cómo me encontraste?','choice',['Instagram','Recomendación','Google','Otro']]]},
+ {t:'Historial médico',ico:'🩺',q:[
+  ['diag','¿Tienes algún diagnóstico médico relevante? (hipercolesterolemia, hipotiroidismo, diabetes, SOP…)','area',null,'patologias'],['medic','Medicación actual (nombre y dosis)','area',null,'medicacion'],
+  ['alerg','Alergias alimentarias','text',null,'alergias'],['intol','Intolerancias alimentarias','text',null,'intol'],
+  ['lesion','Lesiones actuales o crónicas (dónde, cuándo empezó, si limita tu actividad)','area',null,'lesiones'],['supl','Suplementación actual (nombre, dosis, frecuencia)','area',null,'suplem'],
+  ['ciclo','Solo si aplica: ciclo menstrual / menopausia. ¿Ciclo regular? ¿Anticonceptivos? ¿Perimenopausia o menopausia?','area',null,'ciclo']]},
+ {t:'Hábitos alimentarios',ico:'🍽',q:[
+  ['comidas','¿Cuántas comidas haces al día?','text'],['horarios','Horarios aproximados de comidas','text'],['gusta','Alimentos que te GUSTAN o te apetecen (sé específico/a)','area',null,'prefs'],
+  ['noGusta','Alimentos que NO te gustan o no quieres comer','area',null,'evitar'],['fuera','¿Comes fuera de casa? ¿Cuántas veces a la semana y en qué contexto?','area'],
+  ['agua','Litros de agua al día (aprox.)','text',null,'agua'],['alcohol','¿Consumes alcohol? ¿Con qué frecuencia?','text',null,'alcohol']]},
+ {t:'Entrenamiento y actividad',ico:'🏋️',q:[
+  ['entreno','¿Qué entrenamiento haces actualmente? (tipo, días por semana, duración)','area',null,'tipoEntreno'],['exp','Experiencia en el gimnasio','choice',['Principiante (<1 año)','Intermedio (1-3 años)','Avanzado (>3 años)']],
+  ['disp','¿Qué días puedes entrenar y cuánto tiempo tienes por sesión?','area'],['material','¿Qué material tienes disponible?','choice',['Gimnasio completo','Gym básico','Casa con material','Solo peso corporal']],
+  ['pasos','Pasos diarios aproximados','text'],['deporte','¿Practicas algún deporte extra?','text']]},
+ {t:'Psicología alimentaria',ico:'🧠',q:[
+  ['dietas','¿Has hecho dietas antes? ¿Cuáles? ¿Qué resultado tuviste?','area',null,'histDietas'],['control','¿Sientes que pierdes el control con la comida en algún momento?','choice',['Nunca','Pocas veces','A veces','Con frecuencia']],
+  ['cuando','¿Cuándo ocurre más? (noche, fines de semana, estrés…)','text'],['cuerpo','Relación con tu cuerpo ahora mismo (1 = muy mal · 10 = muy bien)','scale'],
+  ['evita','¿Evitas situaciones por tu aspecto físico? (playa, fotos, ropa…)','area']]},
+ {t:'Objetivos y expectativas',ico:'🎯',q:[
+  ['objetivo','¿Cuál es tu objetivo principal? (lo más específico posible)','area',null,'objLargo'],['porque','¿Por qué ahora? ¿Qué te ha llevado a buscar asesoramiento en este momento?','area'],
+  ['espera','¿Qué esperas de la asesoría Yaronska? ¿Qué necesitas de mí como coach?','area'],['miedo','¿Cuál es tu mayor obstáculo o miedo de cara a este proceso?','area'],
+  ['compromiso','¿Cuánto tiempo estás dispuesto/a a comprometerte?','choice',['1 mes','3 meses','6 meses','+6 meses']],['entorno','¿Tienes pareja, familia o amigos que puedan influir en tu adherencia? Cuéntame.','area'],
+  ['extra','Añade cualquier cosa que creas relevante y que no te haya preguntado','area']]}];
+const cuestOf=()=>S.profile.cuest||{a:{},step:0,done:false};
+function cuestCard(){const c=cuestOf();if(c.done||!(FICHA.cuestOn||(!S.checkins.length&&FICHA.cuestOn!==false)))return '';const n=CUEST.reduce((a,x)=>a+x.q.length,0),f=Object.values(c.a||{}).filter(v=>v!==''&&v!=null).length;
+  return `<section class="cuestcard"><div><span class="lbl">Primer paso</span><b>📋 Rellena tu cuestionario inicial</b><small>${f?`Llevas ${f} de ${n} respuestas · continúa donde lo dejaste`:'Unos 10 minutos. Con esto Yaron personaliza tu plan desde el primer día.'}</small></div><button class="btn sm" type="button" onclick="go('cuest')">${f?'Continuar':'Empezar'}</button></section>`}
+function vCuest(){const c=cuestOf();const st=Math.min(c.step||0,CUEST.length-1);const sec=CUEST[st];const a=c.a||{};
+  const fld=([k,t,ty,op])=>{const v=a[k]??'';const id='cq-'+k;
+    if(ty==='choice')return `<div class="field"><label>${esc(t)}</label><div class="chips">${op.map(o=>`<button type="button" class="chip ${v===o?'on':''}" onclick="cuestSet('${k}',${esc(JSON.stringify(o))},true)">${esc(o)}</button>`).join('')}</div></div>`;
+    if(ty==='scale')return `<div class="field"><label>${esc(t)}</label><div class="scale10">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" class="${+v===n?'on':''}" onclick="cuestSet('${k}',${n},true)">${n}</button>`).join('')}</div></div>`;
+    if(ty==='area')return `<div class="field"><label for="${id}">${esc(t)}</label><textarea id="${id}" rows="3" onchange="cuestSet('${k}',this.value)">${esc(v)}</textarea></div>`;
+    return `<div class="field"><label for="${id}">${esc(t)}</label><input id="${id}" ${ty==='date'?'type="date"':ty==='num'?'inputmode="decimal"':''} value="${esc(v)}" onchange="cuestSet('${k}',this.value)"></div>`};
+  return `<div class="hello"><span class="lbl">Cuestionario inicial · ${st+1} de ${CUEST.length}</span><h1>${sec.ico} <em>${esc(sec.t)}</em></h1></div>
+  <div class="cqbar">${CUEST.map((x,i)=>`<i class="${i<st?'done':i===st?'on':''}"></i>`).join('')}</div>
+  ${st===0?`<p class="small muted" style="margin:0">Cuanto más honesto/a y detallado/a seas, mejor podrá Yaron personalizar tu plan. No hay respuestas correctas ni incorrectas y todo es confidencial. Puedes dejarlo a medias y seguir luego.</p>`:''}
+  <form class="form" onsubmit="event.preventDefault();cuestNext(1)">${sec.q.map(fld).join('')}
+  <div class="row cqnav">${st?`<button class="btn ghost" type="button" onclick="cuestNext(-1)">← Atrás</button>`:`<button class="btn ghost" type="button" onclick="cuestLater()">Seguir más tarde</button>`}<button class="btn" type="submit">${st===CUEST.length-1?'✅ Enviar a Yaron':'Siguiente →'}</button></div></form>`}
+function cuestGrab(){document.querySelectorAll('[id^="cq-"]').forEach(el=>{const k=el.id.slice(3);const c=cuestOf();c.a=c.a||{};c.a[k]=el.value.trim();S.profile.cuest=c})}
+function cuestSet(k,v,re){const c=cuestOf();c.a=c.a||{};c.a[k]=typeof v==='string'?v.trim():v;S.profile.cuest=c;save();if(re){cuestGrab();render()}}
+function cuestNext(d){cuestGrab();const c=cuestOf();if(d>0&&c.step>=CUEST.length-1){c.done=true;c.at=new Date().toISOString();S.profile.cuest=c;save();go('home');toast('¡Gracias! Yaron ya tiene tu cuestionario');return}
+  c.step=Math.max(0,Math.min(CUEST.length-1,(c.step||0)+d));S.profile.cuest=c;save();render();window.scrollTo(0,0)}
+function cuestLater(){cuestGrab();save();go('home')}
+// entrenador: ver respuestas y pasarlas a la Ficha
+function cuestPanel(){const c=(S.profile||{}).cuest;if(!c||!c.a||!Object.keys(c.a).length)return `<div class="panel"><div class="sec-h"><span class="lbl">📋 Cuestionario inicial</span><label class="chkrow"><input type="checkbox" ${(FICHA.cuestOn||(!S.checkins.length&&FICHA.cuestOn!==false))?'checked':''} onchange="FICHA.cuestOn=this.checked;save();renderCoach()"> Pedírselo en su Inicio</label></div><p class="small muted" style="margin:0">Aún no lo ha rellenado. A los clientes nuevos (sin revisiones) les sale solo como primer paso en su Inicio; a los que ya tenías, solo si marcas la casilla.</p></div>`;
+  const a=c.a;return `<div class="panel"><div class="sec-h"><span class="lbl">📋 Cuestionario inicial ${c.done?`· enviado el ${new Date(c.at).toLocaleDateString('es-ES')}`:'· a medias'}</span><button class="btn sm" type="button" onclick="cuestToFicha()">⇩ Pasar datos a la Ficha</button></div>
+    ${CUEST.map(sec=>{const rows=sec.q.filter(q=>a[q[0]]!==''&&a[q[0]]!=null);return rows.length?`<details class="cqsec" ${sec===CUEST[0]?'open':''}><summary>${sec.ico} ${esc(sec.t)} <small class="muted">· ${rows.length}/${sec.q.length}</small></summary><dl>${rows.map(q=>`<dt>${esc(q[1])}</dt><dd>${esc(String(a[q[0]]))}</dd>`).join('')}</dl></details>`:''}).join('')}
+    <p class="small muted" style="margin:0">«Pasar datos a la Ficha» rellena sus datos personales, médicos y de hábitos solo en los campos que estén vacíos, y añade su peso inicial si aún no tiene ninguno. No pisa nada de lo que ya hayas escrito tú.</p></div>`}
+function cuestToFicha(){const c=(S.profile||{}).cuest;if(!c)return;const a=c.a;let n=0;
+  CUEST.forEach(sec=>sec.q.forEach(([k,,ty,,f])=>{if(!f)return;let v=a[k];if(v===''||v==null)return;if(f==='sexo'&&!['Hombre','Mujer'].includes(v))return;if(f==='altura')v=String(v).replace(',','.');
+    if(FICHA[f]===''||FICHA[f]==null){FICHA[f]=v;n++}}));
+  const pe=parseFloat(String(a.peso||'').replace(',','.'));if(pe>0&&!allWeights().length){S.checkins.push({date:(c.at||new Date().toISOString()).slice(0,10),r:{},fotos:0,fotosP:[],nota:'Peso del cuestionario inicial',peso:pe});S.checkins.sort((x,y)=>x.date.localeCompare(y.date));n++}
+  save();toast(n?`${n} dato${n>1?'s':''} pasado${n>1?'s':''} a la Ficha`:'La Ficha ya tenía esos datos');renderCoach()}
