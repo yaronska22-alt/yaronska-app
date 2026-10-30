@@ -390,6 +390,7 @@ function vDaily(){
   const mini=(key,lbl)=>`<span>${lbl}</span><div class="dots">${[1,2,3,4,5].map(n=>`<button type="button" class="${t[key]===n?'on':''}" onclick="today.${key}=${n};render()" aria-label="${lbl} ${n}">${n}</button>`).join('')}</div>`;
   return `<section class="daily" aria-label="Objetivos de hoy">
     <div class="daily-h"><h2>Hoy</h2><span class="small muted">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} · ${isTrain?'día de entreno':'día de descanso'}</span></div>
+    ${S.routine.length?`<button type="button" class="wkhome" onclick="trainTab='rutina';go('train')">${(()=>{const T=wkTrain();return `🏋️ <span>Entrenos de la semana: <b>${T.done} de ${T.target}</b></span><span class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</span><small>${T.left?`Te ${T.left===1?'queda':'quedan'} ${T.left}`:'✅ Completada'}</small>`})()}</button>`:''}
     <div class="daytog"><span class="small muted">${libre&&!tipoSet?'¿Hoy entrenas?':'Hoy es'}</span><div class="seg2"><button type="button" class="chip ${isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('T')">🏋️ Día de entreno</button><button type="button" class="chip ${!isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('R')">🏠 Descanso</button></div></div>
     <div class="stepsrow"><div class="field"><label for="dSteps">Pasos de hoy${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>
     <div class="toggles">${tg('diet','🍽','Dieta')}${tg('train','🏋',isTrain?'Entreno':'Descanso ok')}${tg('stepsOk','👟','Pasos')}</div>
@@ -485,18 +486,30 @@ function exCard(e,ei,label){
     ${last?`<div class="small muted">Última sesión: ${fdate(last.date)}${last.nota?` · <span class="y">tu nota: «${esc(last.nota)}»</span>`:''}</div>`:''}</article>`;
 }
 const OPT_TXT='Esta sesión es opcional: hazla si esta semana tienes tiempo y energía. Si no, no pasa nada, tu progreso no depende de ella.';
+// ---- entrenos de la semana (lunes a domingo): hechos y los que quedan
+function wkTrain(){const W=volWeek(0);const R=S.routine;const optN=new Set(R.filter(d=>d.opt).map(d=>d.d));const ses={};
+  Object.values(S.hist).forEach(a=>a.forEach(h=>{if(h.date>=W.a&&h.date<=W.b&&h.sets&&h.sets.length){const k=h.date+'|'+(h.day||'');ses[k]={date:h.date,day:h.day||''}}}));
+  const L=Object.values(ses);const req=L.filter(x=>!optN.has(x.day)),opt=L.filter(x=>optN.has(x.day));
+  const nReq=R.filter(d=>!d.opt).length;const target=Math.max(1,+FICHA.diasSemana||nReq||1);const done=req.length;
+  const dayDone=d=>{const x=L.filter(y=>y.day===d.d).sort((a,b)=>b.date.localeCompare(a.date))[0];return x?x.date:null};
+  return {done,target,left:Math.max(0,target-done),opt:opt.length,dayDone}}
+const wdName=dt=>new Date(dt+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'});
+function wkBar(){const T=wkTrain();if(!S.routine.length)return '';
+  return `<div class="wkt ${T.left?'':'full'}"><div><span class="lbl">Entrenos de esta semana</span><b>${T.done} de ${T.target}${T.opt?` <small class="muted">+ ${T.opt} opcional</small>`:''}</b></div><div class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</div><small>${T.left?`Te ${T.left===1?'queda':'quedan'} <b>${T.left}</b> entreno${T.left===1?'':'s'}`:'✅ ¡Semana completada!'}</small></div>`}
 let trainTab='rutina';
 const trainTabs=()=>`<div class="tabs">${[['rutina','Mi rutina'],['progreso','📈 Progreso'],['volumen','📊 Volumen'],['rangos','🏅 Rangos']].map(([k,l])=>`<button type="button" class="${trainTab===k?'on':''}" onclick="trainTab='${k}';render()">${l}</button>`).join('')}</div>`;
 function vTrain(){
   if(trainTab==='rangos')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tus <em>rangos</em></h1></div>${trainTabs()}${vRanks()}`;
   if(trainTab==='progreso')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>progreso</em></h1></div>${trainTabs()}${vProgress()}`;
   if(trainTab==='volumen')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>volumen</em></h1></div>${trainTabs()}${vVolume(false)}`;
-  const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];
+  const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];const WK=wkTrain();
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
   ${trainTabs()}
-  <div class="daysel">${R.map((r,i)=>`<button type="button" class="chip ${r.opt?'opt':''} ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${esc(r.d.split('·')[0].trim())}${r.opt?' <small>(opcional)</small>':''}</button>`).join('')}</div>
+  ${wkBar()}
+  <div class="daysel">${R.map((r,i)=>{const dn=WK.dayDone(r);return `<button type="button" class="chip ${r.opt?'opt':''} ${dn?'done':''} ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${dn?'✓ ':''}${esc(r.d.split('·')[0].trim())}${r.opt?' <small>(opcional)</small>':''}</button>`}).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}${d.opt?' <span class="optb">Opcional</span>':''}</h2>
   ${d.opt?`<div class="band optband">${esc(d.optTxt||OPT_TXT)}</div>`:''}
+  ${WK.dayDone(d)?`<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(WK.dayDone(d)))}. Si lo repites, se guarda como otra sesión.</div>`:''}
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
@@ -508,8 +521,15 @@ function saveSession(){
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
   const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
-  save();toast('Entreno guardado');render();
+  save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d);else toast('Nota enviada a Yaron');
 }
+function doneSheet(d){const T=wkTrain();const sh=document.getElementById('sheet');
+  const msg=d.opt?'Sesión opcional hecha: esto es un extra 🔥':T.left?`Te ${T.left===1?'queda':'quedan'} <b>${T.left}</b> entreno${T.left===1?'':'s'} esta semana.`:'¡Has completado todos los entrenos de la semana! 💪';
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Entreno hecho"><div class="sheet-b donesh"><div class="donebig">✅</div><h2>¡Entreno hecho!</h2><p class="muted" style="margin:0">${esc(d.d)}</p>
+    <div class="wkdots big">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</div>
+    <p style="margin:0;font-size:16px"><b>${T.done} de ${T.target}</b> esta semana${T.opt?` · + ${T.opt} opcional`:''}</p><p style="margin:0">${msg}</p>
+    <button class="btn" type="button" onclick="closeSheet();window.scrollTo({top:0,behavior:'smooth'})">Genial</button></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 function vCheck(){
   return `<div class="hello"><span class="lbl">Revisión semanal · ${esc(CLIENT.checkDay)}</span><h1>Tu <em>check-in</em></h1></div>
   <form class="form" onsubmit="sendCheck(event)">

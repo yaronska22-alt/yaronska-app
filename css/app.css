@@ -518,3 +518,19 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .tabs+.hsb{margin-top:4px}
 .tbl-w{scrollbar-width:none}.tbl-w::-webkit-scrollbar{display:none}
 .hscroll{scrollbar-width:none}.hscroll::-webkit-scrollbar{display:none}
+/* entrenos de la semana */
+.wkt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid var(--y);border-radius:10px;padding:12px 14px}
+.wkt.full{border-left-color:var(--ok)}
+.wkt>div:first-child{display:flex;flex-direction:column;gap:2px}
+.wkt b{font-size:18px}.wkt small b{font-size:inherit;color:var(--y)}
+.wkt>small{grid-column:1/-1;font-size:13px}
+.wkdots{display:inline-flex;gap:5px;align-items:center}
+.wkdots i{width:12px;height:12px;border-radius:50%;border:2px solid var(--line-2)}
+.wkdots i.on{background:var(--ok);border-color:var(--ok)}
+.wkdots.big{justify-content:center}.wkdots.big i{width:18px;height:18px}
+.chip.done:not(.on){border-color:var(--ok);color:var(--ok)}
+.donebar{border-left-color:var(--ok)}
+.donesh{text-align:center;align-items:center;display:flex;flex-direction:column;gap:10px}
+.donebig{font-size:46px;line-height:1}
+.wkhome{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
+.wkhome small{margin-left:auto;color:var(--muted)}
