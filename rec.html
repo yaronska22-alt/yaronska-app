@@ -84,7 +84,7 @@ select:focus,input:focus{border-color:var(--y)}
         <button class="btn ghost" id="bPause" type="button" disabled>❚❚ Pausa</button>
         <button class="btn red" id="bStop" type="button" disabled>■ Parar</button>
       </div>
-      <p class="hint">Con <b>Pantalla + cámara</b> la cámara sale en una burbuja flotante encima de todo. Para que se grabe, comparte la <b>pantalla completa</b> (no una pestaña ni una ventana). Puedes moverla y cambiarle el tamaño.</p>
+      <p class="hint">Con <b>Pantalla + cámara</b> tu cara sale en un círculo en la esquina del vídeo, como en Loom. Puedes compartir la pantalla completa, una ventana o una pestaña: tu cara se graba siempre. Elige la esquina y el tamaño a la derecha.</p>
     </div>
     <div class="panel">
       <div class="field"><label class="lbl">Modo</label>
@@ -96,7 +96,8 @@ select:focus,input:focus{border-color:var(--y)}
         <label class="sw"><input type="checkbox" id="raw" checked><span><b>Audio de estudio (sin filtros)</b><br><span class="hint" style="margin:0">Desactiva la reducción de ruido, el eco y el volumen automático del navegador para que el micrófono externo grabe tal cual. Quítalo solo si usas el micro del portátil en un sitio con ruido.</span></span></label>
         <label class="sw"><input type="checkbox" id="sys"><span>Grabar también el sonido del ordenador<br><span class="hint" style="margin:0">Solo si vas a enseñar un vídeo con sonido.</span></span></label>
       </div>
-      <div class="field" id="camF"><label class="lbl" for="cam">Cámara</label><select id="cam"></select></div>
+      <div class="field" id="camF"><label class="lbl" for="cam">Cámara</label><select id="cam"></select>
+        <div class="row" id="bubF" style="margin-top:8px;flex-wrap:nowrap"><select id="bPos" aria-label="Posición de tu cara"><option value="bl">Abajo izquierda</option><option value="br">Abajo derecha</option><option value="tl">Arriba izquierda</option><option value="tr">Arriba derecha</option></select><select id="bSize" aria-label="Tamaño de tu cara"><option value="0.22">Pequeña</option><option value="0.3" selected>Mediana</option><option value="0.4">Grande</option></select></div></div>
       <div class="field"><label class="lbl" for="qual">Calidad de vídeo</label>
         <select id="qual"><option value="1080">Full HD 1080p (recomendado)</option><option value="1440">2K 1440p</option><option value="720">HD 720p (archivo más ligero)</option></select></div>
       <div class="field"><label class="lbl" for="nm">Nombre del vídeo</label><input type="text" id="nm" placeholder="Ej.: Feedback Carlos semana 3" maxlength="80"></div>
@@ -119,7 +120,7 @@ if(!navigator.mediaDevices||!window.MediaRecorder){$('warn').textContent='Este n
 else if(!navigator.mediaDevices.getDisplayMedia){$('warn').textContent='Para grabar la pantalla usa Google Chrome o Microsoft Edge en el ordenador.';$('warn').classList.add('on')}
 
 // ---------- modo
-function setMode(m){MODE=m;LS.set('mode',m);document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('camF').style.display=m==='screen'?'none':'';$('sys').closest('.sw').style.display=m==='cam'?'none':''}
+function setMode(m){MODE=m;LS.set('mode',m);document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('camF').style.display=m==='screen'?'none':'';$('bubF').style.display=m==='both'?'':'none';$('sys').closest('.sw').style.display=m==='cam'?'none':''}
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{if(rec)return;setMode(b.dataset.m)});setMode(MODE);
 
 // ---------- micrófonos y cámaras
@@ -160,7 +161,7 @@ navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.media
 // ---------- cámara
 async function openCam(){
   if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;
-  const id=$('cam').value;const h=MODE==='cam'?+$('qual').value:720;
+  const id=$('cam').value;const h=MODE==='cam'?+$('qual').value:1080;
   try{camStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:id?{exact:id}:undefined,width:{ideal:Math.round(h*16/9)},height:{ideal:h},frameRate:{ideal:30}}});LS.set('camLabel',camStream.getVideoTracks()[0].label)}catch(e){toast('No se puede abrir la cámara');return}
   if(!rec){$('pv').srcObject=camStream;$('ph').style.display='none'}}
 $('cam').onchange=openCam;$('qual').onchange=()=>{if(MODE==='cam')openCam()};
@@ -177,6 +178,37 @@ async function openBubble(){
   const v=document.createElement('video');v.muted=true;v.playsInline=true;v.srcObject=camStream;await v.play();
   try{await v.requestPictureInPicture();pip={close:()=>document.pictureInPictureElement&&document.exitPictureInPicture()}}catch(e){toast('No se ha podido abrir la burbuja de la cámara')}}
 const closeBubble=()=>{try{pip&&pip.close()}catch(e){}pip=null};
+
+// ---------- tu cara dentro del vídeo (como Loom): se mezcla pantalla + cámara en cada fotograma.
+// Lo marca la cámara (30 fps constantes), así sigue funcionando aunque esta ventana quede detrás.
+let COMP=null;
+['bPos','bSize'].forEach(k=>{const v=LS.get(k);if(v)$(k).value=v;$(k).onchange=()=>LS.set(k,$(k).value)});
+function bubble(ctx,src,sw,sh,W,H){const d=Math.round(H*(+$('bSize').value)),m=Math.round(H*.035),pos=$('bPos').value;
+  const x=pos[1]==='l'?m:W-m-d,y=pos[0]==='t'?m:H-m-d;const s=Math.min(sw,sh),sx=(sw-s)/2,sy=(sh-s)/2;
+  ctx.save();ctx.beginPath();ctx.arc(x+d/2,y+d/2,d/2,0,Math.PI*2);ctx.closePath();ctx.clip();ctx.drawImage(src,sx,sy,s,s,x,y,d,d);ctx.restore();
+  ctx.beginPath();ctx.arc(x+d/2,y+d/2,d/2-Math.max(2,d*.012),0,Math.PI*2);ctx.lineWidth=Math.max(4,d*.025);ctx.strokeStyle='#FFD60A';ctx.stroke()}
+function composite(scrTrack,camTrack,maxH){
+  const st=scrTrack.getSettings();let W=st.width||1920,H=st.height||1080;if(H>maxH){W=Math.round(W*maxH/H);H=maxH}W-=W%2;H-=H%2;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const ctx=cv.getContext('2d',{alpha:false});ctx.imageSmoothingQuality='high';
+  const state={on:true,scr:null};
+  if('MediaStreamTrackProcessor' in window&&'MediaStreamTrackGenerator' in window){
+    const gen=new MediaStreamTrackGenerator({kind:'video'});const out=gen.writable.getWriter();
+    const sr=new MediaStreamTrackProcessor({track:scrTrack}).readable.getReader();
+    const cr=new MediaStreamTrackProcessor({track:camTrack}).readable.getReader();
+    (async()=>{while(state.on){const {value,done}=await sr.read();if(done)break;if(state.scr)state.scr.close();state.scr=value}})().catch(()=>{});
+    (async()=>{while(state.on){const {value:cam,done}=await cr.read();if(done)break;
+      if(state.scr)ctx.drawImage(state.scr,0,0,W,H);else{ctx.fillStyle='#000';ctx.fillRect(0,0,W,H)}
+      bubble(ctx,cam,cam.displayWidth,cam.displayHeight,W,H);const ts=cam.timestamp;cam.close();
+      const vf=new VideoFrame(cv,{timestamp:ts});try{await out.write(vf)}catch(e){vf.close();break}}})().catch(()=>{});
+    state.stop=()=>{state.on=false;try{sr.cancel();cr.cancel()}catch(e){}if(state.scr){state.scr.close();state.scr=null}try{out.close()}catch(e){}gen.stop()};
+    return {track:gen,stop:()=>state.stop()}}
+  // otros navegadores: dibujo con temporizador de un worker (no se frena en segundo plano)
+  const vs=document.createElement('video'),vc=document.createElement('video');[vs,vc].forEach(v=>{v.muted=true;v.playsInline=true});
+  vs.srcObject=new MediaStream([scrTrack]);vc.srcObject=new MediaStream([camTrack]);vs.play();vc.play();
+  const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'],{type:'text/javascript'})));
+  wk.onmessage=()=>{if(vs.readyState>=2)ctx.drawImage(vs,0,0,W,H);if(vc.readyState>=2)bubble(ctx,vc,vc.videoWidth,vc.videoHeight,W,H)};
+  const out=cv.captureStream(30).getVideoTracks()[0];
+  return {track:out,stop:()=>{wk.terminate();out.stop();vs.srcObject=null;vc.srcObject=null}}}
 
 // ---------- carpeta de destino (Google Drive para ordenador)
 const idb=()=>new Promise((ok,ko)=>{const r=indexedDB.open('yaronska-rec',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
@@ -205,7 +237,7 @@ async function start(){
       scrStream=await navigator.mediaDevices.getDisplayMedia({video:{width:{ideal:w,max:w},height:{ideal:h,max:h},frameRate:{ideal:30,max:30}},audio:$('sys').checked?{echoCancellation:false,noiseSuppression:false,autoGainControl:false}:false,selfBrowserSurface:'exclude',surfaceSwitching:'include',systemAudio:$('sys').checked?'include':'exclude',monitorTypeSurfaces:'include'});
       const vt=scrStream.getVideoTracks()[0];try{vt.contentHint='detail'}catch(e){}
       vt.addEventListener('ended',()=>{if(rec)stop()});
-      if(MODE==='both'&&vt.getSettings().displaySurface&&vt.getSettings().displaySurface!=='monitor')toast('Ojo: no estás compartiendo la pantalla completa, la burbuja de la cámara no saldrá en el vídeo',6000);
+      
     }
   }catch(e){if(e.name!=='NotAllowedError')toast('No se ha podido empezar: '+e.message);return}
   // audio: el micro va directo (máxima calidad); si hay sonido del ordenador, se mezclan
@@ -213,14 +245,14 @@ async function start(){
   const sysT=scrStream?scrStream.getAudioTracks():[];
   if(sysT.length){mixCtx=new AudioContext({sampleRate:48000});const dst=mixCtx.createMediaStreamDestination();dst.channelCount=2;
     mixCtx.createMediaStreamSource(micStream).connect(dst);mixCtx.createMediaStreamSource(new MediaStream(sysT)).connect(dst);aTracks=dst.stream.getAudioTracks()}
-  const vTrack=(MODE==='cam'?camStream:scrStream).getVideoTracks()[0];
+  let vTrack=(MODE==='cam'?camStream:scrStream).getVideoTracks()[0];
+  if(MODE==='both'&&camStream){const ct=camStream.getVideoTracks()[0].clone();COMP=composite(vTrack,ct,h);const st0=COMP.stop;COMP.stop=()=>{st0();ct.stop()};vTrack=COMP.track}
   recStream=new MediaStream([vTrack,...aTracks]);
   const type=fmt();const ext=/mp4/.test(type)?'mp4':'webm';
   fileName=`${clean($('nm').value)||'Yaronska Rec'} ${stamp()}.${ext}`;
   writer=null;chunks=[];
   if(await dirOK()){try{const fh=await dirH.getFileHandle(fileName,{create:true});writer=await fh.createWritable()}catch(e){writer=null;toast('No se puede escribir en la carpeta: se descargará')}}
-  $('pv').srcObject=MODE==='cam'?camStream:scrStream;$('ph').style.display='none';
-  if(MODE==='both')await openBubble();
+  $('pv').srcObject=new MediaStream([vTrack]);$('ph').style.display='none';
   await countdown();
   rec=new MediaRecorder(recStream,{mimeType:type||undefined,videoBitsPerSecond:h>=1440?14e6:h>=1080?8e6:5e6,audioBitsPerSecond:320000});
   let q=Promise.resolve();
@@ -232,7 +264,7 @@ async function start(){
   document.title='● Grabando · Yaronska Rec';
 }
 function pause(){if(!rec)return;if(rec.state==='recording'){rec.pause();acc+=Date.now()-t0;$('bPause').textContent='▶ Seguir';$('badge').classList.add('paused');document.title='❚❚ En pausa · Yaronska Rec'}else{rec.resume();t0=Date.now();$('bPause').textContent='❚❚ Pausa';$('badge').classList.remove('paused');document.title='● Grabando · Yaronska Rec'}}
-function stop(){if(!rec||rec.state==='inactive')return;if(rec.state==='recording')acc+=Date.now()-t0;rec.stop();clearInterval(tick);closeBubble();if(scrStream)scrStream.getTracks().forEach(t=>t.stop());}
+function stop(){if(!rec||rec.state==='inactive')return;if(rec.state==='recording')acc+=Date.now()-t0;rec.stop();clearInterval(tick);closeBubble();if(COMP){const c=COMP;COMP=null;setTimeout(()=>c.stop(),300)}if(scrStream)scrStream.getTracks().forEach(t=>t.stop());}
 async function finish(){
   const secs=Math.round(acc/1000),type=rec.mimeType;let where='';
   if(writer&&!chunks.length){try{await writer.close();where='Guardado en '+dirH.name}catch(e){where=''}}
