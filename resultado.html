@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tu resultado · Checklist del Lunes</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0A0907">
+<link rel="icon" href="img/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@700;800;900&family=Onest:wght@400;500;600;700&display=swap">
+<style>
+/* Hoja de resultado del Checklist del Lunes: se ve en el móvil y se exporta a PDF (A4) para mandarla a Yaron. */
+:root{--bg:#0A0907;--s1:#141210;--s2:#1E1B17;--line:#2A2620;--y:#FFD60A;--y2:#FFEC6E;--fg:#fff;--g:#A8A49C;--g2:#6F6B63;--ok:#6FD08C;--warn:#FFB547;--bad:#FF6B5B;
+  --d:"Jost","Futura","Century Gothic",system-ui,sans-serif;--b:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--b);font-size:15px;line-height:1.5}
+.bar8{height:8px;background:var(--y)}
+.wrap{max-width:820px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-left,0px)) 60px;display:flex;flex-direction:column;gap:16px}
+.lbl{font-family:var(--d);font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--y)}
+.panel{background:var(--s1);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel h1{font-family:var(--d);font-weight:900;font-size:28px;line-height:1.05}
+.panel p{color:var(--g)}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--g)}
+input{background:var(--s2);border:1px solid var(--line);border-radius:4px;padding:12px;color:var(--fg);font:inherit;font-size:16px;outline:none}
+input:focus{border-color:var(--y)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:480px){.btns{grid-template-columns:1fr}}
+.btn{font-family:var(--d);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;padding:15px 18px;cursor:pointer;border:1px solid var(--line);background:var(--s2);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--y);border-color:var(--y);color:#000}.btn.wa{background:#25D366;border-color:#25D366;color:#04210f}
+.btn:disabled{opacity:.5;cursor:wait}
+.hint{font-size:12.5px;color:var(--g2)}
+.err{background:#1f1210;border:1px solid var(--bad);color:#ffd2cc;border-radius:6px;padding:12px}
+
+/* ===== hoja ===== */
+.sheet{background:var(--bg);color:var(--fg);display:flex;flex-direction:column;gap:14px}
+.sheet .sec{background:var(--s1);border:1px solid var(--line);border-radius:8px;padding:16px}
+.sh-head{background:#000;border-radius:8px;overflow:hidden}
+.sh-head .tb{height:8px;background:var(--y)}
+.sh-head .in{padding:18px 18px 16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.sh-head h2{font-family:var(--d);font-weight:900;font-size:30px;line-height:1;margin-top:6px}.sh-head h2 em{font-style:normal;color:var(--y)}
+.sh-head .who{font-family:var(--d);font-weight:800;font-size:18px;color:var(--y);margin-top:6px;text-transform:uppercase}
+.meta{display:grid;grid-template-columns:auto auto;gap:3px 12px;font-size:12px;background:var(--s1);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.meta span{color:var(--g);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;align-self:center}.meta b{text-align:right;font-variant-numeric:tabular-nums}
+.verdict{border-left:4px solid var(--y);padding-left:14px}
+.verdict .big{font-family:var(--d);font-weight:900;font-size:24px;line-height:1.12}
+.verdict p{color:var(--g);margin-top:6px}
+.score{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.ring{width:118px;height:118px}
+.ring text{font-family:var(--d);font-weight:900}
+.areas{display:flex;flex-direction:column;gap:11px}
+.ar .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ar .nm{font-weight:600}
+.lv{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.lv.ok{color:var(--ok);border:1px solid #24533a}.lv.warn{color:var(--warn);border:1px solid #5a4318}.lv.bad{color:var(--bad);border:1px solid #5a2620}
+.track{height:10px;background:var(--s2);border-radius:2px;margin-top:5px;overflow:hidden}
+.fill{height:100%;border-radius:2px}.fill.ok{background:var(--ok)}.fill.warn{background:var(--warn)}.fill.bad{background:var(--bad)}
+.pc{font-size:12px;color:var(--g2);margin-top:3px;font-variant-numeric:tabular-nums}
+.h3{font-family:var(--d);font-weight:800;font-size:19px;line-height:1.2}
+.cycle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.cycle div{border:1px dashed var(--line);border-radius:6px;padding:10px;font-size:13px;color:var(--g2)}
+.cycle div b{display:block;font-family:var(--d);font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.cycle div.on{border:1px solid var(--bad);color:var(--fg);background:#1f1210}.cycle div.on b{color:var(--bad)}
+.pil{display:flex;flex-direction:column}
+.pil div{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.pil div:first-child{border-top:0}
+.pil .n{font-family:var(--d);font-weight:900;font-size:20px;color:var(--y)}
+.first{background:var(--y);color:#000;border-radius:8px;padding:16px}
+.first .lbl{color:#000}.first .h3{margin-top:4px}.first p{margin-top:6px;font-size:14.5px}
+.det{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.det{grid-template-columns:1fr}}
+.det .a{background:var(--s1);border:1px solid var(--line);border-radius:8px;padding:12px;border-top:3px solid var(--g2)}
+.det .a.warn{border-top-color:var(--warn)}.det .a.bad{border-top-color:var(--bad)}.det .a.ok{border-top-color:var(--ok)}
+.det .a h4{font-family:var(--d);font-weight:800;font-size:15px;display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.det ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+.det li{font-size:12.5px;line-height:1.35;display:grid;grid-template-columns:auto 1fr;gap:7px}
+.dots{display:inline-flex;gap:2px;padding-top:4px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--s2)}.dots i.on{background:var(--y)}
+.det .none{font-size:12.5px;color:var(--g2)}
+.sh-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--d);font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--g2);padding:4px 2px}
+.sh-foot b{color:var(--y)}
+/* versión PDF: ancho fijo A4 y 2 columnas */
+.pdf{width:794px;padding:28px;position:fixed;left:-10000px;top:0}
+.pdf .det{grid-template-columns:1fr 1fr}
+</style>
+</head>
+<body>
+<div class="bar8"></div>
+<main class="wrap" id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const WA="34655694175";
+const AREAS=[
+ {id:"semana",n:"Entre semana",items:[["Te saltas el desayuno o comes casi nada hasta mediodía \"para ahorrar calorías\".",2],["Comes lo primero que pillas en el curro: máquina, bar, bollería.",2],["Cenas \"ligero\" (ensalada, yogur…) y a las dos horas estás picando.",2],["Picas por la noche delante de la tele o el móvil.",3],["Tus comidas casi no llevan proteína (carne, pescado, huevos, lácteos, legumbre).",2],["Te prohíbes cosas (pan, pasta, dulce) y acabas comiéndolas a lo bestia.",3],["No sabes qué vas a comer hasta que tienes hambre.",2],["Bebes refrescos o zumos casi a diario.",1]]},
+ {id:"finde",n:"Fin de semana",items:[["El viernes piensas \"bah, ya el lunes empiezo\".",3],["No comes antes de una comida o cena fuera \"para guardar hueco\".",3],["Comes fuera sin criterio: pan, entrante, principal, postre y lo que caiga.",2],["Bebes 4 o más cervezas o copas a lo largo del finde.",2],["El \"cheat meal\" se convierte en \"cheat weekend\" de viernes a domingo.",3],["Picoteo constante: patatas, frutos secos, aperitivos con el fútbol o con amigos.",2],["Resaca = comida basura al día siguiente.",2],["El sábado y el domingo apenas te mueves: sofá, coche, terraza.",1]]},
+ {id:"lunes",n:"El lunes",items:[["Te pesas el lunes y la báscula te hunde el día.",2],["Comes mucho menos para \"compensar\".",3],["Metes cardio extra o entrenas a lo bestia para \"quemar\" lo del finde.",2],["Empiezas una dieta nueva o más estricta.",3],["Te sientes culpable o te hablas fatal por lo que comiste.",2],["Para el miércoles o el jueves ya vas con hambre y ansiedad.",3]]},
+ {id:"mov",n:"Movimiento y entreno",items:[["La mayoría de días haces menos de 6.000 pasos.",2],["No entrenas fuerza, o vas al gimnasio sin plan a hacer lo que te apetece.",2],["Entrenas a rachas: dos semanas a tope y luego tres sin ir.",3],["Usas el entreno para \"quemar\" lo que comes.",2],["Pasas 8 horas o más sentado sin apenas levantarte.",1],["Solo haces cardio porque \"es lo que adelgaza\".",1]]},
+ {id:"cabeza",n:"Descanso y cabeza",items:[["Duermes menos de 6-7 horas la mayoría de noches.",2],["Te acuestas con el móvil y tardas en dormirte.",1],["Cuando estás estresado, cansado o aburrido, comes.",3],["Vas a todo o nada: o dieta perfecta o a la mierda.",3],["Cuando fallas un día, das la semana por perdida.",3],["Solo miras la báscula: ni fotos, ni cintura, ni cómo te queda la ropa.",1]]}
+];
+const PILLARS=[{n:"No compensar el lunes",area:"lunes"},{n:"Entender qué ha pasado de verdad",area:null},{n:"Una semana que no te deje con hambre",area:["semana","mov","cabeza"]},{n:"Un finde con plan, no con prohibiciones",area:"finde"}];
+const FIRST={semana:"Mete proteína en cada comida y deja de saltarte el desayuno o \"cenar ligero\" para ahorrar. Si la semana te deja con hambre, el finde explota.",finde:"Antes de comer fuera, come normal durante el día y elige un solo capricho de verdad (o el postre, o las cervezas, o la pizza), no todo.",lunes:"Este lunes come exactamente igual que un martes normal. Nada de compensar, nada de cardio de castigo, nada de dieta nueva.",mov:"Ponte un mínimo de pasos diarios que puedas cumplir siempre (por ejemplo, 7.000) antes de pensar en entrenar más.",cabeza:"Elige una noche de esta semana para dormir 7 horas sin móvil en la cama, y cuando falles una comida, sigue con la siguiente como si nada."};
+const LV={ok:"Controlado",warn:"Fuga",bad:"Agujero"};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=s=>document.querySelector(s);
+
+// #r=0-3-5.1.2-4..  → índices marcados por bloque (en el orden de AREAS)
+function parse(){const m=location.hash.match(/r=([0-9.\-]*)/);if(!m)return null;const parts=m[1].split(".");const sel={};
+  AREAS.forEach((a,i)=>{sel[a.id]=(parts[i]||"").split("-").filter(x=>x!=="").map(Number).filter(n=>n>=0&&n<a.items.length)});return sel}
+const SEL=parse();
+let NAME="";try{NAME=localStorage.getItem("cl_name")||""}catch(e){}
+
+function calc(){return AREAS.map(a=>{const sel=[...new Set(SEL[a.id]||[])].sort((x,y)=>x-y);const max=a.items.reduce((s,i)=>s+i[1],0);const got=sel.reduce((s,i)=>s+a.items[i][1],0);const pc=Math.round(got/max*100);return {...a,sel,max,got,pc,lv:pc>=50?"bad":pc>=25?"warn":"ok"}})}
+function verdict(R){const fails=R.filter(r=>r.lv!=="ok"),nonFinde=fails.filter(r=>r.id!=="finde"),finde=R.find(r=>r.id==="finde"),marked=R.reduce((s,r)=>s+r.sel.length,0);
+  if(marked===0)return ["No has marcado nada.","O lo tienes muy controlado o te ha dado pereza ser sincero."];
+  if(nonFinde.length>=2)return [finde.lv!=="ok"?`El finde no es tu único problema. Fallas en ${fails.length} de 5 áreas.`:`El finde no es tu problema. Fallas en ${fails.length} de 5 áreas.`,"La comida del sábado es solo donde se nota. Lo que te tira la semana viene de antes y de después: "+nonFinde.map(r=>r.n.toLowerCase()).join(", ")+"."];
+  if(nonFinde.length===1&&finde.lv!=="ok")return ["El finde pesa, pero no va solo.",`Además del finde, tienes una fuga clara en ${nonFinde[0].n.toLowerCase()}. Si solo arreglas el sábado, el problema vuelve.`];
+  if(nonFinde.length===1)return [`Tu fuga principal no es el finde: es ${nonFinde[0].n.toLowerCase()}.`,"Seguramente llevas tiempo culpando a la comida del sábado de algo que está pasando en otro sitio."];
+  if(finde.lv!=="ok")return ["Tu semana va bien. El finde necesita un plan.","No hace falta prohibirte nada: hace falta saber cómo llegar, qué pedir y cuánto beber."];
+  return ["Lo tienes bastante controlado.","Pocas fugas y ninguna grande."]}
+
+function sheet(){const R=calc();const [big,txt]=verdict(R);
+  const has=(id,idx)=>(SEL[id]||[]).some(i=>idx.includes(i));
+  const cyc=[["Restringes entre semana","Desayuno saltado, cenas ligeras, prohibiciones",has("semana",[0,2,5])||has("cabeza",[3])],["Llegas al finde con hambre","\"Ya el lunes empiezo\", sin comer antes",has("finde",[0,1])],["Te pasas","Cheat weekend, alcohol, picoteo",has("finde",[2,3,4,5,6])],["Compensas el lunes","Comer menos, cardio de castigo, dieta nueva",has("lunes",[1,2,3])]];
+  const cycOn=cyc.filter(c=>c[2]).length;
+  const tot=R.reduce((s,r)=>s+r.got,0),max=R.reduce((s,r)=>s+r.max,0),gpc=Math.round(tot/max*100),marked=R.reduce((s,r)=>s+r.sel.length,0),nItems=R.reduce((s,r)=>s+r.items.length,0);
+  const glv=gpc>=50?"bad":gpc>=25?"warn":"ok",gcol={ok:"#6FD08C",warn:"#FFB547",bad:"#FF6B5B"}[glv];
+  const C=2*Math.PI*48,ring=`<svg class="ring" viewBox="0 0 118 118" role="img" aria-label="Riesgo global ${gpc}%"><circle cx="59" cy="59" r="48" fill="none" stroke="#1E1B17" stroke-width="12"/><circle cx="59" cy="59" r="48" fill="none" stroke="${gcol}" stroke-width="12" stroke-dasharray="${C*Math.max(gpc,1)/100} ${C}" transform="rotate(-90 59 59)" stroke-linecap="butt"/><text x="59" y="60" text-anchor="middle" fill="#fff" font-size="28">${gpc}%</text><text x="59" y="80" text-anchor="middle" fill="#A8A49C" font-size="10" letter-spacing="1">RIESGO</text></svg>`;
+  const pst=p=>{if(!p.area)return ["Hecho","ok"];const ids=[].concat(p.area);const rs=R.filter(r=>ids.includes(r.id));const w=rs.some(r=>r.lv==="bad")?"bad":rs.some(r=>r.lv==="warn")?"warn":"ok";return [w==="ok"?"Bien":w==="warn"?"A revisar":"Aquí fallas",w]};
+  const worst=[...R].sort((a,b)=>b.pc-a.pc)[0];
+  const date=new Date().toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
+  const dots=w=>`<span class="dots" title="Peso ${w}">${[1,2,3].map(i=>`<i class="${i<=w?"on":""}"></i>`).join("")}</span>`;
+  return `<div class="sh-head"><div class="tb"></div><div class="in"><div><div class="lbl">@Yaronska_Fit · Checklist del Lunes</div><h2>Tu <em>diagnóstico</em></h2>${NAME?`<div class="who">${esc(NAME)}</div>`:""}</div>
+    <div class="meta"><span>Fecha</span><b>${date}</b><span>Marcadas</span><b>${marked} de ${nItems}</b><span>Áreas con fuga</span><b>${R.filter(r=>r.lv!=="ok").length} de 5</b><span>Bucle del lunes</span><b>${cycOn} de 4</b></div></div></div>
+   <div class="sec verdict"><div class="big">${esc(big)}</div><p>${esc(txt)}</p></div>
+   <div class="sec"><div class="lbl" style="margin-bottom:12px">Dónde pierdes el progreso</div><div class="score">${ring}<div class="areas">${R.map(r=>`<div class="ar"><div class="top"><span class="nm">${esc(r.n)}</span><span class="lv ${r.lv}">${LV[r.lv]} · ${r.pc}%</span></div><div class="track"><div class="fill ${r.lv}" style="width:${Math.max(r.pc,2)}%"></div></div><div class="pc">${r.sel.length} de ${r.items.length} marcadas · ${r.got}/${r.max} puntos</div></div>`).join("")}</div></div></div>
+   <div class="sec"><div class="h3">${cycOn>=3?"Estás dentro del bucle del lunes":cycOn?"Tienes parte del bucle del lunes":"Fuera del bucle del lunes"}</div><p style="color:var(--g);font-size:14px;margin-top:4px">${cycOn} de los 4 pasos del círculo. Cada pieza alimenta a la siguiente.</p><div class="cycle">${cyc.map((c,i)=>`<div class="${c[2]?"on":""}"><b>${i+1}. ${esc(c[0])}</b>${esc(c[1])}</div>`).join("")}</div></div>
+   <div class="sec"><div class="lbl" style="margin-bottom:4px">Los 4 pilares</div><div class="pil">${PILLARS.map((p,i)=>{const [t,w]=pst(p);return `<div><span class="n">${i+1}</span><span>${esc(p.n)}</span><span class="lv ${w}">${t}</span></div>`}).join("")}</div></div>
+   ${marked?`<div class="first"><div class="lbl">Tu primer paso esta semana</div><div class="h3">Empieza por: ${esc(worst.n.toLowerCase())}</div><p>${esc(FIRST[worst.id])}</p></div>`:""}
+   <div><div class="lbl" style="margin:4px 0 10px">Lo que has marcado, bloque a bloque</div><div class="det">${R.map(r=>`<div class="a ${r.lv}"><h4><span>${esc(r.n)}</span><span class="lv ${r.lv}">${r.sel.length}/${r.items.length}</span></h4>${r.sel.length?`<ul>${r.sel.map(i=>`<li>${dots(r.items[i][1])}<span>${esc(r.items[i][0])}</span></li>`).join("")}</ul>`:`<p class="none">Nada marcado en este bloque.</p>`}</div>`).join("")}</div>
+     <p class="hint" style="margin-top:8px">● Peso de cada respuesta: 1 = poco, 3 = mucho.</p></div>
+   <div class="sh-foot"><span><b>Yaronska_Fit</b> · Método Anti-Esfuerzo</span><span>#ComeConGusto</span></div>`}
+
+function render(){const app=$("#app");
+  if(!SEL){app.innerHTML=`<div class="panel"><h1>No hay resultado</h1><p>Abre esta página desde el botón «Enviar mi resultado a Yaron» al terminar el checklist.</p></div>`;return}
+  app.innerHTML=`<div class="panel"><div class="lbl">Tu resultado en PDF</div><h1>Envíaselo a Yaron</h1><p>Pon tu nombre para que sepa que es tuyo y mándaselo por WhatsApp. Debajo ves cómo queda.</p>
+    <label class="f" for="nm">Tu nombre<input id="nm" maxlength="40" autocomplete="name" placeholder="Ej.: Carlos García" value="${esc(NAME)}"></label>
+    <div class="btns"><button class="btn wa" id="send" type="button">Enviar a Yaron por WhatsApp</button><button class="btn" id="dl" type="button">Descargar PDF</button></div>
+    <p class="hint" id="msg">En el móvil se abre el menú de compartir: elige WhatsApp y el chat de Yaron.</p></div>
+   <div class="sheet" id="sheet">${sheet()}</div>`;
+  $("#nm").oninput=e=>{NAME=e.target.value.trim();try{localStorage.setItem("cl_name",NAME)}catch(x){}$("#sheet").innerHTML=sheet()};
+  $("#dl").onclick=()=>go(false);$("#send").onclick=()=>go(true);
+}
+async function makePdf(){
+  await document.fonts.ready;
+  const box=document.createElement("div");box.className="sheet pdf";box.innerHTML=sheet();document.body.appendChild(box);
+  try{
+    const cv=await html2canvas(box,{backgroundColor:"#0A0907",scale:2,useCORS:true,windowWidth:794});
+    const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:"pt",format:"a4"});const W=pdf.internal.pageSize.getWidth(),H=pdf.internal.pageSize.getHeight();
+    const pxPerPt=cv.width/W,pageH=Math.floor(H*pxPerPt);
+    // corta en páginas sin partir bloques: busca filas "vacías" (color de fondo) cerca del corte
+    const ctx=cv.getContext("2d");const bgRow=y=>{const d=ctx.getImageData(0,y,cv.width,1).data;for(let i=0;i<d.length;i+=16){if(Math.abs(d[i]-10)>6||Math.abs(d[i+1]-9)>6||Math.abs(d[i+2]-7)>6)return false}return true};
+    let y=0,first=true;
+    while(y<cv.height-4){let end=Math.min(y+pageH,cv.height);if(end<cv.height){let k=end;while(k>y+pageH*0.6&&!bgRow(k))k-=2;if(k>y+pageH*0.6)end=k}
+      const part=document.createElement("canvas");part.width=cv.width;part.height=end-y;const pc=part.getContext("2d");pc.fillStyle="#0A0907";pc.fillRect(0,0,part.width,part.height);pc.drawImage(cv,0,y,cv.width,end-y,0,0,cv.width,end-y);
+      if(!first)pdf.addPage();first=false;pdf.setFillColor(10,9,7);pdf.rect(0,0,W,H,"F");pdf.addImage(part.toDataURL("image/jpeg",0.92),"JPEG",0,0,W,(end-y)/pxPerPt);y=end}
+    return pdf.output("blob");
+  }finally{box.remove()}
+}
+const fname=()=>"Checklist del Lunes - "+(NAME||"resultado").replace(/[\\/:*?"<>|]/g,"")+".pdf";
+function summary(){const R=calc();return "LUNES — "+(NAME?NAME+" — ":"")+"mi diagnóstico del checklist:\n"+R.map(r=>`• ${r.n}: ${LV[r.lv]} (${r.sel.length}/${r.items.length})`).join("\n")}
+async function go(share){
+  const b=share?$("#send"):$("#dl"),t=b.textContent;b.disabled=true;b.textContent="Preparando el PDF…";$("#msg").textContent="Un momento, estoy creando tu PDF…";
+  try{
+    const blob=await makePdf();const file=new File([blob],fname(),{type:"application/pdf"});
+    if(share&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:"Mi resultado del Checklist del Lunes",text:summary()});$("#msg").textContent="✅ Listo. Si no lo has enviado, vuelve a pulsar el botón.";return}catch(e){if(e.name==="AbortError"){$("#msg").textContent="Has cerrado el menú sin enviarlo. Vuelve a pulsar el botón.";return}}}
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+    if(share){$("#msg").innerHTML="Se ha descargado tu PDF. Ahora se abre el chat de Yaron: <b>adjunta el PDF</b> (📎 → Documento).";setTimeout(()=>{location.href="https://wa.me/"+WA+"?text="+encodeURIComponent(summary()+"\n\nTe adjunto el PDF con el resultado.")},900)}
+    else $("#msg").textContent="✅ PDF descargado: «"+fname()+"».";
+  }catch(e){console.error(e);$("#msg").innerHTML='<span class="err">No se ha podido crear el PDF. Haz captura de pantalla del resultado y mándasela a Yaron.</span>'}
+  finally{b.disabled=false;b.textContent=t}
+}
+render();
+</script>
+</body>
+</html>
