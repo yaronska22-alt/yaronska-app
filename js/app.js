@@ -134,11 +134,11 @@ async function sync(){
   for(const [k,v] of Object.entries(S.daily)){const b=J(v);if(snap.d[k]!==b){await db.upsertDaily({client_id:CUR.id,fecha:k,data:v});snap.d[k]=b}}
   for(const [n,a] of Object.entries(S.hist))for(const h of a){const b=J(hBody(n,h));if(!h.id){const r=await db.insert('workout_logs',JSON.parse(b));h.id=r.id;h.ts=Date.parse(r.created_at)||h.ts;snap.h[h.id]=b}else if(snap.h[h.id]!==b){await db.update('workout_logs',h.id,JSON.parse(b));snap.h[h.id]=b}}
 }
-let syncChain=Promise.resolve(),syncTimer=null,PENDING=false,retryTimer=null;
+let SYNC_ERR=null,SYNC_OK=0;let syncChain=Promise.resolve(),syncTimer=null,PENDING=false,retryTimer=null;
 function save(){PENDING=true;clearTimeout(syncTimer);syncTimer=setTimeout(runSync,400)}
 function runSync(){
   clearTimeout(syncTimer);clearTimeout(retryTimer);
-  syncChain=syncChain.then(sync).then(()=>{PENDING=false;setSaveState('ok')}).catch(e=>{console.error(e);setSaveState('err');toast('No se ha podido guardar. Lo reintento en unos segundos…');retryTimer=setTimeout(runSync,6000)});
+  syncChain=syncChain.then(sync).then(()=>{PENDING=false;SYNC_ERR=null;SYNC_OK=Date.now();setSaveState('ok');drStatus()}).catch(e=>{console.error(e);SYNC_ERR=e;setSaveState('err');drStatus();toast('No se ha podido guardar. Lo reintento en unos segundos…');retryTimer=setTimeout(runSync,6000)});
   setSaveState('busy');return syncChain;
 }
 async function flushSync(){if(PENDING)await runSync()}
@@ -524,19 +524,29 @@ function vTrain(){
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <div class="sesdate"><label for="sesD" class="small muted">¿Cuándo lo hiciste?</label><select id="sesD" onchange="SES_D=this.value">${[0,1,2,3,4,5,6].map(i=>{const k=iso(daysAgo(i));return `<option value="${k}" ${(SES_D||iso(new Date()))===k?'selected':''}>${i===0?'Hoy':i===1?'Ayer':esc(daysAgo(i).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}))}</option>`}).join('')}</select></div>
-  <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
+  <p class="drst" id="drSt" aria-live="polite">${drText()}</p>
+  <button class="btn" id="bSaveSes" type="button" onclick="saveSession(this)">Guardar entreno</button>`;
 }
 let SES_D=null;
-function saveSession(){
-  const d=S.routine[dayIdx];let any=false;const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
+async function saveSession(btn){
+  if(saveSession.busy)return;
+  const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
   d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
-    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length)delete S.next[e.n]}});
+    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
-  rtStop();SAVED_AT=Date.now();draftClear();
-  const k=date;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
-  save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
+  rtStop();SAVED_AT=Date.now();
+  const k=date;const prevDay=S.daily[k]?clone(S.daily[k]):undefined;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
+  // se sube YA y se espera la confirmación del servidor antes de dar el entreno por guardado
+  saveSession.busy=true;const B=btn||document.getElementById('bSaveSes');if(B){B.disabled=true;B.textContent='Subiendo tu entreno…'}
+  save();try{await Promise.race([runSync(),new Promise(r=>setTimeout(r,20000))])}catch(e){}
+  saveSession.busy=false;
+  const ok=!SYNC_ERR&&NEW.every(([n,o])=>o.id);
+  if(!ok){NEW.forEach(([n,o])=>{if(!o.id){const L=S.hist[n]||[];const i=L.indexOf(o);if(i>=0)L.splice(i,1)}});if(!NEW.some(([n,o])=>o.id)){if(prevDay===undefined)delete S.daily[k];else S.daily[k]=prevDay}
+    SES_D=date;render();
+    const sh=document.getElementById('sheet');sh.innerHTML=`<div class="sheet-in" role="alertdialog" aria-label="No se ha subido"><div class="sheet-b"><h2>⚠️ No se ha podido subir</h2><p class="small muted" style="margin:0">Parece que no hay conexión ahora mismo. <b style="color:var(--fg)">No se ha borrado nada</b>: todo lo que has apuntado sigue en su sitio.</p><p class="small muted" style="margin:0">Comprueba tu conexión y vuelve a pulsar <b style="color:var(--fg)">Guardar entreno</b>.</p><button class="btn" type="button" onclick="closeSheet()">Entendido</button></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};return}
+  draftClear();save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
 function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
@@ -1734,10 +1744,18 @@ function formNewClient(id){const f=FORMS.find(x=>x.id===id);if(!f)return;openInv
 const DRAFT_RX=/^(kg|rp|ri)-\d+-\d+-\d+$|^nt-\d+-\d+$/;
 const draftKey=()=>CUR?`ys-draft-${CUR.id}-${iso(new Date())}`:null;
 let DRAFT=null,draftT=0;
-function draftGet(){if(DRAFT)return DRAFT;try{DRAFT=JSON.parse(localStorage.getItem(draftKey())||'{}')}catch(e){DRAFT={}}return DRAFT}
-document.addEventListener('input',e=>{const t=e.target;if(t.classList&&t.classList.contains('kgpre'))t.classList.remove('kgpre');if(!t.id||!DRAFT_RX.test(t.id)||!CUR)return;const D=draftGet();if(t.value.trim())D[t.id]=t.value;else delete D[t.id];clearTimeout(draftT);draftT=setTimeout(()=>{try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}},400)});
+function draftGet(){if(DRAFT)return DRAFT;try{DRAFT=JSON.parse(localStorage.getItem(draftKey())||'{}')}catch(e){DRAFT={}}
+  const sv=S&&S.profile&&S.profile.draft;if(sv&&sv.k===iso(new Date())&&sv.v&&Object.keys(sv.v).length>Object.keys(DRAFT).length)DRAFT=Object.assign({},sv.v,DRAFT);return DRAFT}
+// ---- el borrador se sube a la nube solo (cada pocos segundos mientras apunta) para no perder nada aunque se cierre la app o cambie de móvil
+let drCloudT=0,DR_AT=0;
+function draftCloud(){clearTimeout(drCloudT);drCloudT=setTimeout(()=>{if(!CUR||!S||!S.profile)return;const D=draftGet();S.profile.draft=Object.keys(D).length?{k:iso(new Date()),v:Object.assign({},D),at:new Date().toISOString()}:undefined;if(!S.profile.draft)delete S.profile.draft;DR_AT=Date.now();save()},1500);drStatus('typing')}
+function drText(st){const D=DRAFT||{};if(!Object.keys(D).length&&!st)return 'Lo que apuntas se guarda solo mientras entrenas. Al acabar, pulsa «Guardar entreno».';
+  if(st==='typing'||PENDING)return '☁️ Guardando lo que apuntas…';if(SYNC_ERR)return '📱 Sin conexión: lo tienes guardado en el móvil y se subirá solo.';
+  return '✅ Todo lo que has apuntado está guardado. Al acabar, pulsa «Guardar entreno».'}
+function drStatus(st){const el=document.getElementById('drSt');if(el)el.textContent=drText(st);el&&el.classList.toggle('err',!!SYNC_ERR)}
+document.addEventListener('input',e=>{const t=e.target;if(t.classList&&t.classList.contains('kgpre'))t.classList.remove('kgpre');if(!t.id||!DRAFT_RX.test(t.id)||!CUR)return;const D=draftGet();if(t.value.trim())D[t.id]=t.value;else delete D[t.id];clearTimeout(draftT);draftT=setTimeout(()=>{try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}},400);draftCloud()});
 function draftApply(){const D=draftGet();Object.entries(D).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&v!=null){el.value=v;el.classList.remove('kgpre')}})}
-function draftClear(){const k=draftKey();DRAFT={};try{localStorage.removeItem(k)}catch(e){}}
+function draftClear(){const k=draftKey();DRAFT={};clearTimeout(drCloudT);try{localStorage.removeItem(k)}catch(e){}if(S&&S.profile&&S.profile.draft)delete S.profile.draft}
 
 // ================= VALORACIÓN DE LA FICHA =================
 // Cada bloque empieza en 100 y resta por cada alerta (roja −25, naranja −10, «a tener en cuenta» −4). Los puntos fuertes no suman: se muestran para equilibrar la lectura.
