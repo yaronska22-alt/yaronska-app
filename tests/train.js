@@ -40,7 +40,7 @@ console.log('kg curl:',(await p.textContent('.ex >> nth=3')).match(/12,5 kg[^R]*
 // el cliente registra el entreno del día 1
 await p.fill('#kg-0-0-0','100');await p.fill('#rp-0-0-0','5');await p.fill('#ri-0-0-0','1');
 await p.fill('#kg-0-0-2','90');await p.fill('#rp-0-0-2','8');
-await p.click('text=Guardar entreno');await w(800);
+await p.click('text=Guardar entreno');await p.waitForTimeout(250);if(await p.isVisible('#sheet button:text-is("Genial")'))await p.click('#sheet button:text-is("Genial")');await w(800);
 await p.setViewportSize({width:1200,height:900});await p.evaluate(()=>{setView('coach');coachTab='sesiones';renderCoach()});await w(200);
 console.log('ses tipos:',await p.evaluate(()=>[...document.querySelectorAll('.cmain table')[0].querySelectorAll('tbody tr')].map(r=>r.innerText.replace(/\s+/g,' ')).join(' | ')));
 await p.fill('#nsk-0-0','102,5');await p.fill('#nsr-0-0','5');await p.fill('#nsk-0-1','92,5');await p.fill('#nn-0','Sube el top set');

@@ -18,7 +18,7 @@ await p.fill('#kg-0-0-0','50');await p.fill('#rp-0-0-0','10');
 await p.click('.ex >> nth=0 >> summary');await p.fill('#nt-0-0','Molestia en el hombro derecho en la última serie');
 await p.click('.ex >> nth=1 >> summary');await p.fill('#nt-0-1','Hoy no pude, máquina ocupada');
 await (await p.$('.ex >> nth=0')).screenshot({path:OUT+'/n1.png'});
-await p.click('text=Guardar entreno');await w(900);
+await p.click('text=Guardar entreno');await p.waitForTimeout(250);if(await p.isVisible('#sheet button:text-is("Genial")'))await p.click('#sheet button:text-is("Genial")');await w(900);
 console.log('db logs:',await p.evaluate(()=>JSON.stringify(window.__mock.workout_logs.map(l=>[l.ejercicio,l.sets.length,l.nota]))));
 await p.evaluate(()=>{trainTab='progreso';render()});await w(100);console.log('progreso ok:',await p.textContent('.pgrid2'));
 await p.setViewportSize({width:1200,height:900});
