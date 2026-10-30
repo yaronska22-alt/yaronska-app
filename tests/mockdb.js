@@ -47,6 +47,8 @@ window.db={
   async templates(){if(!isCoach())deny('tpl');return st.templates},
   async updateClient(id,row){if(!isCoach())deny('updateClient');Object.assign(st.clients.find(c=>c.id===id),JSON.parse(JSON.stringify(row)));window.__writes=(window.__writes||0)+1;persist()},
   async upsertAdmin(row){if(!isCoach())deny('admin');const a=st.client_admin.find(a=>a.client_id===row.client_id);if(a)Object.assign(a,row);else st.client_admin.push(row);persist()},
+  async notify(cid,kind,msg,title){window.__notify=(window.__notify||[]).concat([{cid,kind,msg,title}]);return {sent:0}},
+  async pending(since){if(!isCoach())deny('pend');return {ck:st.checkins.filter(c=>c.fecha>=since).map(c=>({id:c.id,client_id:c.client_id,fecha:c.fecha,rev:(c.data||{}).rev||null})).sort((a,b)=>b.fecha.localeCompare(a.fecha)),wl:st.workout_logs.filter(l=>l.fecha>=since).map(l=>({client_id:l.client_id,fecha:l.fecha,dia:l.dia,ejercicio:l.ejercicio,nota:l.nota||null,sets:l.sets}))}},
   async touchSeen(){const c=st.clients.find(c=>st.session&&c.user_id===st.session);if(c){c.last_seen=now();persist()}},
   async del(t,id){const r=st[t].find(x=>x.id===id);if(!r||!can(r.client_id))deny('del '+t);st[t]=st[t].filter(x=>x.id!==id);persist()},
   async removePhotos(paths){(paths||[]).forEach(x=>delete st.files[x]);persist()},

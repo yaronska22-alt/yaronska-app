@@ -90,6 +90,14 @@ const db = {
   },
   async pushCount(clientId) { const { count } = await sb.from('push_subs').select('id', { count: 'exact', head: true }).eq('client_id', clientId); return count || 0; },
   async testPush(clientId) { const { data, error } = await sb.functions.invoke('avisos', { body: { client_id: clientId } }); if (error) throw error; return data; },
+  async notify(clientId, kind, msg, title) { const { data, error } = await sb.functions.invoke('avisos', { body: { client_id: clientId, kind, msg, title } }); if (error) throw error; return data; },
+  async pending(since) {
+    const [ck, wl] = await Promise.all([
+      sb.from('checkins').select('id,client_id,fecha,rev:data->rev').gte('fecha', since).order('fecha', { ascending: false }),
+      sb.from('workout_logs').select('client_id,fecha,dia,ejercicio,nota,sets').gte('fecha', since).order('fecha', { ascending: false })
+    ]).then(rs => rs.map(ok));
+    return { ck, wl };
+  },
   async touchSeen() { try { await sb.rpc('touch_seen'); } catch (e) {} },
   async templates() { return ok(await sb.from('templates').select('*').order('id')); },
 

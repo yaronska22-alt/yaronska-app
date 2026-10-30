@@ -219,7 +219,7 @@ async function enter(user){
     ME=Object.assign({id:user.id,email:user.email},await db.me(user.id));
     if(ME.role==='coach'){
       TPL_MINE=(await db.templates()).map(t=>({id:t.id,name:t.nombre,desc:t.descr||'',days:t.days}));
-      await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{CUR=null;SNAP=null}
+      await refreshList();if(CL.length){coachSel=CL[0].id;await loadClient(coachSel)}else{CUR=null;SNAP=null}loadPend().then(()=>{pendCount()});
     }else{
       if(!ME.clientId)return showAuth('nolink');
       await loadClient(ME.clientId);
@@ -365,6 +365,7 @@ function vHome(){
   const ph=phOf(FICHA,S.phase);const pct=Math.round(S.week/S.weeksPhase*100);
   const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
+  ${revCard()}
   ${vRemind()}
   ${pushCard()}
   <section class="wchart" aria-label="Tu evolución">
@@ -546,7 +547,7 @@ function vCheck(){
     <div><span class="lbl">Fotos de la semana</span><div class="photos" style="margin-top:8px">${['Frontal','Lateral','Espalda'].map((t,i)=>`<label class="ph"><span style="font-size:20px">＋</span>${t}<input type="file" accept="image/*" onchange="pickPhoto(this)" aria-label="Foto ${t}"></label>`).join('')}</div><p class="lock" style="margin:6px 0 0">🔒 Solo las vemos tú y yo.</p></div>
     <div class="field"><label for="ckNota">¿Cómo ha ido la semana? Lo mejor, lo más difícil, dudas…</label><textarea id="ckNota"></textarea></div>
     <button class="btn" type="submit">Enviar check-in</button>
-  </form>`;
+  </form>${revHistory()}`;
 }
 function urineTxt(n){return n<=3?'Hidratado: vas bien.':n<=5?'Algo deshidratado: bebe un poco más durante el día.':'Deshidratado: bebe agua ya, sí o sí.'}
 function pickPhoto(inp){const f=inp.files[0];if(!f)return;inp.closest('.ph')._file=f;const r=new FileReader();r.onload=()=>{const lab=inp.closest('.ph');let img=lab.querySelector('img');if(!img){img=document.createElement('img');img.alt='';lab.prepend(img)}img.src=r.result;lab.dataset.ok=1};r.readAsDataURL(f)}
@@ -601,7 +602,7 @@ function coachItem(s){
   return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
-  if(CUR&&id===CUR.id&&coachSel!=='__biz')return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
+  if(CUR&&id===CUR.id&&!String(coachSel).startsWith('__'))return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
   try{await flushSync()}catch(e){}
   coachSel=id;document.querySelector('.cmain').innerHTML='<p class="muted">Cargando…</p>';
   try{await loadClient(id)}catch(e){toast('No se ha podido cargar el cliente');console.error(e)}
@@ -612,15 +613,15 @@ function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=tr
 function _renderCoach(){setTimeout(placeCalc);
   const el=document.getElementById('coachView');
   const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina']];
-  const c=coachSel==='__biz'?null:CL.find(x=>CUR&&x.id===CUR.id);
+  const c=String(coachSel).startsWith('__')?null:CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
-  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}</span>
+  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}</span>
     ${CL.map(coachItem).join('')}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
     <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
   </aside>
   <section class="cmain">
-    ${coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
+    ${coachSel==='__pend'?cPend():coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
     <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${c.linked?`<small class="muted">Última vez en la app: ${seenBadge(c.seen)}</small>`:''}${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
     <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
       <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
@@ -728,7 +729,7 @@ function cChecks(){
   const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Añadir o editar revisiones</span><p class="small muted" style="margin:0">Mete tú el peso, los perímetros y las fotos de cualquier revisión, también la del inicio. Cuentan para sus gráficas, el % graso y la comparativa del físico.</p></div><button class="btn sm" type="button" onclick="openAddPhotos('')">＋ Añadir revisión</button></div></div>`;
   if(!cks.length)return addBtn+'<div class="panel"><p class="small muted" style="margin:0">Todavía no hay check-ins de este cliente.</p></div>';
   return addBtn+`<div class="panel"><span class="lbl">Check-ins recibidos</span><div class="tbl-w"><table class="cktbl"><thead><tr><th class="stk">Fecha</th>${MEAS.map(m=>`<th>${m[1]}</th>`).join('')}${SCALES.map(s=>`<th>${s.t}</th>`).join('')}<th>Orina</th><th>Fotos</th><th>Comentario</th></tr></thead><tbody>
-  ${cks.map(k=>`<tr><td class="stk"><div class="ckd"><b>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</b><span class="ckacts"><button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')" aria-label="Editar revisión">✏️ Editar</button><button class="btn ghost sm del" type="button" onclick="askDelCheck('${k.date}')" aria-label="Borrar revisión">🗑</button></span></div></td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}${k.fotosP&&k.fotosP.length?'':'<span class="muted">—</span>'}</td><td class="ckcom">${esc(k.nota||'')}</td></tr>`).join('')}</tbody></table></div></div>`;
+  ${cks.map(k=>`<tr><td class="stk"><div class="ckd"><b>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</b><span class="ckacts"><button class="btn sm ${k.rev?'ghost rvdone':''}" type="button" onclick="openRev('${k.date}')">${k.rev?'✅ Revisada':'📝 Revisar'}</button><button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')" aria-label="Editar revisión">✏️ Editar</button><button class="btn ghost sm del" type="button" onclick="askDelCheck('${k.date}')" aria-label="Borrar revisión">🗑</button></span></div></td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}${k.fotosP&&k.fotosP.length?'':'<span class="muted">—</span>'}</td><td class="ckcom">${esc(k.nota||'')}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 let openSets=new Set();
 const RX=(di,ei)=>S.routine[di].ex[ei];
@@ -1433,3 +1434,69 @@ function libClear(){const e=RX(libTo[0],libTo[1]);delete e.vid;libPick=null;save
   const show=()=>{if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.className='updbar';d.innerHTML='<span>Hay una versión nueva de la app</span><button class="btn sm" type="button">Actualizar</button>';d.querySelector('button').onclick=async()=>{try{await flushSync()}catch(e){}location.reload()};document.body.appendChild(d)};
   const check=async()=>{const s=await sig();if(!s||s==='|')return;if(base===null){base=s;return}if(s!==base)show()};
   check();setInterval(check,5*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});})();
+
+// ================= RESPUESTA A LA REVISIÓN =================
+function ckPrev(date){const L=S.checkins.filter(x=>x.date<date);return L[L.length-1]||null}
+function openRev(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;const pv=ckPrev(date);const sh=document.getElementById('sheet');const rv=c.rev||{};
+  const rows=MEAS.filter(m=>c[m[0]]!=null||(pv&&pv[m[0]]!=null)).map(m=>{const a=c[m[0]],b=pv?pv[m[0]]:null;const d=a!=null&&b!=null?a-b:null;
+    return `<tr><td>${esc(m[1])}</td><td>${b!=null?nf(b,1)+' '+m[2]:'—'}</td><td><b>${a!=null?nf(a,1)+' '+m[2]:'—'}</b></td><td class="${d==null?'':m[0]==='hs'?(d>=0?'good':'badc'):(m[0]==='peso'?goodDir(d):d<=0)?'good':'badc'}">${d==null?'':(d>0?'+':'')+nf(d,1)}</td></tr>`}).join('');
+  const sc=SCALES.filter(x=>c.r&&c.r[x.k]).map(x=>`<span class="vchip">${esc(x.t)}: <b>${c.r[x.k]}/5</b></span>`).join('');
+  sh.innerHTML=`<div class="sheet-in revsheet" role="dialog" aria-label="Revisar"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>📝 Revisión del ${fdate(date)}</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+    ${rows?`<div class="tbl-w"><table><thead><tr><th></th><th>Anterior${pv?' · '+fdate(pv.date):''}</th><th>Esta</th><th>Cambio</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}
+    ${sc?`<div class="vchips">${sc}</div>`:''}
+    ${c.nota?`<div class="cnote">💬 <b>Su comentario:</b> ${esc(c.nota)}</div>`:''}
+    ${c.fotosP&&c.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(c.fotosP)})'>📷 Ver sus ${c.fotosP.length} fotos</button>`:''}
+    <div class="field"><label for="rvT">Tu valoración para ${esc(CLIENT.first||'el cliente')}</label><textarea id="rvT" rows="5" placeholder="Muy buena semana: has bajado 0,6 kg y la cintura sigue bajando. Esta semana subimos pasos a 10.000 y mantenemos la dieta.">${esc(rv.txt||'')}</textarea></div>
+    <div class="field"><label for="rvU">Vídeo o audio (opcional · enlace de Yaronska Rec, Drive, Loom…)</label><input id="rvU" type="url" value="${esc(rv.url||'')}" placeholder="https://…"></div>
+    <label class="chkrow"><input type="checkbox" id="rvN" ${rv.at?'':'checked'}> Avisarle con una notificación en el móvil</label>
+    ${rv.at?`<p class="small muted" style="margin:0">Revisada el ${new Date(rv.at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${rv.seen?' · ✓ el cliente ya la ha leído':' · el cliente aún no la ha abierto'}.</p>`:''}
+    <div class="row"><button class="btn" type="button" id="rvSave" onclick="saveRev('${date}')">${rv.at?'Guardar cambios':'✅ Marcar como revisada'}</button>${rv.at?`<button class="btn ghost" type="button" onclick="unRev('${date}')">Quitar «revisada»</button>`:''}</div></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
+async function saveRev(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;const txt=document.getElementById('rvT').value.trim(),url=document.getElementById('rvU').value.trim(),nt=document.getElementById('rvN').checked;
+  if(url&&!/^https?:\/\//i.test(url)){toast('El enlace debe empezar por https://');return}
+  const b=document.getElementById('rvSave');b.disabled=true;b.textContent='Guardando…';
+  const old=c.rev||{};c.rev={at:old.at||new Date().toISOString(),txt,url};if(old.at&&(old.txt!==txt||old.url!==url)){c.rev.at=new Date().toISOString()}
+  try{save();await flushSync();
+    if(nt){try{const r=await db.notify(CUR.id,'revisada',txt?txt.slice(0,120):'Entra en la app para ver sus comentarios.');toast(r&&r.sent?'Revisada y avisado en su móvil':'Revisada · no tiene los avisos activados en el móvil')}catch(e){toast('Revisada (no se pudo enviar el aviso)')}}else toast('Revisión guardada');
+    closeSheet();if(PEND)pendMark(CUR.id,date);renderCoach()}
+  catch(e){console.error(e);toast('No se ha podido guardar: '+authMsg(e));b.disabled=false;b.textContent='Guardar'}}
+async function unRev(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;delete c.rev;save();await flushSync();closeSheet();if(PEND){const k=PEND.ck.find(x=>x.client_id===CUR.id&&x.fecha===date);if(k)k.rev=null;pendCount()}renderCoach()}
+// cliente: la última revisión revisada que aún no ha leído
+function lastRev(){const L=S.checkins.filter(x=>x.rev&&(x.rev.txt||x.rev.url));return L[L.length-1]||null}
+function revCard(){const c=lastRev();if(!c)return '';const seen=c.rev.seen&&c.rev.seen>=c.rev.at;
+  return `<section class="revcard ${seen?'seen':''}" aria-label="Respuesta de Yaron"><div class="sec-h"><span class="lbl">📝 Yaron ha revisado tu revisión del ${fdate(c.date)}</span>${seen?'':'<span class="pendn">Nuevo</span>'}</div>
+    ${c.rev.txt?`<p style="margin:0;white-space:pre-line">${esc(c.rev.txt)}</p>`:''}
+    <div class="row">${c.rev.url?`<a class="btn sm" href="${esc(c.rev.url)}" target="_blank" rel="noopener">▶ Ver el vídeo de Yaron</a>`:''}${seen?'':`<button class="btn ghost sm" type="button" onclick="revSeen('${c.date}')">Entendido 👍</button>`}</div></section>`}
+function revSeen(date){const c=S.checkins.find(x=>x.date===date);if(!c||!c.rev)return;c.rev.seen=new Date().toISOString();save();render()}
+function revHistory(){const L=S.checkins.filter(x=>x.rev&&(x.rev.txt||x.rev.url)).slice().reverse();if(!L.length)return '';
+  return `<section class="sec-h"><h2 style="font-size:16px">Respuestas de Yaron</h2></section><div class="revlist">${L.map(c=>`<details class="revitem"><summary><b>${fdate(c.date)}</b>${c.peso?` · ${nf(c.peso)} kg`:''}</summary>${c.rev.txt?`<p style="margin:6px 0 0;white-space:pre-line">${esc(c.rev.txt)}</p>`:''}${c.rev.url?`<a class="btn ghost sm" style="margin-top:6px" href="${esc(c.rev.url)}" target="_blank" rel="noopener">▶ Ver vídeo</a>`:''}</details>`).join('')}</div>`}
+
+// ================= PENDIENTES DE HOY =================
+let PEND=null,PEND_N=0;
+async function loadPend(){try{PEND=await db.pending(iso(daysAgo(21)));pendCount()}catch(e){console.error(e)}}
+const activeCL=()=>CL.filter(c=>!['paused','ended'].includes(c.estado));
+function pendData(){const P=PEND||{ck:[],wl:[]};const A=new Set(activeCL().map(c=>c.id));const nm=id=>(CL.find(c=>c.id===id)||{}).name||'—';const lim7=iso(daysAgo(7));
+  const rev=P.ck.filter(x=>!x.rev&&A.has(x.client_id)).map(x=>({id:x.client_id,n:nm(x.client_id),date:x.fecha}));
+  const notes=P.wl.filter(x=>x.nota&&x.fecha>=lim7&&A.has(x.client_id)).map(x=>({id:x.client_id,n:nm(x.client_id),date:x.fecha,ej:x.ejercicio,nota:x.nota,solo:!(x.sets&&x.sets.length)}));
+  const lastTr={};P.wl.forEach(x=>{if(x.sets&&x.sets.length&&(!lastTr[x.client_id]||x.fecha>lastTr[x.client_id]))lastTr[x.client_id]=x.fecha});
+  const now=Date.now();const inact=activeCL().filter(c=>c.linked&&(!c.seen||now-Date.parse(c.seen)>3*864e5||!lastTr[c.id]||lastTr[c.id]<lim7)).map(c=>({id:c.id,n:c.name,seen:c.seen,tr:lastTr[c.id]||null,noApp:!c.seen||now-Date.parse(c.seen)>3*864e5}));
+  const noLink=activeCL().filter(c=>!c.linked).map(c=>({id:c.id,n:c.name}));
+  const t=iso(new Date()),t7=iso(new Date(Date.now()+7*864e5));const ren=activeCL().filter(c=>c.renov&&c.renov<=t7).map(c=>({id:c.id,n:c.name,date:c.renov,late:c.renov<t})).sort((a,b)=>a.date.localeCompare(b.date));
+  const late=activeCL().filter(c=>c.linked&&c.st==='bad').map(c=>({id:c.id,n:c.name,t:c.t}));
+  return {rev,notes,inact,noLink,ren,late}}
+function pendCount(){const d=pendData();PEND_N=d.rev.length+d.notes.length;const el=document.querySelector('.pendbtn');if(el){let b=el.querySelector('.pendn');if(PEND_N){if(!b){b=document.createElement('span');b.className='pendn';el.appendChild(b)}b.textContent=PEND_N}else if(b)b.remove()}}
+function pendMark(id,date){if(!PEND)return;const k=PEND.ck.find(x=>x.client_id===id&&x.fecha===date);if(k)k.rev={at:new Date().toISOString()};pendCount()}
+async function openPend(){try{await flushSync()}catch(e){}coachSel='__pend';const m=document.querySelector('.cmain');if(m)m.innerHTML='<p class="muted">Cargando…</p>';await Promise.all([refreshList(),loadPend()]);renderCoach()}
+async function goCl(id,tab,fn){await selectClient(id);coachSel=id;coachTab=tab;renderCoach();if(fn)setTimeout(fn,60)}
+function cPend(){const d=pendData();const fd=x=>new Date(x+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+  const box=(ico,t,list,empty,row)=>`<div class="panel pendbox"><div class="sec-h"><span class="lbl">${ico} ${t}</span><span class="pcount ${list.length?'on':''}">${list.length}</span></div>${list.length?`<div class="plist">${list.map(row).join('')}</div>`:`<p class="small muted" style="margin:0">${empty}</p>`}</div>`;
+  const nmq=x=>esc(JSON.stringify(x));
+  return `<div class="chead"><div><span class="lbl">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</span><h1>Pendientes de hoy</h1></div><button class="btn ghost sm" type="button" onclick="openPend()">↻ Actualizar</button></div>
+  <div class="pendgrid">
+  ${box('📝','Revisiones sin revisar',d.rev,'Todo revisado 👌',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"checkins",()=>openRev(${nmq(x.date)}))'><b>${esc(x.n)}</b><small>Enviada el ${fd(x.date)}</small><span class="y">Revisar →</span></button>`)}
+  ${box('🩹','Notas de los entrenos · 7 días',d.notes,'Nadie ha dejado notas esta semana.',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"sesiones")'><b>${esc(x.n)} · <span class="muted">${esc(x.ej)}</span></b><small>${fd(x.date)}${x.solo?' · no hizo el ejercicio':''}</small><span class="pnote">«${esc(x.nota)}»</span></button>`)}
+  ${box('😴','Clientes poco activos',d.inact,'Todos activos esta semana 💪',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"diario")'><b>${esc(x.n)}</b><small>${x.noApp?'App: '+seenTxt(x.seen).t.toLowerCase():'Entra en la app'} · ${x.tr?'último entreno '+fd(x.tr):'sin entrenos registrados en 3 semanas'}</small></button>`)}
+  ${box('⏰','Revisiones atrasadas',d.late,'Nadie lleva más de 15 días sin revisión.',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"checkins")'><b>${esc(x.n)}</b><small>${esc(x.t)}</small></button>`)}
+  ${box('🔁','Renovaciones · próximos 7 días',d.ren,'Ninguna renovación esta semana.',x=>`<button type="button" class="prow" onclick='goCl(${nmq(x.id)},"ficha")'><b>${esc(x.n)}</b><small class="${x.late?'badc':''}">${x.late?'Vencida el ':'Renueva el '}${fd(x.date)}</small></button>`)}
+  ${d.noLink.length?box('✉️','Sin activar la cuenta',d.noLink,'',x=>`<button type="button" class="prow" onclick='inviteMsg(${nmq(x.id)})'><b>${esc(x.n)}</b><small>Aún no ha creado su cuenta · reenviar invitación</small></button>`):''}
+  </div>`}

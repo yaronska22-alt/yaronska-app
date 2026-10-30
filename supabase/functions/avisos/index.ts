@@ -1,6 +1,6 @@
 // Avisos push de Yaronska App.
 // - Lo llama pg_cron cada 15 min (cabecera x-cron-secret): víspera de la revisión, mañana de la revisión y registro diario.
-// - Lo llama el entrenador desde el panel (con su sesión) para enviar un aviso de prueba a un cliente.
+// - Lo llama el entrenador desde el panel (con su sesión) para enviar un aviso de prueba, de revisión revisada o de logro a un cliente.
 import { createClient } from "npm:@supabase/supabase-js@2.117.0";
 import webpush from "npm:web-push@3.6.7";
 
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   webpush.setVapidDetails("mailto:yaronska22@gmail.com", S.vapid_public, S.vapid_private);
   const body = await req.json().catch(() => ({}));
 
-  // ---- aviso de prueba desde el panel del entrenador
+  // ---- avisos desde el panel del entrenador (prueba, revisión revisada, logro)
   if (req.headers.get("x-cron-secret") !== S.cron_secret) {
     const auth = req.headers.get("Authorization") || "";
     const u = createClient(URL_, ANON, { global: { headers: { Authorization: auth } } });
@@ -52,7 +52,12 @@ Deno.serve(async (req) => {
     if (!me?.user) return json({ error: "no autorizado" }, 401);
     const { data: prof } = await db.from("profiles").select("role").eq("id", me.user.id).maybeSingle();
     if (prof?.role !== "coach" || !body.client_id) return json({ error: "no autorizado" }, 403);
-    const n = await sendTo(body.client_id, { title: "🔔 Aviso de prueba", body: "Así te llegarán los avisos de tu revisión semanal.", url: "/", tag: "prueba" });
+    const msg = body.kind === "revisada"
+      ? { title: "📝 Yaron ha revisado tu revisión", body: String(body.msg || "Entra en la app para ver sus comentarios.").slice(0, 140), url: "/?go=home", tag: "revisada" }
+      : body.kind === "logro"
+      ? { title: String(body.title || "🏆 ¡Enhorabuena!").slice(0, 60), body: String(body.msg || "").slice(0, 140), url: "/?go=home", tag: "logro" }
+      : { title: "🔔 Aviso de prueba", body: "Así te llegarán los avisos de tu revisión semanal.", url: "/", tag: "prueba" };
+    const n = await sendTo(body.client_id, msg);
     return json({ sent: n });
   }
 

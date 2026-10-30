@@ -573,3 +573,23 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .seen.away{color:var(--warn)}
 .seen.never{color:var(--dim)}
 .btn.wa{background:#25D366;border-color:#25D366;color:#06210d;text-align:center;text-decoration:none}
+/* pendientes y respuesta a la revisión */
+.pendbtn{position:relative}
+.pendn{background:var(--y);color:#000;font-weight:800;font-size:11px;border-radius:10px;padding:2px 7px;margin-left:auto;align-self:center}
+.pendgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+.pendbox .sec-h{margin-bottom:4px}
+.pcount{font-weight:800;color:var(--dim)}.pcount.on{color:var(--y)}
+.plist{display:flex;flex-direction:column;gap:6px}
+.prow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;color:var(--fg);font:inherit;font-size:13.5px;cursor:pointer}
+.prow:hover{border-color:var(--y)}
+.prow small{color:var(--muted)}.prow .y{font-size:12px;font-weight:700}
+.pnote{color:#FFDFA0;font-size:13px}
+.rvdone{color:var(--ok)!important;border-color:var(--ok)!important}
+.revsheet{max-width:620px!important}
+.revsheet textarea{width:100%;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:10px;font:inherit;font-size:16px;color:var(--fg);resize:vertical}
+.chkrow{display:flex;gap:8px;align-items:center;font-size:14px}
+.revcard{background:linear-gradient(0deg,rgba(255,214,10,.06),rgba(255,214,10,.06)),var(--surface);border:1px solid var(--y);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.revcard.seen{border-color:var(--line-2);background:var(--surface)}
+.revlist{display:flex;flex-direction:column;gap:6px}
+.revitem{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px}
+.revitem summary{cursor:pointer}
