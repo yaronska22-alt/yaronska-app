@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yaronska Rec</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0A0907">
+<link rel="icon" href="img/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@600;800;900&family=Onest:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0A0907;--s1:#141210;--s2:#1E1B17;--line:#2E2A24;--line2:#3A352E;--fg:#fff;--muted:#A8A49C;--dim:#6E6A63;--y:#FFD60A;--y2:#FFEC6E;--on-y:#000;--red:#FF4D4D;--ok:#4ADE80;
+  --display:"Jost","Arial Black",Arial,sans-serif;--body:"Onest","Helvetica Neue",Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+.brand{font-family:var(--display);font-weight:900;font-size:18px;letter-spacing:.02em}.brand b{color:var(--y)}
+.lbl{font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(28px,5vw,44px);line-height:1;margin:6px 0 0}h1 em{font-style:normal;color:var(--y)}
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--s1);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stage{position:relative;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.stage .ph{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim);padding:20px}
+.badge{position:absolute;top:10px;left:10px;display:none;align-items:center;gap:8px;background:rgba(0,0,0,.7);padding:5px 10px;border-radius:20px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em}
+.badge i{width:10px;height:10px;border-radius:50%;background:var(--red);animation:bl 1s infinite}
+.badge.on{display:flex}.badge.paused i{background:var(--y);animation:none}
+@keyframes bl{50%{opacity:.25}}
+.count{position:absolute;inset:0;display:none;place-items:center;background:rgba(0,0,0,.6);font-family:var(--display);font-weight:900;font-size:120px;color:var(--y)}
+.count.on{display:grid}
+.field{margin-bottom:14px}
+.field label{display:block;margin-bottom:6px}
+select,input[type=text]{width:100%;background:var(--s2);border:1px solid var(--line2);border-radius:6px;padding:10px 12px;outline:none}
+select:focus,input:focus{border-color:var(--y)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{background:var(--s2);border:1px solid var(--line2);border-radius:6px;padding:9px 6px;cursor:pointer;font-size:13px;font-weight:600}
+.seg button.on{background:var(--y);color:var(--on-y);border-color:var(--y)}
+.meter{height:8px;background:var(--s2);border-radius:4px;overflow:hidden;margin-top:8px}
+.meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--y) 70%,var(--red));transition:width .06s}
+.hint{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.hint b{color:var(--fg)}
+.sw{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;cursor:pointer;margin-top:8px}
+.sw input{accent-color:var(--y);width:18px;height:18px;margin:1px 0 0;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:.08em;text-transform:uppercase;padding:13px 18px;border:1px solid var(--y);background:var(--y);color:var(--on-y);border-radius:6px;cursor:pointer}
+.btn:hover{background:var(--y2)}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line2)}.btn.ghost:hover{border-color:var(--y);color:var(--y)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:8px 12px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ctrls{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ctrls .btn{flex:1}
+.folder{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s2);border-radius:6px;padding:10px 12px;font-size:13.5px}
+.folder b{display:block;font-size:14px;word-break:break-all}
+.list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--s2);border-radius:6px;padding:9px 12px;font-size:13.5px}
+.item small{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--s2);border:1px solid var(--y);padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:92vw}
+.toast.on{opacity:1}
+.warn{background:rgba(255,214,10,.08);border:1px solid rgba(255,214,10,.35);border-radius:8px;padding:10px 12px;font-size:13.5px;margin-bottom:14px;display:none}
+.warn.on{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand">YARONSKA<b>_FIT</b> · REC</div><span class="lbl" id="ver">Grabador de feedback</span></header>
+  <div class="warn" id="warn"></div>
+  <div class="grid">
+    <div>
+      <div class="stage" id="stage">
+        <video id="pv" muted playsinline autoplay></video>
+        <div class="ph" id="ph"><div><div class="lbl" style="color:var(--y)">Vista previa</div><p style="margin:6px 0 0">Elige el modo y el micrófono y pulsa <b>Grabar</b>.</p></div></div>
+        <div class="badge" id="badge"><i></i><span id="clock">00:00</span></div>
+        <div class="count" id="count">3</div>
+      </div>
+      <div class="ctrls">
+        <button class="btn" id="bRec" type="button">● Grabar</button>
+        <button class="btn ghost" id="bPause" type="button" disabled>❚❚ Pausa</button>
+        <button class="btn red" id="bStop" type="button" disabled>■ Parar</button>
+      </div>
+      <p class="hint">Con <b>Pantalla + cámara</b> la cámara sale en una burbuja flotante encima de todo. Para que se grabe, comparte la <b>pantalla completa</b> (no una pestaña ni una ventana). Puedes moverla y cambiarle el tamaño.</p>
+    </div>
+    <div class="panel">
+      <div class="field"><label class="lbl">Modo</label>
+        <div class="seg" id="mode"><button type="button" data-m="both" class="on">Pantalla + cámara</button><button type="button" data-m="screen">Solo pantalla</button><button type="button" data-m="cam">Solo cámara</button></div></div>
+      <div class="field"><label class="lbl" for="mic">Micrófono</label>
+        <select id="mic"><option value="">Pulsa «Detectar» para ver tus micrófonos</option></select>
+        <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
+        <div class="row" style="margin-top:8px;justify-content:space-between"><span class="hint" id="micInfo" style="margin:0">Habla y mira que se mueva la barra.</span><button class="btn ghost sm" id="bDetect" type="button">↻ Detectar</button></div>
+        <label class="sw"><input type="checkbox" id="raw" checked><span><b>Audio de estudio (sin filtros)</b><br><span class="hint" style="margin:0">Desactiva la reducción de ruido, el eco y el volumen automático del navegador para que el micrófono externo grabe tal cual. Quítalo solo si usas el micro del portátil en un sitio con ruido.</span></span></label>
+        <label class="sw"><input type="checkbox" id="sys"><span>Grabar también el sonido del ordenador<br><span class="hint" style="margin:0">Solo si vas a enseñar un vídeo con sonido.</span></span></label>
+      </div>
+      <div class="field" id="camF"><label class="lbl" for="cam">Cámara</label><select id="cam"></select></div>
+      <div class="field"><label class="lbl" for="qual">Calidad de vídeo</label>
+        <select id="qual"><option value="1080">Full HD 1080p (recomendado)</option><option value="1440">2K 1440p</option><option value="720">HD 720p (archivo más ligero)</option></select></div>
+      <div class="field"><label class="lbl" for="nm">Nombre del vídeo</label><input type="text" id="nm" placeholder="Ej.: Feedback Carlos semana 3" maxlength="80"></div>
+      <div class="field"><label class="lbl">Dónde se guarda</label>
+        <div class="folder"><div><b id="fName">Sin carpeta: se descargará</b><span class="hint" style="margin:0" id="fHint">Elige tu carpeta de Google Drive para que se suba sola.</span></div><button class="btn ghost sm" id="bFolder" type="button">Elegir carpeta</button></div></div>
+      <div id="last"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const toast=(t,ms=3200)=>{const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),ms)};
+const LS={get(k){try{return localStorage.getItem('rec-'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('rec-'+k,v)}catch(e){}}};
+let MODE=LS.get('mode')||'both',micStream=null,camStream=null,scrStream=null,rec=null,ac=null,an=null,raf=0,t0=0,acc=0,tick=0,writer=null,chunks=[],fileName='',dirH=null,pip=null,recStream=null,mixCtx=null;
+
+// ---------- compatibilidad
+if(!navigator.mediaDevices||!window.MediaRecorder){$('warn').textContent='Este navegador no permite grabar. Usa Google Chrome o Microsoft Edge.';$('warn').classList.add('on')}
+else if(!navigator.mediaDevices.getDisplayMedia){$('warn').textContent='Para grabar la pantalla usa Google Chrome o Microsoft Edge en el ordenador.';$('warn').classList.add('on')}
+
+// ---------- modo
+function setMode(m){MODE=m;LS.set('mode',m);document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('camF').style.display=m==='screen'?'none':'';$('sys').closest('.sw').style.display=m==='cam'?'none':''}
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{if(rec)return;setMode(b.dataset.m)});setMode(MODE);
+
+// ---------- micrófonos y cámaras
+const audioC=()=>{const raw=$('raw').checked;const id=$('mic').value;return {deviceId:id?{exact:id}:undefined,echoCancellation:!raw,noiseSuppression:!raw,autoGainControl:!raw,sampleRate:{ideal:48000},sampleSize:{ideal:24},channelCount:{ideal:2},latency:{ideal:0.01}}};
+async function listDevices(){
+  const ds=await navigator.mediaDevices.enumerateDevices();
+  const mics=ds.filter(d=>d.kind==='audioinput'&&d.deviceId!=='communications'),cams=ds.filter(d=>d.kind==='videoinput');
+  const want=LS.get('micLabel'),cur=$('mic').value;
+  // los externos (USB, interfaz, Rode, Shure, Blue…) primero
+  const ext=d=>/usb|rode|shure|blue|yeti|focusrite|scarlett|audio-technica|hyperx|elgato|wave|fifine|maono|boya|dji|interfa|external|externo/i.test(d.label)&&!/built-in|integrad|interno|internal|realtek|array/i.test(d.label);
+  mics.sort((a,b)=>(a.deviceId==='default')-(b.deviceId==='default')||ext(b)-ext(a));
+  $('mic').innerHTML=mics.map((d,i)=>`<option value="${d.deviceId}">${(d.label||'Micrófono '+(i+1)).replace(/</g,'')}${ext(d)?' ★':''}</option>`).join('')||'<option value="">No se ha encontrado ningún micrófono</option>';
+  const pick=mics.find(d=>d.label&&d.label===want)||mics.find(d=>d.deviceId===cur)||mics.find(ext)||mics[0];if(pick)$('mic').value=pick.deviceId;
+  const wc=LS.get('camLabel');$('cam').innerHTML=cams.map((d,i)=>`<option value="${d.deviceId}">${(d.label||'Cámara '+(i+1)).replace(/</g,'')}</option>`).join('')||'<option value="">Sin cámara</option>';
+  const pc=cams.find(d=>d.label===wc);if(pc)$('cam').value=pc.deviceId;
+  return mics.length&&mics[0].label}
+async function openMic(){
+  if(micStream)micStream.getTracks().forEach(t=>t.stop());
+  try{micStream=await navigator.mediaDevices.getUserMedia({audio:audioC()})}
+  catch(e){try{micStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:$('mic').value?{exact:$('mic').value}:undefined}})}catch(e2){micStream=null;$('micInfo').textContent='No se puede abrir el micrófono: '+(e2.name==='NotAllowedError'?'dale permiso en el candado de la barra de direcciones.':e2.message);return}}
+  const tr=micStream.getAudioTracks()[0],s=tr.getSettings();
+  LS.set('micLabel',tr.label);
+  $('micInfo').innerHTML=`<b>${(tr.label||'Micrófono').replace(/</g,'')}</b> · ${s.sampleRate?Math.round(s.sampleRate/100)/10+' kHz':''}${s.channelCount?' · '+(s.channelCount>1?'estéreo':'mono'):''}${s.noiseSuppression===false?' · sin filtros':''}`;
+  meter()}
+function meter(){cancelAnimationFrame(raf);if(ac)ac.close().catch(()=>{});if(!micStream)return;
+  ac=new AudioContext();an=ac.createAnalyser();an.fftSize=1024;ac.createMediaStreamSource(micStream).connect(an);const buf=new Float32Array(an.fftSize);
+  const loop=()=>{an.getFloatTimeDomainData(buf);let pk=0;for(const v of buf)pk=Math.max(pk,Math.abs(v));const db=20*Math.log10(pk||1e-6);$('lvl').style.width=Math.max(0,Math.min(100,(db+60)/60*100))+'%';raf=requestAnimationFrame(loop)};loop()}
+async function detect(){
+  try{const s=await navigator.mediaDevices.getUserMedia({audio:true,video:MODE!=='screen'});s.getTracks().forEach(t=>t.stop())}catch(e){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});s.getTracks().forEach(t=>t.stop())}catch(e2){$('micInfo').textContent='Dale permiso al micrófono (candado de la barra de direcciones) y pulsa Detectar.';return}}
+  await listDevices();await openMic();if(MODE!=='screen')await openCam()}
+$('bDetect').onclick=detect;
+$('mic').onchange=()=>{const o=$('mic').selectedOptions[0];LS.set('micLabel',o?o.textContent.replace(' ★',''):'');openMic()};
+$('raw').onchange=()=>{LS.set('raw',$('raw').checked?'1':'0');openMic()};if(LS.get('raw')==='0')$('raw').checked=false;
+navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.mediaDevices.addEventListener('devicechange',async()=>{if(rec)return;const before=$('mic').value;await listDevices();if($('mic').value!==before){openMic();toast('Micrófono cambiado: '+$('mic').selectedOptions[0].textContent)}});
+// si ya hay permiso, detecta solo
+(async()=>{try{const p=await navigator.permissions.query({name:'microphone'});if(p.state==='granted')detect()}catch(e){}})();
+
+// ---------- cámara
+async function openCam(){
+  if(camStream)camStream.getTracks().forEach(t=>t.stop());camStream=null;
+  const id=$('cam').value;const h=MODE==='cam'?+$('qual').value:720;
+  try{camStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:id?{exact:id}:undefined,width:{ideal:Math.round(h*16/9)},height:{ideal:h},frameRate:{ideal:30}}});LS.set('camLabel',camStream.getVideoTracks()[0].label)}catch(e){toast('No se puede abrir la cámara');return}
+  if(!rec){$('pv').srcObject=camStream;$('ph').style.display='none'}}
+$('cam').onchange=openCam;$('qual').onchange=()=>{if(MODE==='cam')openCam()};
+
+// ---------- burbuja de cámara flotante (Picture-in-Picture)
+async function openBubble(){
+  if(!camStream)return;
+  if(window.documentPictureInPicture){
+    try{pip=await documentPictureInPicture.requestWindow({width:260,height:260});
+      const d=pip.document;d.body.style.cssText='margin:0;background:#0A0907;overflow:hidden';
+      const v=d.createElement('video');v.muted=true;v.autoplay=true;v.playsInline=true;v.srcObject=camStream;
+      v.style.cssText='position:fixed;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);object-fit:cover;border-radius:50%;border:4px solid #FFD60A;transform:scaleX(-1)';
+      d.body.appendChild(v);return}catch(e){}}
+  const v=document.createElement('video');v.muted=true;v.playsInline=true;v.srcObject=camStream;await v.play();
+  try{await v.requestPictureInPicture();pip={close:()=>document.pictureInPictureElement&&document.exitPictureInPicture()}}catch(e){toast('No se ha podido abrir la burbuja de la cámara')}}
+const closeBubble=()=>{try{pip&&pip.close()}catch(e){}pip=null};
+
+// ---------- carpeta de destino (Google Drive para ordenador)
+const idb=()=>new Promise((ok,ko)=>{const r=indexedDB.open('yaronska-rec',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)});
+const kv=async(k,v)=>{const db=await idb();return new Promise(ok=>{const tx=db.transaction('kv',v===undefined?'readonly':'readwrite');const st=tx.objectStore('kv');const r=v===undefined?st.get(k):st.put(v,k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ok(null)})};
+function showFolder(){$('fName').textContent=dirH?'📁 '+dirH.name:'Sin carpeta: se descargará';$('fHint').textContent=dirH?'Los vídeos se guardan aquí y Google Drive los sube solo.':(window.showDirectoryPicker?'Elige tu carpeta de Google Drive para que se suba sola.':'Este navegador no deja elegir carpeta: el vídeo se descargará.');$('bFolder').style.display=window.showDirectoryPicker?'':'none'}
+$('bFolder').onclick=async()=>{try{dirH=await showDirectoryPicker({id:'yaronska-rec',mode:'readwrite'});await kv('dir',dirH);showFolder();toast('Carpeta guardada')}catch(e){}};
+(async()=>{try{dirH=await kv('dir')}catch(e){}showFolder()})();
+async function dirOK(){if(!dirH)return false;try{let p=await dirH.queryPermission({mode:'readwrite'});if(p!=='granted')p=await dirH.requestPermission({mode:'readwrite'});return p==='granted'}catch(e){return false}}
+
+// ---------- grabación
+const fmt=()=>{const C=['video/mp4;codecs=avc1.640028,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];return C.find(t=>MediaRecorder.isTypeSupported(t))||''};
+const pad=n=>String(n).padStart(2,'0');
+const stamp=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}-${pad(d.getMinutes())}`};
+const clean=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').trim().slice(0,80);
+function clock(){const s=Math.floor((acc+(rec&&rec.state==='recording'?Date.now()-t0:0))/1000);$('clock').textContent=(s>=3600?Math.floor(s/3600)+':':'')+pad(Math.floor(s/60)%60)+':'+pad(s%60)}
+async function countdown(){const c=$('count');c.classList.add('on');for(const n of [3,2,1]){c.textContent=n;await new Promise(r=>setTimeout(r,800))}c.classList.remove('on')}
+
+async function start(){
+  if(rec)return;
+  if(!micStream){await detect();if(!micStream)return}
+  const h=+$('qual').value,w=Math.round(h*16/9);
+  try{
+    if(MODE!=='screen'&&!camStream)await openCam();
+    if(MODE==='cam'){if(!camStream)return;scrStream=null}
+    else{
+      scrStream=await navigator.mediaDevices.getDisplayMedia({video:{width:{ideal:w,max:w},height:{ideal:h,max:h},frameRate:{ideal:30,max:30}},audio:$('sys').checked?{echoCancellation:false,noiseSuppression:false,autoGainControl:false}:false,selfBrowserSurface:'exclude',surfaceSwitching:'include',systemAudio:$('sys').checked?'include':'exclude',monitorTypeSurfaces:'include'});
+      const vt=scrStream.getVideoTracks()[0];try{vt.contentHint='detail'}catch(e){}
+      vt.addEventListener('ended',()=>{if(rec)stop()});
+      if(MODE==='both'&&vt.getSettings().displaySurface&&vt.getSettings().displaySurface!=='monitor')toast('Ojo: no estás compartiendo la pantalla completa, la burbuja de la cámara no saldrá en el vídeo',6000);
+    }
+  }catch(e){if(e.name!=='NotAllowedError')toast('No se ha podido empezar: '+e.message);return}
+  // audio: el micro va directo (máxima calidad); si hay sonido del ordenador, se mezclan
+  let aTracks=micStream.getAudioTracks();
+  const sysT=scrStream?scrStream.getAudioTracks():[];
+  if(sysT.length){mixCtx=new AudioContext({sampleRate:48000});const dst=mixCtx.createMediaStreamDestination();dst.channelCount=2;
+    mixCtx.createMediaStreamSource(micStream).connect(dst);mixCtx.createMediaStreamSource(new MediaStream(sysT)).connect(dst);aTracks=dst.stream.getAudioTracks()}
+  const vTrack=(MODE==='cam'?camStream:scrStream).getVideoTracks()[0];
+  recStream=new MediaStream([vTrack,...aTracks]);
+  const type=fmt();const ext=/mp4/.test(type)?'mp4':'webm';
+  fileName=`${clean($('nm').value)||'Yaronska Rec'} ${stamp()}.${ext}`;
+  writer=null;chunks=[];
+  if(await dirOK()){try{const fh=await dirH.getFileHandle(fileName,{create:true});writer=await fh.createWritable()}catch(e){writer=null;toast('No se puede escribir en la carpeta: se descargará')}}
+  $('pv').srcObject=MODE==='cam'?camStream:scrStream;$('ph').style.display='none';
+  if(MODE==='both')await openBubble();
+  await countdown();
+  rec=new MediaRecorder(recStream,{mimeType:type||undefined,videoBitsPerSecond:h>=1440?14e6:h>=1080?8e6:5e6,audioBitsPerSecond:320000});
+  let q=Promise.resolve();
+  rec.ondataavailable=e=>{if(!e.data||!e.data.size)return;if(writer){const b=e.data;q=q.then(()=>writer.write(b)).catch(err=>{console.error(err);chunks.push(b)})}else chunks.push(e.data)};
+  rec.onstop=()=>q.then(finish);
+  rec.start(1000);t0=Date.now();acc=0;tick=setInterval(clock,250);clock();
+  $('badge').classList.add('on');$('badge').classList.remove('paused');
+  $('bRec').disabled=true;$('bPause').disabled=false;$('bStop').disabled=false;$('bDetect').disabled=true;$('mic').disabled=true;
+  document.title='● Grabando · Yaronska Rec';
+}
+function pause(){if(!rec)return;if(rec.state==='recording'){rec.pause();acc+=Date.now()-t0;$('bPause').textContent='▶ Seguir';$('badge').classList.add('paused');document.title='❚❚ En pausa · Yaronska Rec'}else{rec.resume();t0=Date.now();$('bPause').textContent='❚❚ Pausa';$('badge').classList.remove('paused');document.title='● Grabando · Yaronska Rec'}}
+function stop(){if(!rec||rec.state==='inactive')return;if(rec.state==='recording')acc+=Date.now()-t0;rec.stop();clearInterval(tick);closeBubble();if(scrStream)scrStream.getTracks().forEach(t=>t.stop());}
+async function finish(){
+  const secs=Math.round(acc/1000),type=rec.mimeType;let where='';
+  if(writer&&!chunks.length){try{await writer.close();where='Guardado en '+dirH.name}catch(e){where=''}}
+  if(!where){if(writer){try{await writer.abort()}catch(e){}}const blob=new Blob(chunks,{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);where='Descargado'}
+  if(mixCtx){mixCtx.close().catch(()=>{});mixCtx=null}
+  rec=null;writer=null;chunks=[];scrStream=null;
+  $('badge').classList.remove('on');$('bRec').disabled=false;$('bPause').disabled=true;$('bPause').textContent='❚❚ Pausa';$('bStop').disabled=true;$('bDetect').disabled=false;$('mic').disabled=false;document.title='Yaronska Rec';
+  if(camStream&&MODE!=='screen')$('pv').srcObject=camStream;else{$('pv').srcObject=null;$('ph').style.display=''}
+  const L=$('last');L.innerHTML=`<label class="lbl">Última grabación</label><div class="list"><div class="item"><div><b>${fileName.replace(/</g,'')}</b><br><small>${Math.floor(secs/60)} min ${secs%60} s · ${where}</small></div></div></div>`+(dirH?'<p class="hint">Cuando Google Drive termine de subirlo: clic derecho en el archivo → Compartir → Copiar enlace.</p>':'');
+  toast('✅ Vídeo listo · '+where,5000)}
+$('bRec').onclick=start;$('bPause').onclick=pause;$('bStop').onclick=stop;
+document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='s'){e.preventDefault();rec?stop():start()}});
+window.addEventListener('beforeunload',e=>{if(rec){e.preventDefault();e.returnValue=''}});
+</script>
+</body>
+</html>

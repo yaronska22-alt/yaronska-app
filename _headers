@@ -32,3 +32,14 @@
 
 /data/*
   Cache-Control: public, max-age=0, must-revalidate
+
+# Yaronska Rec: necesita micrófono, cámara y captura de pantalla
+/rec.html
+  ! Permissions-Policy
+  Permissions-Policy: camera=(self), microphone=(self), display-capture=(self), geolocation=()
+  Cache-Control: no-cache
+
+/rec
+  ! Permissions-Policy
+  Permissions-Policy: camera=(self), microphone=(self), display-capture=(self), geolocation=()
+  Cache-Control: no-cache
