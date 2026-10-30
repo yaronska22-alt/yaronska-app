@@ -1,7 +1,7 @@
 const {chromium,devices}=require('playwright');const fs=require('fs');
 const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
 (async()=>{
-const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:390,height:800},isMobile:true,hasTouch:true});
 await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
   if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
   let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';

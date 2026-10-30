@@ -660,3 +660,11 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .vglob{flex-direction:row!important}
 .vacts li.info::marker{color:#6FD3FF;font-weight:800}
 @media (max-width:600px){.vglob{flex-direction:column!important}}
+/* ordenador: barras de desplazamiento visibles y arrastrables */
+.fine .tabs,.fine .tbl-w,.fine .hscroll{scrollbar-width:thin;scrollbar-color:var(--y) var(--surface-2);cursor:grab}
+.fine .tabs::-webkit-scrollbar,.fine .tbl-w::-webkit-scrollbar,.fine .hscroll::-webkit-scrollbar{display:block;height:8px}
+.fine .tabs::-webkit-scrollbar-thumb,.fine .tbl-w::-webkit-scrollbar-thumb,.fine .hscroll::-webkit-scrollbar-thumb{background:var(--y);border-radius:4px}
+.fine .tabs::-webkit-scrollbar-track,.fine .tbl-w::-webkit-scrollbar-track,.fine .hscroll::-webkit-scrollbar-track{background:var(--surface-2);border-radius:4px}
+.fine .dragging{cursor:grabbing;user-select:none}
+.fine .dragging *{pointer-events:none}
+.fine .tbl-w input,.fine .tbl-w select{cursor:auto}

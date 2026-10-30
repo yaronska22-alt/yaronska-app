@@ -1,0 +1,24 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1000,height:800}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli'},'2026-10-01');for(let i=1;i<5;i++)await db.insert('checkins',{client_id:id,fecha:'2026-10-0'+i,data:{peso:80,r:{}}});await refreshList();await loadClient(id);coachSel=id;coachTab='checkins';renderCoach()});await w(400);
+console.log('fine:',await p.evaluate(()=>FINE),'hsb bars:',await p.$$eval('.hsb',a=>a.length));
+const box=await p.$eval('.cktbl',e=>{const w=e.closest('.tbl-w');w.scrollIntoView({block:'center'});const td=[...w.querySelectorAll('td')].find(t=>!t.querySelector('input,button,select')&&t.getBoundingClientRect().x>w.getBoundingClientRect().x+150);const r=td.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,sw:w.scrollWidth,cw:w.clientWidth}});console.log(box);
+await p.mouse.move(box.x,box.y);await p.mouse.down();await p.mouse.move(box.x-300,box.y,{steps:8});await p.mouse.up();
+console.log('scrollLeft tabla:',await p.$eval('.cktbl',e=>e.closest('.tbl-w').scrollLeft));
+await p.evaluate(()=>{coachTab='ficha';renderCoach()});await w(200);
+const t=await p.$eval('.ftabs',e=>{const r=e.getBoundingClientRect();return {x:r.x+100,y:r.y+15,sw:e.scrollWidth,cw:e.clientWidth}});console.log('ftabs',t);
+await p.mouse.move(t.x,t.y);await p.mouse.wheel(0,300);await w(200);console.log('scroll pestañas rueda:',await p.$eval('.ftabs',e=>e.scrollLeft));
+await p.screenshot({path:OUT+'/dr1.png'});
+console.log('ERR',errs);await b.close()})();

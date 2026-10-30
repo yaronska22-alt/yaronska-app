@@ -1412,7 +1412,8 @@ function setDayTipo(t){const k=iso(new Date());S.daily[k]=Object.assign({},S.dai
 // ---- barrita de desplazamiento horizontal (para que se intuya que se puede deslizar)
 const HS_SEL='.tabs,.tbl-w,.hscroll';
 function hsbUpd(el){const bar=el.nextElementSibling;if(!bar||!bar.classList.contains('hsb'))return;const i=bar.firstChild;const r=el.clientWidth/el.scrollWidth;i.style.width=(r*100).toFixed(1)+'%';i.style.left=(el.scrollLeft/el.scrollWidth*100).toFixed(1)+'%'}
-function hsbScan(){document.querySelectorAll(HS_SEL).forEach(el=>{let bar=el.nextElementSibling;const has=bar&&bar.classList.contains('hsb');const need=el.offsetParent&&el.scrollWidth>el.clientWidth+4;
+const FINE=window.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches;
+function hsbScan(){document.querySelectorAll(HS_SEL).forEach(el=>{let bar=el.nextElementSibling;const has=bar&&bar.classList.contains('hsb');const need=!FINE&&el.offsetParent&&el.scrollWidth>el.clientWidth+4;
   if(!need){if(has)bar.remove();return}
   if(!has){bar=document.createElement('div');bar.className='hsb';bar.setAttribute('aria-hidden','true');bar.innerHTML='<i></i>';el.after(bar)}
   if(!el._hsb){el._hsb=1;el.addEventListener('scroll',()=>hsbUpd(el),{passive:true})}hsbUpd(el)})}
@@ -1802,3 +1803,14 @@ function valorHTML(V){const {B,glob,acts}=V;const noData=!B.some(b=>b.has&&b.k!=
   <div class="vgrid">${B.map(b=>`<div class="panel vblk ${b.has?vCol(b.sc):'none'}"><div class="sec-h"><span class="lbl">${b.ico} ${esc(b.t)}</span><b class="vsc">${b.has?b.sc:'—'}</b></div><div class="vbar"><span style="width:${b.has?b.sc:0}%"></span></div>
     ${b.has?(b.it.length?`<ul class="vlist">${b.it.map(x=>`<li class="${x.lv}"><i>${x.lv==='good'?'✅':x.lv==='bad'?'⛔':x.lv==='info'?'ℹ️':'⚠️'}</i><div><b>${esc(x.txt)}</b>${x.act?`<small>${esc(x.act)}</small>`:''}</div></li>`).join('')}</ul>`:'<p class="small muted" style="margin:0">Sin alertas en este bloque.</p>'):'<p class="small muted" style="margin:0">Sin datos todavía.</p>'}
     ${b.k!=='app'?`<button class="linkbtn small" type="button" onclick="fichaTab='${b.k}';renderCoach()">Ver o editar datos →</button>`:''}</div>`).join('')}</div>`}
+
+// ---- ordenador: arrastrar con el ratón y rueda para mover en horizontal pestañas, chips y tablas anchas
+(()=>{if(!FINE)return;document.documentElement.classList.add('fine');
+  const SEL='.tabs,.tbl-w,.hscroll,.mtabs,.daysel,.chips';const over=el=>el&&el.scrollWidth>el.clientWidth+2;
+  let drag=null;
+  document.addEventListener('mousedown',e=>{if(e.button!==0)return;const el=e.target.closest(SEL);if(!over(el))return;if(e.target.closest('input,textarea,select'))return;drag={el,x:e.clientX,sl:el.scrollLeft,moved:false}});
+  document.addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>4){drag.moved=true;drag.el.classList.add('dragging')}if(drag.moved){drag.el.scrollLeft=drag.sl-dx;e.preventDefault()}});
+  document.addEventListener('mouseup',()=>{if(!drag)return;const d=drag;drag=null;d.el.classList.remove('dragging');if(d.moved){const stop=ev=>{ev.stopPropagation();ev.preventDefault()};document.addEventListener('click',stop,{capture:true,once:true});setTimeout(()=>document.removeEventListener('click',stop,{capture:true}),50)}});
+  // rueda: en filas de pestañas/chips mueve en horizontal; en tablas solo con Mayús (para no bloquear el scroll de la página)
+  document.addEventListener('wheel',e=>{const el=e.target.closest('.tabs,.mtabs,.daysel,.hscroll,.chips');if(!over(el)||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;const max=el.scrollWidth-el.clientWidth;const nx=Math.max(0,Math.min(max,el.scrollLeft+e.deltaY));if(nx===el.scrollLeft)return;el.scrollLeft=nx;e.preventDefault()},{passive:false});
+})();
