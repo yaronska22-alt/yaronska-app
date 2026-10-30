@@ -524,6 +524,7 @@ function saveSession(){
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
+  rtStop();
   const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
   save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
@@ -1533,7 +1534,7 @@ function restGo(di,ei,si,el){if(!el||!el.value.trim())return;const d=S.routine[d
   const last=si===e.s-1;const next=last?(d.ex[ei+1]?d.ex[ei+1].n:''):`Serie ${si+2} de ${e.n}`;
   RT={end:Date.now()+sec*1000,total:sec,next,done:false};rtTick();clearInterval(RT.iv);RT.iv=setInterval(rtTick,250);try{if(window.AudioContext&&!window._ac)window._ac=new AudioContext()}catch(e){}}
 function rtBeep(){if(!rtSound())return;try{const ac=window._ac||new AudioContext();window._ac=ac;[0,0.25,0.5].forEach((t,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=i===2?1175:880;g.gain.setValueAtTime(.0001,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.4,ac.currentTime+t+.02);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t+.2);o.connect(g).connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.22)})}catch(e){}}
-function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){el=document.createElement('div');el.id='rtBar';el.className='rtbar';document.body.appendChild(el)}
+function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){el=document.createElement('div');el.id='rtBar';el.className='rtbar';document.body.appendChild(el);document.body.classList.add('rt-on')}
   const left=Math.max(0,Math.ceil((RT.end-Date.now())/1000));const mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
   if(left<=0&&!RT.done){RT.done=true;try{navigator.vibrate&&navigator.vibrate([300,120,300,120,500])}catch(e){}rtBeep();setTimeout(()=>{if(RT&&RT.done)rtStop()},6000)}
   const pct=RT.total?Math.min(100,(1-left/RT.total)*100):100;
@@ -1541,4 +1542,4 @@ function rtTick(){if(!RT)return;let el=document.getElementById('rtBar');if(!el){
     <div class="rtbtns">${RT.done?'':`<button type="button" onclick="rtAdd(-15)" aria-label="Quitar 15 segundos">−15</button><button type="button" onclick="rtAdd(15)" aria-label="Añadir 15 segundos">+15</button>`}<button type="button" onclick="rtSnd()" aria-label="Sonido">${rtSound()?'🔔':'🔕'}</button><button type="button" onclick="rtStop()" aria-label="Cerrar temporizador">✕</button></div>`}
 function rtAdd(s){if(!RT)return;RT.end+=s*1000;RT.total=Math.max(1,RT.total+s);rtTick()}
 function rtSnd(){try{localStorage.setItem('rtSound',rtSound()?'0':'1')}catch(e){}rtTick()}
-function rtStop(){if(RT)clearInterval(RT.iv);RT=null;const el=document.getElementById('rtBar');if(el)el.remove()}
+function rtStop(){if(RT)clearInterval(RT.iv);RT=null;const el=document.getElementById('rtBar');if(el)el.remove();document.body.classList.remove('rt-on')}

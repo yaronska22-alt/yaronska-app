@@ -14,7 +14,7 @@ await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');awai
 if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
 await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5],diasSemana:3},'2026-10-01');await refreshList();await loadClient(id);S.routine=clone(TEMPLATES[0].days);S.routine.push(Object.assign(clone(S.routine[0]),{d:'Día 4 · Extra',opt:true}));save();await flushSync();setView('client');go('train');trainTab='rutina';dayIdx=0;render()});
 await p.setViewportSize({width:390,height:844});await w(200);
-console.log('antes:',await p.textContent('.wkt'));
+await w(800);if(await p.isVisible('button:text-is("Ahora no")'))await p.click('button:text-is("Ahora no")');console.log('antes:',await p.textContent('.wkt'));
 await p.fill('#kg-0-0-0','50');await p.fill('#rp-0-0-0','10');await p.click('text=Guardar entreno');await w(400);
 await p.screenshot({path:OUT+'/w1.png'});console.log('sheet:',(await p.textContent('#sheet')).replace(/\s+/g,' '));
 await p.click('text=Genial');await w(200);

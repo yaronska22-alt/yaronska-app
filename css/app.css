@@ -608,3 +608,4 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .rtbtns{position:relative;display:flex;gap:4px}
 .rtbtns button{min-width:40px;height:38px;border-radius:8px;border:1px solid var(--line-2);background:var(--bg);color:var(--fg);font-weight:700;font-size:13px}
 @media (min-width:901px){body:not(.mobile-mode) .rtbar{bottom:24px}}
+.rt-on .screen{padding-bottom:110px}
