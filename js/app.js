@@ -208,7 +208,7 @@ function openPkSheet(){const sh=document.getElementById('sheet');PK_AFTER=openPk
 async function offerPasskey(){
   if(!db.passkeySupported)return;let k='';try{k=localStorage.getItem('pk-ask-'+ME.id)}catch(e){}if(k)return;
   let L=[];try{L=await db.listPasskeys()}catch(e){return}if(L.length)return;
-  const sh=document.getElementById('sheet');
+  const sh=document.getElementById('sheet');if(!sh.hidden)return;
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Activar Face ID"><div class="sheet-b"><h2>¿Entrar con Face ID la próxima vez?</h2><p class="small muted" style="margin:0">Así no tendrás que escribir la contraseña en este dispositivo. Lo puedes quitar cuando quieras desde tu perfil.</p>
     <div class="row"><button class="btn" type="button" onclick="addPasskey(closeSheet)">Sí, activar</button><button class="btn ghost" type="button" onclick="try{localStorage.setItem('pk-ask-'+ME.id,'no')}catch(e){};closeSheet()">Ahora no</button></div></div></div>`;
   sh.hidden=false;
@@ -524,7 +524,7 @@ function saveSession(){
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
-  rtStop();
+  rtStop();SAVED_AT=Date.now();
   const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
   save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
@@ -1528,7 +1528,8 @@ function restSec(t){t=String(t||'').toLowerCase().replace(',','.');let m;
   if((m=/^\s*(\d+)\s*$/.exec(t)))return +m[1]>10?+m[1]:+m[1]*60;return 0}
 let RT=null;
 const rtSound=()=>{try{return localStorage.getItem('rtSound')!=='0'}catch(e){return true}};
-function restGo(di,ei,si,el){if(!el||!el.value.trim())return;const d=S.routine[di];if(!d)return;const e=d.ex[ei];if(!e)return;
+let SAVED_AT=0;function restGo(di,ei,si,el){setTimeout(()=>{if(Date.now()-SAVED_AT<1500)return;restGo2(di,ei,si,el)},350)}
+function restGo2(di,ei,si,el){if(!el||!el.value.trim()||!document.body.contains(el))return;const d=S.routine[di];if(!d)return;const e=d.ex[ei];if(!e)return;
   if(e.blk){const mates=d.ex.map((x,i)=>({x,i})).filter(o=>o.x.blk===e.blk);if(mates.length>1&&mates[mates.length-1].i!==ei)return}
   const x=exSets(e)[si]||{};const sec=restSec(x.rest||e.rest);if(!sec)return;
   const last=si===e.s-1;const next=last?(d.ex[ei+1]?d.ex[ei+1].n:''):`Serie ${si+2} de ${e.n}`;
