@@ -1,0 +1,20 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+const NAMES=["Abductor (cerrar)", "Adductor (Cerrar)", "Aductor Temp 3 Seg (Cerrar)", "Apertura Maq Polea (SUPERIOR)", "Aperturas", "Aperturas en Máquina", "Aperturas Máq Placas", "Aperturas Máq Polea (Superior)", "Buenos Días", "Cruce de Polea Baja", "Cruce de Poleas Medio", "Crunch abdominal", "Crunch Abdominal Maq", "Curl Banco Scoot Hammer", "Curl Bayesian", "Curl Bayesian Polea Alta", "Curl Biceps", "Curl Biceps 45º", "Curl Biceps Banco Scoot", "Curl Biceps Clasico", "Curl Biceps Martillo", "Curl Biceps Polea Baja", "Curl Biceps Rack", "Curl Biceps Scoot Placas", "Curl Isq Sentado", "Curl isq tumbado", "Curl Isq Unilat", "Curl Isquios Tumb", "Curl Martillo Polea", "Curl Unilat Banco Scott", "Elev Lat Manc", "Elev Lat Mancuerna", "Elev Lat Máq", "Elev Lat Maq Discos", "Elev Lat Maq Placas", "Elev Lat Polea", "Elev Lateral Mancuerna", "Elevación Lat Manc", "Elevación Lat Mancuerna", "Elevación lateral con mancuerna", "Elevación lateral polea", "Ext Cuadriceps", "Ext Cuádriceps", "Ext Cuads (ESPEJOS)", "Ext Tricep Katana", "Ext Triceps", "Ext Triceps Clásico", "Ext Triceps Katana Bilat", "Extensión Cuádriceps", "Extensión Cuádriceps Placas", "Extensión Cuads Hammer", "Extensión de Cuads", "Extensión de tríceps", "Extensión Triceps", "Extensión Triceps Polea", "Gemelo Prensa Placas", "Hip Trusht Rango Incompleto", "Hip Trusth Libre", "Jalón al Pecho", "Jalón Bilateral Discos", "Jalón Pecho Agarre Hombros", "Jalón Unilat Máq", "Máq Pendular Abdomen", "Peck Deck", "Peso Muerto", "Peso Muerto Maq", "Peso Muerto Piernas Rígidas", "Peso Muerto Rumnao", "Peso Muerto Sumo", "Plancha Abdominal", "Prensa de Discos", "Prensa Discos", "Prenss Inclinado Manc", "Press Banca", "Press Banca Larsen", "Press Francés (Barra Z)", "Press Inc Mancuernas", "Press Manc Inc", "Press Maq Placas", "Press Plano Hammer", "Press Plano Multipower", "Press Tras Nuca Mancuerna", "Press Tras Nuca Unilat", "Remo bajo", "Remo Dorian Agarre Cerrado", "Remo Gironda Ancho", "Remo Máq Esp Alta", "Remo T Agarre Ancho", "Remo Unilat Manc", "Sentadilla Isometrica", "Sentadilla Libre", "Sentadilla Pendular", "Sentadilla Pines"];
+await p.evaluate(async(NAMES)=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5],sexo:'Hombre'},'2026-10-01');await refreshList();await loadClient(id);
+  NAMES.forEach((n,i)=>{(S.hist[n]=S.hist[n]||[]).push({date:iso(daysAgo(3)),day:'',sets:[{kg:/plancha/i.test(n)?0:[8,20,40,70][i%4],reps:/plancha/i.test(n)?60:10,rir:2}],ts:Date.now()})});
+  S.weights=[{date:iso(daysAgo(10)),peso:80}];save();await flushSync()},NAMES);
+console.log(await p.evaluate((NAMES)=>{const r=NAMES.map(n=>[n,exRank(n)]);return 'sin rango: '+r.filter(x=>!x[1]).map(x=>x[0]).join(', ')+' | ejemplo: '+r.slice(30,40).map(x=>x[0]+'='+(x[1]&&x[1].name)).join(', ')},NAMES));
+console.log('ERR',errs);await b.close()})();

@@ -1007,34 +1007,41 @@ function fatBlock(R,opt){opt=opt||{};if(R.length<1)return opt.coach?`<p class="s
 const RANKS=[['Hierro','#7A7A7A'],['Bronce','#B87333'],['Plata','#C9D1D9'],['Oro','#FFD60A'],['Rubí','#E0115F'],['Esmeralda','#2ECC71'],['Diamante','#6FD3FF'],['Campeón','#B57BFF']];
 const OLIMPO=['Olimpo','#FFF3B0'];
 const RX_PAT=[
-  // [regex, familia, anclas hombre (principiante→élite), grupo, factor mujer]
+  // [regex, familia, anclas hombre (principiante→élite), grupo, factor mujer]  · acepta abreviaturas (Elev Lat, Ext Cuads, Manc, Máq…) y erratas habituales
   [/dominad|chin.?up|pull.?up/i,'bw',[1.0,1.17,1.33,1.55,1.8],'Espalda',0.85],
   [/fondos|dips?\b/i,'bw',[1.03,1.25,1.45,1.7,2.0],'Pecho',0.85],
   [/flexion|push.?up/i,'reps',[5,15,30,45,65],'Pecho',0.5],
   [/plancha|plank/i,'time',[20,45,90,150,240],'Core',0.9],
-  [/crunch|abdominal|sit.?up|elevaci[oó]n de piernas|rueda/i,'reps',[10,25,40,60,80],'Core',0.85],
-  [/peso muerto rumano|rumano|rdl/i,'load',[0.6,1.0,1.35,1.8,2.2],'Piernas',0.75],
+  [/crunch|abdom|sit.?up|elevaci[oó]n de piernas|rueda/i,'reps',[10,25,40,60,80],'Core',0.85],
+  [/rum[a-z]*o\b|rumano|rdl|r[ií]gidas|stiff/i,'load',[0.6,1.0,1.35,1.8,2.2],'Piernas',0.75],
+  [/buenos d[ií]as|good.?morning/i,'load',[0.4,0.7,1.0,1.3,1.6],'Piernas',0.75],
   [/peso muerto|deadlift/i,'load',[1.0,1.5,1.85,2.4,2.9],'Piernas',0.75],
-  [/hip.?thrust|puente de gl/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.8],
+  [/\bhip\b|puente de gl/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.8],
+  [/gemelo|calf|s[oó]leo/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.75],
   [/prensa|leg.?press/i,'load',[1.5,2.25,3.0,4.0,5.0],'Piernas',0.75],
-  [/sentadilla|squat|hack|p[eé]ndulo|bulgara|zancada/i,'load',[0.75,1.25,1.5,2.0,2.5],'Piernas',0.75],
-  [/ext[\wáéíóú]*\.? (de )?cu[aá]driceps|leg.?ext/i,'load',[0.4,0.65,0.9,1.2,1.5],'Piernas',0.75],
-  [/curl\s*(isq|femoral|femorales)|isquio|leg.?curl/i,'load',[0.3,0.5,0.7,0.95,1.2],'Piernas',0.75],
-  [/gemelo|calf|soleo/i,'load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.75],
-  [/abductor|aductor/i,'load',[0.5,0.8,1.1,1.5,1.9],'Piernas',0.8],
-  [/apertura|pec.?deck|contractor|cruce de poleas|fly/i,'load',[0.3,0.5,0.75,1.0,1.3],'Pecho',0.65],
-  [/press (militar|hombro)|militar|overhead|arnold/i,'load',[0.35,0.5,0.7,0.9,1.1],'Hombros',0.65],
-  [/press|banca|bench/i,'load',[0.55,0.8,1.05,1.4,1.75],'Pecho',0.65],
-  [/elevaci[oó]n(es)? (lateral|frontal)|pájaro|pajaro|face.?pull|posterior/i,'load',[0.05,0.09,0.13,0.18,0.24],'Hombros',0.7],
+  [/sentadilla|squat|hack|p[eé]ndul|b[uú]lgara|zancada/i,'load',[0.75,1.25,1.5,2.0,2.5],'Piernas',0.75],
+  [/ext[\wáéíóú]*\.? (de )?cu[aá]d|leg.?ext/i,'load',[0.4,0.65,0.9,1.2,1.5],'Piernas',0.75],
+  [/curl\s*(isq|femoral|femorales)|isquio|leg.?curl|femoral/i,'load',[0.3,0.5,0.7,0.95,1.2],'Piernas',0.75],
+  [/a[bd]{1,2}uctor/i,'load',[0.5,0.8,1.1,1.5,1.9],'Piernas',0.8],
+  [/tr[ií]ceps?\b|katana|franc[eé]s|patada|pushdown|copa|skull/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65],
+  [/apertura|pec.?k?.?deck|peck|contractor|cruce de polea|crossover|fly/i,'load',[0.3,0.5,0.75,1.0,1.3],'Pecho',0.65],
+  [/press (militar|hombro)|militar|overhead|arnold|nuca/i,'load',[0.35,0.5,0.7,0.9,1.1],'Hombros',0.65],
+  [/press|pren+s+\b|banca|bench/i,'load',[0.55,0.8,1.05,1.4,1.75],'Pecho',0.65],
+  [/elev[\wáéíóú]*\.? ?(es )?(lat|front)|p[aá]jaro|face.?pull|posterior/i,'load',[0.05,0.09,0.13,0.18,0.24],'Hombros',0.7],
   [/jal[oó]n|pulldown|pull.?over/i,'load',[0.55,0.8,1.0,1.25,1.5],'Espalda',0.7],
   [/remo|row/i,'load',[0.5,0.75,0.95,1.2,1.5],'Espalda',0.7],
-  [/curl|b[ií]ceps|martillo/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65],
-  [/tr[ií]ceps|katana|press franc|patada|pushdown|copa/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65]
+  [/curl|b[ií]ceps|martillo/i,'load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65]
 ];
+// si el nombre no encaja con ningún patrón, se usa el músculo del ejercicio (el de «Músculo» en la Rutina o el deducido del nombre)
+const RX_FALL={'Pecho':['load',[0.4,0.65,0.9,1.2,1.5],'Pecho',0.65],'Espalda':['load',[0.5,0.75,0.95,1.2,1.5],'Espalda',0.7],'Hombro':['load',[0.15,0.25,0.35,0.5,0.65],'Hombros',0.65],
+  'Bíceps':['load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65],'Tríceps':['load',[0.2,0.35,0.5,0.7,0.9],'Brazos',0.65],'Antebrazo':['load',[0.15,0.25,0.35,0.5,0.65],'Brazos',0.65],
+  'Cuádriceps':['load',[0.75,1.25,1.75,2.4,3.0],'Piernas',0.75],'Glúteo':['load',[0.6,1.0,1.5,2.1,2.8],'Piernas',0.8],'Isquios':['load',[0.3,0.5,0.7,0.95,1.2],'Piernas',0.75],
+  'Gemelos':['load',[0.75,1.25,1.75,2.5,3.25],'Piernas',0.75],'Abductor':['load',[0.5,0.8,1.1,1.5,1.9],'Piernas',0.8],'Aductor':['load',[0.5,0.8,1.1,1.5,1.9],'Piernas',0.8],
+  'Abdomen':['reps',[10,25,40,60,80],'Core',0.85],'Lumbar':['load',[0.3,0.5,0.75,1.0,1.3],'Espalda',0.75]};
 const MUSC_G={'Pecho':'Pecho','Espalda':'Espalda','Hombro':'Hombros','Hombros':'Hombros','Bíceps':'Brazos','Tríceps':'Brazos','Antebrazo':'Brazos','Cuádriceps':'Piernas','Isquios':'Piernas','Glúteo':'Piernas','Gemelos':'Piernas','Abductor':'Piernas','Abdomen':'Core','Core':'Core'};
 const GROUPS=['Pecho','Espalda','Hombros','Brazos','Piernas','Core'];
-function exPattern(n){const r=RX_PAT.find(p=>p[0].test(n));if(!r)return null;let A=r[2].slice();
-  if(r[1]==='load'&&/mancuerna|\bdb\b/i.test(n)&&!/curl|b[ií]ceps|martillo|elevaci|tr[ií]ceps|patada/i.test(n))A=A.map(x=>x*0.4);
+function exPattern(n){let r=RX_PAT.find(p=>p[0].test(n));if(!r){const re=routineEx(n);const m=volMuscle(n,re&&re.m);const f=RX_FALL[m];if(!f)return null;r=[null].concat(f)}let A=r[2].slice();
+  if(r[1]==='load'&&/mancuerna|\bmanc\b|\bdb\b/i.test(n)&&!/curl|b[ií]ceps|martillo|elev|tr[ií]ceps?\b|katana|franc|patada|p[aá]jaro|face/i.test(n))A=A.map(x=>x*0.4);
   if(r[1]==='load'&&/unilat/i.test(n))A=A.map(x=>x*0.5);
   if(r[1]==='load'&&/m[aá]q|multipower|smith|placas/i.test(n)&&/press|remo|row|militar/i.test(n))A=A.map(x=>x*1.15);
   return {fam:r[1],A,g:r[3],fem:r[4]}}
