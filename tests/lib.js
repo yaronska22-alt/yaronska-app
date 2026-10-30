@@ -15,7 +15,7 @@ if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
 await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);S.routine=[{d:'Día 1 · Torso',ex:[{n:'Press banca',m:'Pecho',s:3,r:'8-10',rir:'RIR 2',rest:'2 min',v:''},{n:'Remo con barra',m:'',s:3,r:'8-10',rir:'RIR 2',rest:'2 min',v:''}]}];save();await flushSync();coachSel=id;coachTab='rutina';renderCoach()});
 await p.click('#lib-0-0');await w(500);await p.fill('#libQ','press banca');await w(400);
 console.log('results:',await p.$$eval('.libc span',a=>a.map(x=>x.textContent)));
-await p.click('.libc >> nth=0');await w(300);await p.screenshot({path:OUT+'/l1.png'});
+await p.fill('#libQ','');await p.dispatchEvent('#libQ','input');await w(300);await p.click('.libfmt .chip >> nth=1');await p.screenshot({path:OUT+'/l0.png'});await p.click('.libgrp .chip:text-is("Tríceps")');await w(300);console.log('3D triceps:',await p.textContent('#libCount'));await p.screenshot({path:OUT+'/l1.png'});await p.click('.libc >> nth=0');await w(300);
 await p.click('#libUse');await w(300);
 await p.click('#lib-0-1');await w(300);console.log('remo first:',await p.textContent('.libc span'));await p.click('.libc >> nth=0');await w(200);await p.click('#libUse');await w(800);
 console.log('vids:',await p.evaluate(()=>S.routine[0].ex.map(e=>e.vid)),'db:',await p.evaluate(()=>window.__mock.clients[0].rutina[0].ex.map(e=>e.vid)));

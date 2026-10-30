@@ -1352,7 +1352,7 @@ addEventListener('resize',hsbQ);
 
 // ================= BIBLIOTECA DE VÍDEOS DE EJERCICIOS =================
 // Los MP4 viven en /ej/ (servidos por Cloudflare con la app). ej/index.json: [{i:id, n:nombre, o:nombre original, g:grupo, s:'3D'|'2D'}]
-const EJ='ej/';let LIB=null,libQ='',libG='',libPick=null,libTo=null;
+const EJ='ej/';let LIB=null,libQ='',libG='',libS='',libPick=null,libTo=null;
 function exVid(id){return `<div class="exvid ${/^3d\//.test(id)?'dk':''}"><video data-src="${EJ}${esc(id)}.mp4" poster="${EJ}${esc(id)}.jpg" muted loop playsinline preload="none" aria-label="Demostración del ejercicio"></video></div>`}
 // solo se reproducen los vídeos que están en pantalla
 const VIO=window.IntersectionObserver?new IntersectionObserver(es=>es.forEach(x=>{const v=x.target;if(x.isIntersecting){if(!v.src)v.src=v.dataset.src;const p=v.play();if(p&&p.catch)p.catch(()=>{})}else v.pause()}),{rootMargin:'120px'}):null;
@@ -1373,16 +1373,19 @@ async function openLib(di,ei){libTo=[di,ei];const e=RX(di,ei);libQ=e.n||'';libG=
 function libRender(){const sh=document.getElementById('sheet');if(!libTo)return;const e=RX(libTo[0],libTo[1]);
   if(!LIB.length){sh.innerHTML=`<div class="sheet-in libsheet"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>Biblioteca de vídeos</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div><p class="muted" style="margin:0">La biblioteca todavía está vacía.</p></div></div>`;return}
   const G=[...new Set(LIB.map(x=>x.g))].sort();
-  const res=LIB.map(x=>({x,sc:libScore(x,libQ)})).filter(r=>r.sc>0&&(!libG||r.x.g===libG)).sort((a,b)=>b.sc-a.sc||a.x.n.localeCompare(b.x.n)).slice(0,60).map(r=>r.x);
+  const res=libRes();
   const pk=libPick&&LIB.find(x=>x.i===libPick);
   sh.innerHTML=`<div class="sheet-in libsheet" role="dialog" aria-label="Biblioteca de vídeos"><div class="sheet-b">
     <div class="row" style="justify-content:space-between"><h2>🎞 Vídeo para «${esc(e.n)}»</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
     ${pk?`<div class="libprev"><video class="${pk.s==='3D'?'dk':''}" src="${EJ}${esc(pk.i)}.mp4" poster="${EJ}${esc(pk.i)}.jpg" muted loop playsinline autoplay></video><div><b>${esc(pk.n)}</b>${pk.c?`<small>${esc(pk.c)}</small>`:''}<small class="muted">${esc(pk.g)} · ${pk.s==='3D'?'Vídeo 3D de técnica':'Animación'}</small><div class="row"><button class="btn sm" type="button" id="libUse" onclick="libUse()">Usar este vídeo</button>${e.vid?`<button class="btn ghost sm" type="button" onclick="libClear()">Quitar vídeo</button>`:''}</div></div></div>`:''}
     <div class="field"><label for="libQ">Buscar</label><input id="libQ" value="${esc(libQ)}" placeholder="press banca, sentadilla, remo…" oninput="libQ=this.value;clearTimeout(window._lq);window._lq=setTimeout(libList,150)" autocomplete="off"></div>
-    <div class="mtabs">${['',...G].map(g=>`<button type="button" class="chip ${libG===g?'on':''}" onclick="libG=${esc(JSON.stringify(g))};libList()">${g?esc(g):'Todos'}</button>`).join('')}</div>
+    <div class="mtabs libfmt">${[['','Todos los formatos'],['3D','🎥 Vídeo 3D de técnica'],['2D','Animación']].map(([k,l])=>`<button type="button" class="chip ${libS===k?'on':''}" data-s="${k}" onclick="libS='${k}';libList()">${l}</button>`).join('')}</div>
+    <div class="mtabs libgrp">${['',...G].map(g=>`<button type="button" class="chip ${libG===g?'on':''}" data-g="${esc(g)}" onclick="libG=${esc(JSON.stringify(g))};libList()">${g?esc(g):'Todos'}</button>`).join('')}</div>
+    <small class="muted" id="libCount">${res.length}${res.length>=150?'+':''} vídeos</small>
     <div id="libGrid" class="libgrid">${libGrid(res)}</div></div></div>`;
 }
-function libGrid(res){return res.length?res.map(x=>`<button type="button" class="libc ${x.i===libPick?'on':''}" onclick="libPick=${esc(JSON.stringify(x.i))};libRender()"><img class="${x.s==='3D'?'dk':''}" src="${EJ}${esc(x.i)}.jpg" alt="" loading="lazy"><span>${esc(x.n)}</span>${x.c?`<small class="cue">${esc(x.c)}</small>`:''}<small>${esc(x.g)}${x.s?' · '+(x.s==='3D'?'Vídeo 3D técnica':'Animación'):''}</small></button>`).join(''):'<p class="muted small" style="margin:0">Nada con esa búsqueda. Prueba con otra palabra.</p>'}
-function libList(){const res=LIB.map(x=>({x,sc:libScore(x,libQ)})).filter(r=>r.sc>0&&(!libG||r.x.g===libG)).sort((a,b)=>b.sc-a.sc||a.x.n.localeCompare(b.x.n)).slice(0,60).map(r=>r.x);const el=document.getElementById('libGrid');if(el)el.innerHTML=libGrid(res);document.querySelectorAll('.libsheet .mtabs .chip').forEach(c=>c.classList.toggle('on',c.textContent===(libG||'Todos')))}
+function libGrid(res){return res.length?res.map(x=>`<button type="button" class="libc ${x.i===libPick?'on':''}" onclick="libPick=${esc(JSON.stringify(x.i))};libRender()"><img class="${x.s==='3D'?'dk':''}" src="${EJ}${esc(x.i)}.jpg" alt="" loading="lazy">${x.s==='3D'?'<em class="b3d">3D</em>':''}<span>${esc(x.n)}</span>${x.c?`<small class="cue">${esc(x.c)}</small>`:''}<small>${esc(x.g)}${x.s?' · '+(x.s==='3D'?'Vídeo 3D técnica':'Animación'):''}</small></button>`).join(''):'<p class="muted small" style="margin:0">Nada con esa búsqueda. Prueba con otra palabra.</p>'}
+function libRes(){return LIB.map(x=>({x,sc:libScore(x,libQ)})).filter(r=>r.sc>0&&(!libG||r.x.g===libG)&&(!libS||r.x.s===libS)).sort((a,b)=>b.sc-a.sc||a.x.n.localeCompare(b.x.n)||(a.x.s<b.x.s?1:-1)).slice(0,150).map(r=>r.x)}
+function libList(){const res=libRes();const el=document.getElementById('libGrid');if(el)el.innerHTML=libGrid(res);const c=document.getElementById('libCount');if(c)c.textContent=res.length+(res.length>=150?'+':'')+' vídeos';document.querySelectorAll('.libsheet .mtabs.libgrp .chip').forEach(c=>c.classList.toggle('on',c.dataset.g===libG));document.querySelectorAll('.libsheet .mtabs.libfmt .chip').forEach(c=>c.classList.toggle('on',c.dataset.s===libS))}
 function libUse(){const e=RX(libTo[0],libTo[1]);e.vid=libPick;save();closeSheet();renderCoach();toast('Vídeo asignado')}
 function libClear(){const e=RX(libTo[0],libTo[1]);delete e.vid;libPick=null;save();closeSheet();renderCoach();toast('Vídeo quitado')}
