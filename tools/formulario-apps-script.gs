@@ -2,11 +2,14 @@
 // Pegar en: Google Forms → ⋮ → Editor de secuencias de comandos. Luego ejecutar «instalar» una vez.
 const URL_APP = 'https://gpiykjgziuxvjlmbgyds.supabase.co/functions/v1/formulario';
 const SECRETO = 'PEGAR_AQUI_EL_CODIGO_SECRETO';
+// Tu formulario «1. Formulario Entrenamiento Personalizado» (así funciona aunque el script esté en un proyecto aparte)
+const FORM_ID = '141lo_t12B4ZVLwrEVruz268iIjniJGrNOaxwNnGaAAU';
 
 // Sirve tanto si el script está en el FORMULARIO como en la HOJA de respuestas
 function form_() {
   let f = null; try { f = FormApp.getActiveForm(); } catch (e) {}
-  if (!f) { const url = SpreadsheetApp.getActiveSpreadsheet().getFormUrl(); if (url) f = FormApp.openByUrl(url); }
+  if (!f && FORM_ID) f = FormApp.openById(FORM_ID);
+  if (!f) { try { const url = SpreadsheetApp.getActiveSpreadsheet().getFormUrl(); if (url) f = FormApp.openByUrl(url); } catch (e) {} }
   if (!f) throw new Error('No encuentro el formulario: pega el script desde el propio formulario (⋮ → Editor de secuencias de comandos).');
   return f;
 }
