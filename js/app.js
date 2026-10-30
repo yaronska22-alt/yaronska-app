@@ -19,9 +19,14 @@ Object.defineProperties(CLIENT,{
   checkDay:{get:()=>(FICHA||FICHA_DEF).revFis||'Domingo'},
   goal:{get:()=>(FICHA||FICHA_DEF).objetivo},
   trainDays:{get:()=>(FICHA||FICHA_DEF).dias||[]},
-  stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +(isTrainToday()?f.pasosT:f.pasosR)||0}}});
+  stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +(isTrainOn(dKey())?f.pasosT:f.pasosR)||0}}});
 // ¿Hoy entrena? Lo que marque el cliente hoy; si no, sus días fijos (en «rotación» no hay días fijos)
-function isTrainToday(){try{const d=S&&S.daily&&S.daily[iso(new Date())];if(d&&d.tipo)return d.tipo==='T';if(d&&d.train===true)return true}catch(e){}const f=FICHA||FICHA_DEF;return f.diasModo!=='libre'&&(f.dias||[]).includes(new Date().getDay())}
+function isTrainToday(){return isTrainOn(iso(new Date()))}
+function isTrainOn(k){try{const d=S&&S.daily&&S.daily[k];if(d&&d.tipo)return d.tipo==='T';if(d&&d.train===true)return true}catch(e){}const f=FICHA||FICHA_DEF;return f.diasModo!=='libre'&&(f.dias||[]).includes(new Date(k+'T12:00').getDay())}
+// día que el cliente está rellenando en Inicio (hoy o uno anterior)
+let DSEL=null;const DMAX=14;const dKey=()=>DSEL||iso(new Date());
+function dSel(k){const t=iso(new Date());if(k>t)k=t;if(k<iso(daysAgo(DMAX)))k=iso(daysAgo(DMAX));DSEL=k===t?null:k;today={};render()}
+function dShift(n){const d=new Date(dKey()+'T12:00');d.setDate(d.getDate()+n);dSel(iso(d))}
 // Programas: cada cliente está en uno, con sus fases (o etapas en la fase libre)
 const PROGS={
   perdida:{n:'Método Anti-Esfuerzo',t:'Pérdida de grasa',w:'Fase',ph:[
@@ -386,24 +391,26 @@ function vHome(){
   <a class="wa-btn" href="https://wa.me/${WA}?text=${encodeURIComponent('¡Hola Yaron! Tengo una duda: ')}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.1.3.6 1 1.4 1.7 1 .9 1.8 1.1 2.1 1.3.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l2 .9c.3.1.4.2.5.3.1.2.1.8-.2 1.5z"/></svg><span>¿Dudas? Escríbeme por WhatsApp<small>Sin horarios · te respondo lo antes posible</small></span></a>`;
 }
 function vDaily(){
-  const k=iso(new Date());const d=S.daily[k]||{};const t=Object.assign({steps:'',diet:null,train:null,stepsOk:null,estres:0,energia:0,animo:0},d,today);
-  const isTrain=isTrainToday();const tipoSet=!!(d.tipo||d.train===true);const libre=FICHA.diasModo==='libre';
-  const week=[6,5,4,3,2,1,0].map(i=>{const dd=daysAgo(i);const v=S.daily[iso(dd)];let c='';if(v){const n=[v.diet,v.train===null?true:v.train,v.stepsOk].filter(Boolean).length;c=n===3?'full':n>0?'part':''}return `<span>${'DLMXJVS'[dd.getDay()]}<em class="${c}">${v?(c==='full'?'✓':'·'):''}</em></span>`}).join('');
+  const k=dKey(),isT=!DSEL;const dt=new Date(k+'T12:00');const d=S.daily[k]||{};const t=Object.assign({steps:'',diet:null,train:null,stepsOk:null,estres:0,energia:0,animo:0},d,today);
+  const isTrain=isTrainOn(k);const tipoSet=!!(d.tipo||d.train===true);const libre=FICHA.diasModo==='libre';
+  const week=[6,5,4,3,2,1,0].map(i=>{const dd=daysAgo(i);const v=S.daily[iso(dd)];let c='';if(v){const n=[v.diet,v.train===null?true:v.train,v.stepsOk].filter(Boolean).length;c=n===3?'full':n>0?'part':''}const kk=iso(dd);return `<button type="button" class="wd ${kk===k?'sel':''}" onclick="dSel('${kk}')" aria-label="Rellenar ${dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})}">${'DLMXJVS'[dd.getDay()]}<em class="${c}">${v?(c==='full'?'✓':'·'):''}</em></button>`}).join('');
   const tg=(key,ico,lbl)=>`<button type="button" class="tg ${t[key]?'on':''}" onclick="today.${key}=!(${JSON.stringify(!!t[key])});render()" aria-pressed="${!!t[key]}"><i>${t[key]?'✓':ico}</i>${lbl}</button>`;
   const mini=(key,lbl)=>`<span>${lbl}</span><div class="dots">${[1,2,3,4,5].map(n=>`<button type="button" class="${t[key]===n?'on':''}" onclick="today.${key}=${n};render()" aria-label="${lbl} ${n}">${n}</button>`).join('')}</div>`;
   return `<section class="daily" aria-label="Objetivos de hoy">
-    <div class="daily-h"><h2>Hoy</h2><span class="small muted">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} · ${isTrain?'día de entreno':'día de descanso'}</span></div>
-    ${S.routine.length?`<button type="button" class="wkhome" onclick="trainTab='rutina';go('train')">${(()=>{const T=wkTrain();return `🏋️ <span>Entrenos de la semana: <b>${T.done} de ${T.target}</b></span><span class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</span><small>${T.left?`Te ${T.left===1?'queda':'quedan'} ${T.left}`:'✅ Completada'}</small>`})()}</button>`:''}
-    <div class="daytog"><span class="small muted">${libre&&!tipoSet?'¿Hoy entrenas?':'Hoy es'}</span><div class="seg2"><button type="button" class="chip ${isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('T')">🏋️ Día de entreno</button><button type="button" class="chip ${!isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('R')">🏠 Descanso</button></div></div>
-    <div class="stepsrow"><div class="field"><label for="dSteps">Pasos de hoy${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>
+    <div class="daily-h"><div class="dnav"><button type="button" class="dar" onclick="dShift(-1)" ${k<=iso(daysAgo(DMAX))?'disabled':''} aria-label="Día anterior">‹</button><h2>${isT?'Hoy':k===iso(daysAgo(1))?'Ayer':esc(dt.toLocaleDateString('es-ES',{weekday:'long'}))}</h2><button type="button" class="dar" onclick="dShift(1)" ${isT?'disabled':''} aria-label="Día siguiente">›</button></div><span class="small muted">${dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} · ${isTrain?'día de entreno':'día de descanso'}</span></div>
+    ${isT?'':`<div class="dpast">✏️ Estás rellenando un día anterior · <button type="button" onclick="dSel('${iso(new Date())}')">Volver a hoy</button></div>`}
+    ${isT&&S.routine.length?`<button type="button" class="wkhome" onclick="trainTab='rutina';go('train')">${(()=>{const T=wkTrain();return `🏋️ <span>Entrenos de la semana: <b>${T.done} de ${T.target}</b></span><span class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</span><small>${T.left?`Te ${T.left===1?'queda':'quedan'} ${T.left}`:'✅ Completada'}</small>`})()}</button>`:''}
+    <div class="daytog"><span class="small muted">${libre&&!tipoSet?(isT?'¿Hoy entrenas?':'¿Entrenaste?'):(isT?'Hoy es':'Fue')}</span><div class="seg2"><button type="button" class="chip ${isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('T')">🏋️ Día de entreno</button><button type="button" class="chip ${!isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('R')">🏠 Descanso</button></div></div>
+    <div class="stepsrow"><div class="field"><label for="dSteps">Pasos ${isT?'de hoy':'de ese día'}${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>
     <div class="toggles">${tg('diet','🍽','Dieta')}${tg('train','🏋',isTrain?'Entreno':'Descanso ok')}${tg('stepsOk','👟','Pasos')}</div>
     <div class="mini">${mini('estres','Estrés')}${mini('energia','Energía')}${mini('animo','Ánimo')}</div>
     <p class="small muted" style="margin:0">1 = muy mal · 5 = genial</p>
-    <button class="btn" type="button" onclick="saveDaily()">OK, guardar mi día</button>
-    <div class="week" aria-label="Últimos 7 días">${week}</div>
+    <button class="btn" type="button" onclick="saveDaily()">${isT?'OK, guardar mi día':'Guardar ese día'}</button>
+    <div class="week" aria-label="Últimos 7 días · toca un día para rellenarlo">${week}</div>
+    <p class="small muted" style="margin:-4px 0 0;text-align:center">Toca un día para rellenarlo si se te olvidó${DMAX>7?' (usa ‹ para ir más atrás)':''}</p>
   </section>`;
 }
-function saveDaily(){const k=iso(new Date());const prev=S.daily[k]||{};const v=Object.assign({steps:'',diet:false,train:false,stepsOk:false,estres:0,energia:0,animo:0},prev,today);v.steps=+v.steps||0;S.daily[k]=v;today={};save();toast('Día guardado');render()}
+function saveDaily(){const k=dKey();const prev=S.daily[k]||{};const v=Object.assign({steps:'',diet:false,train:false,stepsOk:false,estres:0,energia:0,animo:0},prev,today);v.steps=+v.steps||0;S.daily[k]=v;today={};const was=DSEL;DSEL=null;save();toast(was?'Guardado el '+new Date(was+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}):'Día guardado');render()}
 function vFood(){
   if(!S.planOn)return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div><div class="empty">Tu plan aparecerá aquí en cuanto Yaron lo prepare.</div>`;
   if(!S.restOn)dayType='T';
@@ -516,17 +523,19 @@ function vTrain(){
   ${WK.dayDone(d)?`<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(WK.dayDone(d)))}. Si lo repites, se guarda como otra sesión.</div>`:''}
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
+  <div class="sesdate"><label for="sesD" class="small muted">¿Cuándo lo hiciste?</label><select id="sesD" onchange="SES_D=this.value">${[0,1,2,3,4,5,6].map(i=>{const k=iso(daysAgo(i));return `<option value="${k}" ${(SES_D||iso(new Date()))===k?'selected':''}>${i===0?'Hoy':i===1?'Ayer':esc(daysAgo(i).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}))}</option>`}).join('')}</select></div>
   <button class="btn" type="button" onclick="saveSession()">Guardar entreno</button>`;
 }
+let SES_D=null;
 function saveSession(){
-  const d=S.routine[dayIdx];let any=false;const date=iso(new Date());const PRS=[];
+  const d=S.routine[dayIdx];let any=false;const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
   d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');const kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`)),reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`)),rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
-    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(sets.length)delete S.next[e.n]}});
+    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length)delete S.next[e.n]}});
   if(!any){toast('Apunta al menos una serie (kg y reps) o una nota');return}
   rtStop();SAVED_AT=Date.now();draftClear();
-  const k=iso(new Date());S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
+  const k=date;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
   save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
@@ -1407,7 +1416,7 @@ function applyMobile(){let m=false;try{m=localStorage.getItem('ys-mobile')==='1'
 function toggleMobile(){let m=document.body.classList.contains('mobile-mode');try{localStorage.setItem('ys-mobile',m?'0':'1')}catch(e){}applyMobile();window.scrollTo(0,0)}
 applyMobile();
 
-function setDayTipo(t){const k=iso(new Date());S.daily[k]=Object.assign({},S.daily[k]||{},{tipo:t});if(t==='R'&&S.daily[k].train===true)S.daily[k].train=false;dayType=t;if(today.train!==undefined&&t==='R')delete today.train;save();render()}
+function setDayTipo(t){const k=dKey();S.daily[k]=Object.assign({},S.daily[k]||{},{tipo:t});if(t==='R'&&S.daily[k].train===true)S.daily[k].train=false;if(!DSEL)dayType=t;if(today.train!==undefined&&t==='R')delete today.train;save();render()}
 
 // ---- barrita de desplazamiento horizontal (para que se intuya que se puede deslizar)
 const HS_SEL='.tabs,.tbl-w,.hscroll';
