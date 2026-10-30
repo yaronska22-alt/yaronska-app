@@ -580,9 +580,9 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .pendbox .sec-h{margin-bottom:4px}
 .pcount{font-weight:800;color:var(--dim)}.pcount.on{color:var(--y)}
 .plist{display:flex;flex-direction:column;gap:6px}
-.prow{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;color:var(--fg);font:inherit;font-size:13.5px;cursor:pointer}
-.prow:hover{border-color:var(--y)}
-.prow small{color:var(--muted)}.prow .y{font-size:12px;font-weight:700}
+.pitem{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;color:var(--fg);font:inherit;font-size:13.5px;cursor:pointer}
+.pitem:hover{border-color:var(--y)}
+.pitem small{color:var(--muted)}.pitem .y{font-size:12px;font-weight:700}
 .pnote{color:#FFDFA0;font-size:13px}
 .rvdone{color:var(--ok)!important;border-color:var(--ok)!important}
 .revsheet{max-width:620px!important}
@@ -618,3 +618,10 @@ html{scroll-padding-top:calc(var(--toph,64px) + 8px)}
 .cqnav{justify-content:space-between}
 .cqsec{border-top:1px solid var(--line);padding:8px 0}.cqsec summary{cursor:pointer;font-weight:700}
 .cqsec dl{margin:8px 0 0;display:grid;gap:2px}.cqsec dt{color:var(--muted);font-size:12.5px;margin-top:6px}.cqsec dd{margin:0;white-space:pre-line}
+/* imagen para redes */
+.sosheet{max-width:900px!important}
+.sogrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.soform{display:flex;flex-direction:column;gap:10px}
+.soprev{display:flex;flex-direction:column;gap:6px;align-items:center;position:sticky;top:0}
+.soprev canvas{width:100%;max-width:380px;border-radius:12px;border:1px solid var(--line-2);background:#000}
+@media (max-width:700px){.sogrid{grid-template-columns:1fr}.soprev{position:static}}

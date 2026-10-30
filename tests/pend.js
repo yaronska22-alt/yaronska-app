@@ -25,7 +25,7 @@ await w(400);
 console.log('pend:',(await p.textContent('.pendgrid')).replace(/\s+/g,' ').slice(0,600));
 console.log('badge:',await p.textContent('.pendbtn'));
 await p.screenshot({path:OUT+'/p1.png',fullPage:true});
-await p.click('.prow >> nth=0');await w(800);
+await p.click('.pitem >> nth=0');await w(800);
 console.log('rev sheet:',(await p.textContent('#sheet')).replace(/\s+/g,' ').slice(0,300));
 await p.fill('#rvT','Muy buena semana, -1 kg. Seguimos igual.');await p.fill('#rvU','https://drive.google.com/x');
 await p.screenshot({path:OUT+'/p2.png'});

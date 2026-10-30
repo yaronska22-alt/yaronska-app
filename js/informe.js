@@ -159,3 +159,55 @@ async function makeReport(btn){
   }catch(e){console.error(e);toast('No se ha podido generar el PDF: '+(e.message||e))}
   finally{btn.disabled=false;btn.textContent=t}
 }
+
+// ================= IMAGEN ANTES / DESPUÉS PARA REDES =================
+let SO=null;
+function openSocial(){const pcs=rpPhotoCks();if(pcs.length<2){toast('Hacen falta al menos 2 revisiones con fotos');return}
+  SO={a:pcs[0].date,b:pcs[pcs.length-1].date,pose:'frontal',fmt:'post',kg:true,wk:true,face:false,name:false,img:{}};
+  const opt=v=>pcs.map(c=>`<option value="${c.date}" ${c.date===v?'selected':''}>${new Date(c.date+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}${c.peso?' · '+nf(c.peso)+' kg':''}</option>`).join('');
+  const sw=(id,l,on)=>`<label class="prow"><span>${l}</span><input class="sw" type="checkbox" id="${id}" ${on?'checked':''} onchange="soDraw()"></label>`;
+  const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in sosheet" role="dialog" aria-label="Imagen para redes"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>📲 Antes / después para redes</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+    <div class="sogrid"><div class="soform">
+      <div class="fgrid"><div class="field"><label for="soA">Antes</label><select id="soA" onchange="soDraw(1)">${opt(SO.a)}</select></div><div class="field"><label for="soB">Después</label><select id="soB" onchange="soDraw(1)">${opt(SO.b)}</select></div></div>
+      <div class="field"><label>Foto</label><div class="chips" id="soPose">${[['frontal','Frontal'],['lateral','Lateral'],['espalda','Espalda']].map(([k,l])=>`<button type="button" class="chip ${k==='frontal'?'on':''}" data-k="${k}" onclick="SO.pose='${k}';document.querySelectorAll('#soPose .chip').forEach(c=>c.classList.toggle('on',c.dataset.k==='${k}'));soDraw()">${l}</button>`).join('')}</div></div>
+      <div class="field"><label>Formato</label><div class="chips" id="soFmt"><button type="button" class="chip on" data-k="post" onclick="SO.fmt='post';document.querySelectorAll('#soFmt .chip').forEach(c=>c.classList.toggle('on',c.dataset.k==='post'));soDraw()">Post 4:5</button><button type="button" class="chip" data-k="story" onclick="SO.fmt='story';document.querySelectorAll('#soFmt .chip').forEach(c=>c.classList.toggle('on',c.dataset.k==='story'));soDraw()">Historia 9:16</button></div></div>
+      ${sw('soKg','Mostrar el cambio de peso',true)}${sw('soWk','Mostrar las semanas',true)}${sw('soName','Mostrar su nombre',false)}${sw('soFace','Tapar la cara (difumina la parte de arriba)',false)}
+      <label class="prow" style="border-color:var(--y)"><span>Tengo su permiso para publicarlo<small>Sin su consentimiento expreso no se puede publicar</small></span><input class="sw" type="checkbox" id="soOk" ${FICHA.redesOk?'checked':''} onchange="FICHA.redesOk=this.checked;save();soBtns()"></label>
+      <div class="row"><button class="btn" type="button" id="soDl" onclick="soSave()">⬇️ Descargar imagen</button><button class="btn ghost" type="button" id="soSh" onclick="soShare()" ${navigator.canShare?'':'hidden'}>Compartir</button></div>
+    </div><div class="soprev"><canvas id="soCv"></canvas><small class="muted" id="soMsg">Cargando fotos…</small></div></div></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};soBtns();soDraw(1)}
+function soBtns(){const ok=document.getElementById('soOk').checked;['soDl','soSh'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=!ok})}
+async function soLoad(date){if(SO.img[date])return SO.img[date];const c=S.checkins.find(x=>x.date===date);const P=await rpPhotos(c);const out={};
+  await Promise.all(Object.entries(P).map(([k,src])=>new Promise(r=>{const im=new Image();im.onload=()=>{out[k]=im;r()};im.onerror=r;im.src=src})));SO.img[date]=out;return out}
+async function soDraw(reload){if(!SO)return;const g=id=>document.getElementById(id);SO.a=g('soA').value;SO.b=g('soB').value;SO.kg=g('soKg').checked;SO.wk=g('soWk').checked;SO.name=g('soName').checked;SO.face=g('soFace').checked;
+  const msg=g('soMsg');if(reload)msg.textContent='Cargando fotos…';const [IA,IB]=await Promise.all([soLoad(SO.a),soLoad(SO.b)]);
+  const W=1080,H=SO.fmt==='story'?1920:1350;const cv=g('soCv');if(!cv)return;cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const F=getComputedStyle(document.body).fontFamily||'Arial';const D=getComputedStyle(document.documentElement).getPropertyValue('--display').trim()||F;
+  x.fillStyle='#0A0907';x.fillRect(0,0,W,H);
+  // cabecera
+  const top=SO.fmt==='story'?150:90;x.textBaseline='alphabetic';
+  x.font=`800 44px ${D}`;x.fillStyle='#fff';const t1='YARONSKA';const w1=x.measureText(t1).width;x.font=`800 44px ${D}`;const w2=x.measureText('_FIT').width;
+  x.fillText(t1,(W-w1-w2)/2,top);x.fillStyle='#FFD60A';x.fillText('_FIT',(W-w1-w2)/2+w1,top);
+  x.font=`800 30px ${D}`;x.fillStyle='#A8A49C';const sub=SO.name?(CLIENT.name||'').toUpperCase():'TRANSFORMACIÓN REAL';x.textAlign='center';x.fillText(sub,W/2,top+52);x.textAlign='left';
+  // fotos
+  const pad=40,gap=20,py=top+90,ph=H-py-(SO.fmt==='story'?380:300),pw=(W-pad*2-gap)/2;
+  const cover=(im,dx,dy,dw,dh)=>{if(!im){x.fillStyle='#1E1B17';x.fillRect(dx,dy,dw,dh);x.fillStyle='#6E6A63';x.font=`600 28px ${F}`;x.textAlign='center';x.fillText('Sin foto',dx+dw/2,dy+dh/2);x.textAlign='left';return}
+    const r=Math.max(dw/im.width,dh/im.height);const sw=dw/r,sh=dh/r;const sx=(im.width-sw)/2,sy=Math.max(0,(im.height-sh)*0.35);
+    x.save();x.beginPath();x.roundRect?x.roundRect(dx,dy,dw,dh,24):x.rect(dx,dy,dw,dh);x.clip();x.drawImage(im,sx,sy,sw,sh,dx,dy,dw,dh);
+    if(SO.face){x.filter='blur(28px)';x.drawImage(im,sx,sy,sw,sh*0.2,dx,dy,dw,dh*0.2);x.filter='none';x.fillStyle='rgba(10,9,7,.25)';x.fillRect(dx,dy,dw,dh*0.2)}x.restore()};
+  cover(IA[SO.pose],pad,py,pw,ph);cover(IB[SO.pose],pad+pw+gap,py,pw,ph);
+  const lab=(t,cx,col)=>{x.font=`800 30px ${D}`;const tw=x.measureText(t).width+40;x.fillStyle=col;x.beginPath();const lx=cx-tw/2,ly=py+ph-70;x.roundRect?x.roundRect(lx,ly,tw,50,25):x.rect(lx,ly,tw,50);x.fill();x.fillStyle='#0A0907';x.textAlign='center';x.fillText(t,cx,ly+36);x.textAlign='left'};
+  lab('ANTES',pad+pw/2,'#ffffff');lab('DESPUÉS',pad+pw+gap+pw/2,'#FFD60A');
+  // datos
+  const A=S.checkins.find(c=>c.date===SO.a),B=S.checkins.find(c=>c.date===SO.b);const wk=Math.max(1,Math.round((new Date(SO.b)-new Date(SO.a))/6048e5));
+  const facts=[];if(SO.kg&&A.peso&&B.peso){const d=B.peso-A.peso;facts.push([(d>0?'+':'')+nf(d,1)+' kg','PESO'])}
+  if(SO.wk)facts.push([wk+'','SEMANA'+(wk>1?'S':'')]);
+  const fy=py+ph+(SO.fmt==='story'?120:95);
+  if(facts.length){const cw=W/facts.length;facts.forEach(([v,l],i)=>{const cx=cw*i+cw/2;x.textAlign='center';x.font=`800 76px ${D}`;x.fillStyle='#FFD60A';x.fillText(v,cx,fy);x.font=`700 24px ${D}`;x.fillStyle='#A8A49C';x.fillText(l,cx,fy+40)});x.textAlign='left'}
+  x.fillStyle='#FFD60A';x.fillRect(0,H-12,W,12);x.textAlign='center';x.font=`700 28px ${F}`;x.fillStyle='#ffffff';x.fillText('@Yaronska_Fit · Método Anti-Esfuerzo',W/2,H-(SO.fmt==='story'?110:50));x.textAlign='left';
+  msg.textContent=(!IA[SO.pose]||!IB[SO.pose])?'Falta la foto '+SO.pose+' en alguna de las dos revisiones.':'Vista previa · se descarga en '+W+'×'+H+' px';}
+function soBlob(){return new Promise(r=>document.getElementById('soCv').toBlob(r,'image/jpeg',0.92))}
+const soName=()=>`antes-despues-${(CLIENT.first||'cliente').toLowerCase()}-${SO.b}.jpg`;
+async function soSave(){if(!document.getElementById('soOk').checked){toast('Marca que tienes su permiso');return}const b=await soBlob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=soName();document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+async function soShare(){const b=await soBlob();const f=new File([b],soName(),{type:'image/jpeg'});try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'Antes y después'});else soSave()}catch(e){}}
