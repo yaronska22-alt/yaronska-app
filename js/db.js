@@ -50,7 +50,7 @@ const db = {
   async listClients() {
     const clients = ok(await sb.from('clients').select('id,email,user_id,ficha,prefs,fase,semana,semanas_fase,last_seen').order('created_at'));
     const admin = ok(await sb.from('client_admin').select('*'));
-    const cks = ok(await sb.from('checkins').select('client_id,fecha').order('fecha', { ascending: false }));
+    const cks = ok(await sb.from('checkins').select('client_id,fecha,rev:data->rev').order('fecha', { ascending: false }));
     return { clients, admin, checkins: cks };
   },
   async createClient(email, ficha, alta) {

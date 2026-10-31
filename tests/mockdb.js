@@ -25,7 +25,7 @@ window.db={
   async listPasskeys(){return (st.pk||[]).filter(k=>k.user===me().id)},
   async deletePasskey(id){st.pk=st.pk.filter(k=>k.id!==id);persist()},
   async me(uid){const u=st.users.find(x=>x.id===uid);const role=u.role;let clientId=null;if(role==='client'){const c=st.clients.find(c=>c.user_id===uid);clientId=c?c.id:null}return {role,clientId}},
-  async listClients(){if(!isCoach())deny('list');return {clients:st.clients.map(c=>({...c})),admin:st.client_admin.map(a=>({...a})),checkins:st.checkins.map(c=>({client_id:c.client_id,fecha:c.fecha})).sort((a,b)=>b.fecha.localeCompare(a.fecha))}},
+  async listClients(){if(!isCoach())deny('list');return {clients:st.clients.map(c=>({...c})),admin:st.client_admin.map(a=>({...a})),checkins:st.checkins.map(c=>({client_id:c.client_id,fecha:c.fecha,rev:(c.data||{}).rev||null})).sort((a,b)=>b.fecha.localeCompare(a.fecha))}},
   async createClient(email,ficha,alta){if(!isCoach())deny('create');const id='c-'+nid();st.clients.push({id,user_id:null,email,ficha,prefs:{},fase:0,semana:1,semanas_fase:4,kcal:1800,rest_on:true,plan:null,rutina:[],pautas:{},created_at:now()});st.client_admin.push({client_id:id,estado:'active',alta});persist();return id},
   async loadClient(id,withAdmin){if(!can(id))deny('load');const c=st.clients.find(c=>c.id===id);const f=(t)=>st[t].filter(x=>x.client_id===id).map(x=>JSON.parse(JSON.stringify(x)));
     if(withAdmin&&!isCoach())deny('admin');

@@ -10,7 +10,7 @@ const FICHA_DEF={nombre:'',email:'',tel:'',sexo:'',nac:'',altura:'',objetivo:'pe
   omega3:'',vitD:'',b12:'',magnesio:'',vitC:'',hierro:'',calcio:'',zinc:'',folato:'',potasio:'',creatina:'',colageno:'',cafeina:'',multi:'no',supOtros:'',
   sal:'',sol:'',agua:'',cafe:'',alcohol:'',tabaco:'',aire:'',pantallas:'',lifeNotas:'',alDejar:'',alimActual:'',analiticas:'',antojos:'',apoyo:'',atracones:'',ciudad:'',cocina:'',comidasDia:'',compensa:'',compromiso:'',cuentaKcal:'',cuerpo:'',culpa:'',deportePasado:'',dietaActual:'',disfruta:'',donde:'',energia:'',entPrevio:'',entender:'',espejo:'',espejoRel:'',espera:'',evitaAct:'',franja:'',frustra:'',fuera:'',gimnasio:'',haceEj:'',hijos:'',horarios:'',horasTrabajo:'',material:'',musculos:'',noParar:'',objPrincipal:'',obstaculos:'',pesaje:'',pesoMax:'',pesoMin:'',pesoObj:'',plazo:'',porque:'',preguntas:'',prenda:'',primero:'',prohibidos:'',resultadoPrevio:'',sabeCocinar:'',talla:'',tiempoCocina:'',tiempoSesion:'',trabajo:'',trabajoTipo:'',turnos:'',yoyo:''};
 // Campos que SOLO ve el entrenador: se guardan aparte (tabla client_admin) y el cliente nunca los recibe
-const ADMIN_MAP={estado:'estado',alta:'alta',tipo:'tipo',renov:'renovacion',pago:'pago',cheat:'cheatmeals',pausa:'pausa',baja:'baja',notasCom:'notas'};
+const ADMIN_MAP={estado:'estado',alta:'alta',tipo:'tipo',renov:'renovacion',pago:'pago',cheat:'cheatmeals',pausa:'pausa',baja:'baja',notasCom:'notas',pautadoAt:'pautado_at'};
 var FICHA=null;
 Object.defineProperties(CLIENT,{
   program:{get:()=>PROG().n},
@@ -109,7 +109,7 @@ function fromDb(d){
   d.daily.forEach(x=>{S.daily[x.fecha]=x.data});
   d.logs.forEach(l=>{(S.hist[l.ejercicio]=S.hist[l.ejercicio]||[]).push({id:l.id,date:l.fecha,day:l.dia||'',sets:l.sets||[],nota:l.nota||'',ts:Date.parse(l.created_at)})});
   // Una pauta deja de mostrarse cuando el cliente ya ha entrenado ese ejercicio después de pautarla
-  Object.entries(c.pautas||{}).forEach(([n,p])=>{const h=S.hist[n]||[];if(!p.ts||!h.some(x=>x.ts>p.ts))S.next[n]=p});
+  Object.entries(c.pautas||{}).forEach(([n,p])=>{const h=S.hist[n]||[];if(!p.ts||!h.some(x=>x.ts>p.ts&&(!p.from||x.date>=p.from)))S.next[n]=p});
   FICHA=S.ficha;CUR={id:c.id,email:c.email};
   SNAP={client:J(clientRow()),admin:d.admin?J(adminRow()):null,profile:J({n:FICHA.nombre,t:FICHA.tel,p:S.profile}),w:{},c:{},d:{},h:{}};
   S.weights.forEach(w=>SNAP.w[w.id]=J(wBody(w)));S.checkins.forEach(x=>SNAP.c[x.id]=J(cBody(x)));
@@ -482,7 +482,7 @@ function suggestion(e){
   return done?{kg:kg+(kg>=20?2.5:1),txt:`${e.r} reps`,why:'Llegaste al tope de repeticiones: sube peso'}:{kg,txt:`intenta +1 rep por serie`,why:'Mismo peso, busca una repetición más'};
 }
 function exCard(e,ei,label){
-  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const SS=exSets(e);const nx=S.next[e.n];
+  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const SS=exSets(e);const nx=nxOf(e.n);
   const rk=exRank(e.n);
   return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e))}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div>${e.vid&&!e.v?'':`<a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a>`}</div>
     ${e.vid?exVid(e.vid):''}
@@ -534,7 +534,7 @@ async function saveSession(btn){
   d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
-    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length)delete S.next[e.n]}});
+    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from))delete S.next[e.n]}});
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
   rtStop();SAVED_AT=Date.now();
   const k=date;const prevDay=S.daily[k]?clone(S.daily[k]):undefined;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
@@ -620,17 +620,26 @@ function vRes(){
 function statusOf(last){if(!last)return {st:'warn',t:'Sin check-ins'};const d=Math.round((new Date(iso(new Date())+'T12:00')-new Date(last+'T12:00'))/864e5);return d<=8?{st:'ok',t:'Al día'}:d<=15?{st:'warn',t:'Check-in pendiente'}:{st:'bad',t:d+' días sin check-in'}}
 async function refreshList(){
   const {clients,admin,checkins}=await db.listClients();
-  const A={};admin.forEach(a=>A[a.client_id]=a);const L={};checkins.forEach(c=>{if(!L[c.client_id])L[c.client_id]=c.fecha});
+  const A={};admin.forEach(a=>A[a.client_id]=a);const L={},LC={};checkins.forEach(c=>{if(!L[c.client_id]){L[c.client_id]=c.fecha;LC[c.client_id]={fecha:c.fecha,rev:!!c.rev}}});
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
     return {id:c.id,email:c.email,ficha:f,adm:a,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
-      renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',seen:c.last_seen||null,...statusOf(L[c.id])}});
+      renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',seen:c.last_seen||null,...statusOf(L[c.id]),
+      wk:wkState(LC[c.id]||null,a.pautado_at||null,true)}});
 }
+// Semana del cliente: ¿ha mandado revisión en los últimos 7 días? ¿la he revisado? ¿le he pautado el entreno después?
+function wkState(ck,pAt,hasRut){const lim=iso(daysAgo(7));const recent=ck&&ck.fecha>=lim?ck:null;
+  const rev=!recent?'none':recent.rev?'done':'todo';const since=recent?recent.fecha:lim;const pau=pAt&&pAt.slice(0,10)>=since?'done':(recent&&hasRut?'todo':'none');return {rev,pau}}
+function liveWk(){const L=[...S.checkins].sort((a,b)=>b.date.localeCompare(a.date))[0];return wkState(L?{fecha:L.date,rev:!!L.rev}:null,FICHA.pautadoAt||null,true)}
+function refreshItem(){if(!CUR)return;const s=CL.find(x=>x.id===CUR.id);if(s)s.wk=liveWk()}
+function wkChips(w){if(!w)return '';const R={none:['wk-n','📝 Sin revisión'],todo:['wk-t','📝 Revisar'],done:['wk-d','📝 Revisada ✓']}[w.rev],P={none:['wk-n','🏋️ —'],todo:['wk-t','🏋️ Pautar'],done:['wk-d','🏋️ Pautado ✓']}[w.pau];
+  return `<span class="wkc"><i class="${R[0]}">${R[1]}</i>${w.pau==='none'&&w.rev==='none'?'':`<i class="${P[0]}">${P[1]}</i>`}</span>`}
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
+  refreshItem();
   if(CUR&&id===CUR.id&&!String(coachSel).startsWith('__'))return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
   try{await flushSync()}catch(e){}
   coachSel=id;document.querySelector('.cmain').innerHTML='<p class="muted">Cargando…</p>';
@@ -644,7 +653,7 @@ function _renderCoach(){setTimeout(placeCalc);
   const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina']];
   const c=String(coachSel).startsWith('__')?null:CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
-  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}</span>
+  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}${(()=>{const A=activeCL().map(c=>c.id===(CUR&&CUR.id)?liveWk():c.wk).filter(Boolean);const r=A.filter(w=>w.rev==='todo').length,pa=A.filter(w=>w.pau==='todo').length;return r||pa?` <span class="wksum">· ${r?r+' por revisar':''}${r&&pa?' · ':''}${pa?pa+' por pautar':''}</span>`:''})()}</span>
     ${CL.map(coachItem).join('')}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
     <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
@@ -873,24 +882,30 @@ function cSes(){
   const inS='style="width:72px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;text-align:center"';
   const NT=exNotes(30);
   return `${NT.length?`<div class="panel"><span class="lbl">💬 Notas del cliente · últimos 30 días</span><div class="ntlist">${NT.map(x=>`<button type="button" class="ntrow ${x.date+'|'+(x.day||'')===sesSel?'on':''}" onclick="sesSel=${esc(JSON.stringify(x.date+'|'+(x.day||'')))};renderCoach()"><small class="muted">${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.n)}</small><span>${esc(x.nota)}</span></button>`).join('')}</div></div>`:''}<div class="panel"><div class="range"><div class="field"><label for="sesS">Sesión</label><select id="sesS" onchange="sesSel=this.value;renderCoach()">${L.map(x=>`<option value="${esc(x.date+'|'+x.day)}" ${x.date+'|'+x.day===sesSel?'selected':''}>${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.day||'Entreno')} · ${x.items.length} ejercicios</option>`).join('')}</select></div></div>
-    <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p></div>
+    <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p>
+    <div class="pmode"><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
   ${se.items.map(({n,hi,h},k)=>{const nx=S.next[n]||{};const re=routineEx(n,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
     const blk=re&&re.blk?`<span class="stag" style="background:var(--surface-2);color:var(--y)">${esc(blkName(re.blkT))} ${esc(re.blk)}</span>`:'';
     const tOf=(st,si)=>st.t!==undefined?st.t:(plan[st.i??si]||{}).t||'';
     return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="small muted">${h.sets.length?h.sets.length+' series':'Sin series · solo nota'}</span></div>${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
     <div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=plan[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
-    <span class="lbl" style="margin-top:4px">Pautar próximo entreno</span>
+    <span class="lbl" style="margin-top:4px">Pautar próximo entreno${nx.ts?` <span class="pfrom">✓ pautado${nx.from?' · lo ve desde el '+new Date(nx.from+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):' · ya visible'}</span>`:''}</span>
     ${det?`<div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Kg</th><th>Reps</th><th>RIR / RPE</th></tr></thead><tbody>${plan.map((pl,si)=>{const v=(nx.sets||[])[si]||{};const lastS=h.sets.find(x=>(x.i??-1)===si)||h.sets[si]||{};return `<tr><td>${si+1}</td><td>${setTag(pl.t)||'<span class="muted">Normal</span>'}</td><td><input id="nsk-${k}-${si}" value="${esc(v.kg||'')}" placeholder="${lastS.kg??''}" inputmode="decimal" ${inS}></td><td><input id="nsr-${k}-${si}" value="${esc(v.reps||'')}" placeholder="${esc(pl.reps||'')}" ${inS}></td><td><input id="nsi-${k}-${si}" value="${esc(v.int||'')}" placeholder="${esc(pl.rpe||'')}" ${inS}></td></tr>`}).join('')}</tbody></table></div>
       <div class="range"><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente</label><input id="nn-${k}" value="${esc(nx.nota||'')}" placeholder="Top set a 100 kg y back-offs al 90 %"></div><button class="btn sm" type="button" onclick="setNext('${nm}',${k},${plan.length})">Pautar</button></div>`
     :`<div class="range"><div class="field"><label for="nk-${k}">Kg</label><input id="nk-${k}" value="${esc(nx.kg||'')}" inputmode="decimal" placeholder="${h.sets.length?Math.max(...h.sets.map(x=>x.kg)):''}"></div><div class="field"><label for="nr-${k}">Reps objetivo</label><input id="nr-${k}" value="${esc(nx.reps||'')}" placeholder="p. ej. 10-12"></div><div class="field"><label for="ni-${k}">RIR / RPE objetivo</label><input id="ni-${k}" value="${esc(nx.int||'')}" placeholder="RIR 2 · RPE 8"></div><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente</label><input id="nn-${k}" value="${esc(nx.nota||'')}" placeholder="Baja el peso y controla la bajada"></div>
     <button class="btn sm" type="button" onclick="setNext('${nm}',${k},0)">Pautar</button></div>`}</div>`}).join('')}`;
 }
 function editSet(n,hi,si,f,v){const x=parseFloat(String(v).replace(',','.'));S.hist[n][hi].sets[si][f]=isNaN(x)?null:x;save();toast('Corregido')}
+// pauta visible para el cliente: si es «desde el lunes», no aparece hasta ese día
+function nxOf(n){const x=S.next[n];if(!x)return undefined;if(view==='client'&&x.from&&iso(new Date())<x.from)return undefined;return x}
+const nextMonday=()=>{const d=new Date();d.setHours(12);d.setDate(d.getDate()+((8-d.getDay())%7||7));return iso(d)};
+let PAUTA_MODE=(()=>{try{return localStorage.getItem('pautaMode')||'lunes'}catch(e){return 'lunes'}})();
+function setPautaMode(m){PAUTA_MODE=m;try{localStorage.setItem('pautaMode',m)}catch(e){}renderCoach()}
 function setNext(n,k,ns){const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};const nota=g('nn-'+k);
   if(ns){const sets=[];for(let si=0;si<ns;si++)sets.push({kg:g(`nsk-${k}-${si}`),reps:g(`nsr-${k}-${si}`),int:g(`nsi-${k}-${si}`)});
-    if(!nota&&!sets.some(x=>x.kg||x.reps||x.int))delete S.next[n];else S.next[n]={sets,nota,ts:Date.now()}}
-  else{const kg=g('nk-'+k),reps=g('nr-'+k),int=g('ni-'+k);if(!kg&&!reps&&!nota&&!int)delete S.next[n];else S.next[n]={kg,reps,nota,int,ts:Date.now()}}
-  save();toast('Pautado para el próximo entreno');renderCoach()}
+    if(!nota&&!sets.some(x=>x.kg||x.reps||x.int))delete S.next[n];else S.next[n]=Object.assign({sets,nota,ts:Date.now()},PAUTA_MODE==='lunes'?{from:nextMonday()}:{})}
+  else{const kg=g('nk-'+k),reps=g('nr-'+k),int=g('ni-'+k);if(!kg&&!reps&&!nota&&!int)delete S.next[n];else S.next[n]=Object.assign({kg,reps,nota,int,ts:Date.now()},PAUTA_MODE==='lunes'?{from:nextMonday()}:{})}
+  FICHA.pautadoAt=new Date().toISOString();save();toast(PAUTA_MODE==='lunes'?'Pautado: lo verá desde el lunes '+new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'Pautado para su próximo entreno');refreshItem();renderCoach()}
 // Plan automático según kcal (tu forma de trabajar: plantilla Yaronska escalada)
 let planPrev=null;
 function cPlan(){
@@ -1516,7 +1531,7 @@ async function saveRev(date){const c=S.checkins.find(x=>x.date===date);if(!c)ret
   const old=c.rev||{};c.rev={at:old.at||new Date().toISOString(),txt,url};if(old.at&&(old.txt!==txt||old.url!==url)){c.rev.at=new Date().toISOString()}
   try{save();await flushSync();
     if(nt){try{const r=await db.notify(CUR.id,'revisada',txt?txt.slice(0,120):'Entra en la app para ver sus comentarios.');toast(r&&r.sent?'Revisada y avisado en su móvil':'Revisada · no tiene los avisos activados en el móvil')}catch(e){toast('Revisada (no se pudo enviar el aviso)')}}else toast('Revisión guardada');
-    closeSheet();if(PEND)pendMark(CUR.id,date);renderCoach()}
+    closeSheet();if(PEND)pendMark(CUR.id,date);refreshItem();renderCoach()}
   catch(e){console.error(e);toast('No se ha podido guardar: '+authMsg(e));b.disabled=false;b.textContent='Guardar'}}
 async function unRev(date){const c=S.checkins.find(x=>x.date===date);if(!c)return;delete c.rev;save();await flushSync();closeSheet();if(PEND){const k=PEND.ck.find(x=>x.client_id===CUR.id&&x.fecha===date);if(k)k.rev=null;pendCount()}renderCoach()}
 // cliente: la última revisión revisada que aún no ha leído
