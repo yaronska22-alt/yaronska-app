@@ -727,3 +727,7 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .failchip{position:fixed;z-index:60;background:var(--bad,#FF6B5B);color:#fff;border:0;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}
 .prevbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(255,214,10,.1);border:1px solid var(--y);border-radius:10px;padding:10px 12px}
 .prevbar b{display:block;color:var(--y);font-size:14px}.prevbar small{color:var(--muted);font-size:12.5px}
+.pauthd{display:flex;flex-direction:column;gap:2px;border:1px solid var(--ok);border-bottom:0;border-radius:10px 10px 0 0;background:rgba(124,227,139,.08);padding:8px 12px;margin-bottom:-8px}
+.pauthd b{color:var(--ok);font-size:13.5px}.pauthd span{font-size:13px;color:var(--fg)}
+.setplan.paut{border:1px solid var(--ok);border-radius:0 0 10px 10px;padding:6px;background:rgba(124,227,139,.04)}
+.setplan.paut li.pz>span:not(.sn){color:var(--ok);font-weight:700}
