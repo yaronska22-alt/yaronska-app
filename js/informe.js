@@ -38,10 +38,10 @@ function rpCss(){return `
 .ysr-cmp-h{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
 .ysr-cmp-h>div{background:#1a1a1a;border-left:3px solid #FFD60A;padding:7px 10px}
 .ysr-cmp-h .l{font-size:8.5px;color:#bbb;text-transform:uppercase}.ysr-cmp-h .v{font-family:Jost,Arial,sans-serif;font-size:17px;text-transform:uppercase}
-.ysr-pair{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.ysr-pair{display:grid;grid-template-columns:repeat(auto-fit,228px);justify-content:center;gap:8px;margin-bottom:10px}
 .ysr-rowlab{font-family:Jost,Arial,sans-serif;font-weight:600;font-size:13px;text-transform:uppercase;color:#FFD60A;margin:2px 0 5px}
-.ysr-ph{position:relative;background:#141414;height:330px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #2a2a2a}
-.ysr-ph img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.ysr-ph{position:relative;background:#141414;width:228px;height:304px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #2a2a2a}
+.ysr-ph img{width:100%;height:100%;display:block}
 .ysr-ph .tag{position:absolute;left:0;top:0;background:#FFD60A;color:#000;font-family:Jost,Arial,sans-serif;font-weight:600;font-size:10px;padding:3px 8px;text-transform:uppercase}
 .ysr-ph .none{color:#666;font-size:11px}
 .ysr-diff{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -69,6 +69,9 @@ async function rpPhotos(c){const P={};const paths=(c&&c.fotosP)||[];if(!paths.le
   let urls=[];try{urls=await db.photoUrls(paths)}catch(e){return P}
   await Promise.all(paths.map(async(p,i)=>{const k=/frontal/.test(p)?'frontal':/lateral/.test(p)?'lateral':/espalda/.test(p)?'espalda':'otra'+i;
     try{const b=await (await fetch(urls[i])).blob();P[k]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}catch(e){}}));return P}
+// recorta cada foto al mismo formato vertical 3:4 (centrada) para que antes/después se vean igual de grandes
+function rpCrop(src,ratio=3/4){return new Promise(res=>{const im=new Image();im.onload=()=>{const w=im.naturalWidth,h=im.naturalHeight;let cw=w,ch=h;if(w/h>ratio)cw=Math.round(h*ratio);else ch=Math.round(w/ratio);
+  const sx=Math.round((w-cw)/2),sy=Math.round((h-ch)*0.4);const W=Math.min(900,cw),H=Math.round(W/ratio);const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,sx,sy,cw,ch,0,0,W,H);res(cv.toDataURL('image/jpeg',0.9))};im.onerror=()=>res(src);im.src=src})}
 const rpPhotoCks=()=>S.checkins.filter(c=>c.fotosP&&c.fotosP.length).slice().sort((a,b)=>a.date.localeCompare(b.date));
 function rpWeek(date){const W=allWeights();const start=FICHA.alta||(W[0]&&W[0].date);if(!start)return 1;return Math.max(1,Math.floor((new Date(date+'T12:00')-new Date(start+'T12:00'))/6048e5)+1)}
 function rpTrend(c){const W=allWeights().filter(w=>w.date<=c.date);if(W.length<2)return 'Primera medición';
@@ -104,6 +107,7 @@ const rpHead=(kicker,week,date)=>`<div class="ysr-top">Yaronska · @Yaronska_Fit
 const rpFoot='<div class="ysr-foot">yaronska22@gmail.com · @Yaronska_Fit · #ComeConGusto · Documento privado</div>';
 async function rpCmpPage(aD,bD,week){
   const A=S.checkins.find(c=>c.date===aD),B=S.checkins.find(c=>c.date===bD);const [PA,PB]=await Promise.all([rpPhotos(A),rpPhotos(B)]);
+  for(const P of [PA,PB])for(const k of Object.keys(P))P[k]=await rpCrop(P[k]);
   const F=fatSeries();const fa=(F.find(x=>x.date===aD)||{}).v,fb=(F.find(x=>x.date===bD)||{}).v;
   const ph=(P,k,lab)=>`<div class="ysr-ph">${P[k]?`<img src="${P[k]}" alt="">`:'<span class="none">Sin foto</span>'}<span class="tag">${lab}</span></div>`;
   const keys=[['frontal','Frontal'],['lateral','Lateral'],['espalda','Espalda']].filter(([k])=>PA[k]||PB[k]);
