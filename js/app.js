@@ -469,6 +469,8 @@ const SET_S={aprox:'Aprox',top:'Top',backoff:'B-off',drop:'Drop',rp:'R-P',amrap:
 const BLK_T=[['superserie','Superserie'],['biserie','Biserie'],['triserie','Triserie'],['circuito','Circuito'],['gigante','Serie gigante']];
 const BLK_L='ABCDEFGH'.split('');
 const blkName=t=>(BLK_T.find(x=>x[0]===t)||['','Bloque'])[1];
+// series de la sesión: si Yaron ha pautado otra estructura (nº de series o tipos), manda la pauta
+function sesSets(e,nx){const base=exSets(e);if(!nx||!nx.sets||!nx.sets.length)return base;return nx.sets.map((x,i)=>Object.assign({},base[i]||base[base.length-1]||{},{t:x.t!==undefined?x.t:((base[i]||{}).t||'')}))}
 function exSets(e){const a=[];for(let i=0;i<e.s;i++){const x=(e.sets||[])[i]||{};a.push({t:x.t||'',kg:x.kg||e.kg||'',reps:x.reps||e.r,rpe:x.rpe||e.rir,rest:x.rest||e.rest,nota:x.nota||''})}return a}
 const detailed=e=>{const a=exSets(e);return a.some(x=>x.t||x.nota)||new Set(a.map(x=>x.kg+'|'+x.reps+'|'+x.rpe+'|'+x.rest)).size>1};
 function blocksOf(ex){const out=[];let cur=null;ex.forEach((e,ei)=>{if(e.blk&&cur&&cur.letter===e.blk)cur.items.push({e,ei});else{cur={letter:e.blk||'',type:e.blkT||'',items:[{e,ei}]};out.push(cur)}});
@@ -482,12 +484,12 @@ function suggestion(e){
   return done?{kg:kg+(kg>=20?2.5:1),txt:`${e.r} reps`,why:'Llegaste al tope de repeticiones: sube peso'}:{kg,txt:`intenta +1 rep por serie`,why:'Mismo peso, busca una repetición más'};
 }
 function exCard(e,ei,label){
-  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const SS=exSets(e);const nx=nxOf(e.n);
+  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const nx=nxOf(e.n);const SS=sesSets(e,nx);
   const rk=exRank(e.n);
   return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e))}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div>${e.vid&&!e.v?'':`<a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a>`}</div>
     ${e.vid?exVid(e.vid):''}
     ${det?`<ol class="setplan">${SS.map((x,i)=>`<li><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${x.kg?esc(String(x.kg).replace('.',','))+' kg × ':''}${esc(x.reps)}${/ s$/.test(x.reps)?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`
-      :`<div class="presc"><span>${e.s} series</span>${e.kg?`<span><b>${esc(String(e.kg).replace('.',','))} kg</b></span>`:''}<span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
+      :`<div class="presc"><span>${SS.length} series</span>${e.kg?`<span><b>${esc(String(e.kg).replace('.',','))} kg</b></span>`:''}<span>${esc(e.r)}${/ s$/.test(e.r)?'':' reps'}</span><span>${esc(rpeTxt(e))}</span><span>Descanso ${esc(e.rest)}</span></div>`}
     ${e.aprox?`<div class="aprox"><b>Series de aproximación</b><span>${esc(e.aprox)}</span></div>`:''}
     ${nx&&nx.sets?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08);flex-direction:column;align-items:stretch;gap:4px"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span>${nx.sets.map((x,i)=>x.kg||x.reps||x.int?`<b style="color:var(--ok);font-size:13px">Serie ${i+1}${SS[i]&&SS[i].t?' · '+esc(SET_S[SS[i].t]||''):''}: ${[x.kg?esc(x.kg)+' kg':'',x.reps?'× '+esc(x.reps):'',x.int?'· '+esc(x.int):''].filter(Boolean).join(' ')}</b>`:'').join('')}</div>`
     :nx?`<div class="target" style="border-color:var(--ok);background:rgba(124,227,139,.08)"><span>Pautado por Yaron${nx.nota?' · <small class="muted">'+esc(nx.nota)+'</small>':''}</span><b style="color:var(--ok)">${[nx.kg?esc(nx.kg)+' kg':'',nx.reps?'× '+esc(nx.reps):'',nx.int?'· '+esc(nx.int):''].filter(Boolean).join(' ')}</b></div>`:sg?`<div class="target"><span>Objetivo hoy · <small class="muted">${esc(sg.why)}</small></span><b>${nf(sg.kg,1).replace(',0','')} kg · ${esc(sg.txt)}</b></div>`:''}
@@ -531,10 +533,10 @@ let SES_D=null;
 async function saveSession(btn){
   if(saveSession.busy)return;
   const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
-  d.ex.forEach((e,ei)=>{const sets=[];const SS=exSets(e);for(let si=0;si<e.s;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
+  d.ex.forEach((e,ei)=>{const sets=[];const NX=nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:isNaN(rir)?null:rir,i:si};if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
-    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from))delete S.next[e.n]}});
+    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from)){const P=S.next[e.n];if(P.fix&&P.sets){e.s=P.sets.length;const base=exSets(Object.assign({},e,{s:P.sets.length}));e.sets=base.map((x,i)=>Object.assign(x,{t:P.sets[i].t||''}))}delete S.next[e.n]}}});
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
   rtStop();SAVED_AT=Date.now();
   const k=date;const prevDay=S.daily[k]?clone(S.daily[k]):undefined;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
@@ -639,7 +641,7 @@ function coachItem(s){
   return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
 }
 async function selectClient(id){
-  refreshItem();
+  refreshItem();PDRAFT={};
   if(CUR&&id===CUR.id&&!String(coachSel).startsWith('__'))return;if(CUR&&id===CUR.id){coachSel=id;renderCoach();return}
   try{await flushSync()}catch(e){}
   coachSel=id;document.querySelector('.cmain').innerHTML='<p class="muted">Cargando…</p>';
@@ -890,21 +892,37 @@ function cSes(){
     return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="small muted">${h.sets.length?h.sets.length+' series':'Sin series · solo nota'}</span></div>${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
     <div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=plan[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
     <span class="lbl" style="margin-top:4px">Pautar próximo entreno${nx.ts?` <span class="pfrom">✓ pautado${nx.from?' · lo ve desde el '+new Date(nx.from+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):' · ya visible'}</span>`:''}</span>
-    ${det?`<div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Kg</th><th>Reps</th><th>RIR / RPE</th></tr></thead><tbody>${plan.map((pl,si)=>{const v=(nx.sets||[])[si]||{};const lastS=h.sets.find(x=>(x.i??-1)===si)||h.sets[si]||{};return `<tr><td>${si+1}</td><td>${setTag(pl.t)||'<span class="muted">Normal</span>'}</td><td><input id="nsk-${k}-${si}" value="${esc(v.kg||'')}" placeholder="${lastS.kg??''}" inputmode="decimal" ${inS}></td><td><input id="nsr-${k}-${si}" value="${esc(v.reps||'')}" placeholder="${esc(pl.reps||'')}" ${inS}></td><td><input id="nsi-${k}-${si}" value="${esc(v.int||'')}" placeholder="${esc(pl.rpe||'')}" ${inS}></td></tr>`}).join('')}</tbody></table></div>
-      <div class="range"><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente</label><input id="nn-${k}" value="${esc(nx.nota||'')}" placeholder="Top set a 100 kg y back-offs al 90 %"></div><button class="btn sm" type="button" onclick="setNext('${nm}',${k},${plan.length})">Pautar</button></div>`
-    :`<div class="range"><div class="field"><label for="nk-${k}">Kg</label><input id="nk-${k}" value="${esc(nx.kg||'')}" inputmode="decimal" placeholder="${h.sets.length?Math.max(...h.sets.map(x=>x.kg)):''}"></div><div class="field"><label for="nr-${k}">Reps objetivo</label><input id="nr-${k}" value="${esc(nx.reps||'')}" placeholder="p. ej. 10-12"></div><div class="field"><label for="ni-${k}">RIR / RPE objetivo</label><input id="ni-${k}" value="${esc(nx.int||'')}" placeholder="RIR 2 · RPE 8"></div><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente</label><input id="nn-${k}" value="${esc(nx.nota||'')}" placeholder="Baja el peso y controla la bajada"></div>
-    <button class="btn sm" type="button" onclick="setNext('${nm}',${k},0)">Pautar</button></div>`}</div>`}).join('')}`;
+    ${pautaHTML(n,k,nm,plan,h,nx,re,inS)}</div>`}).join('')}`;
 }
 function editSet(n,hi,si,f,v){const x=parseFloat(String(v).replace(',','.'));S.hist[n][hi].sets[si][f]=isNaN(x)?null:x;save();toast('Corregido')}
+// ---- pauta por series: siempre serie a serie, con tipo de serie (normal, top set, back-off…) y nº de series editable
+let PDRAFT={};
+function pRows(n,plan,h,nx){if(PDRAFT[n])return PDRAFT[n];
+  if(nx.sets&&nx.sets.length)return nx.sets.map((x,i)=>({t:x.t!==undefined?x.t:((plan[i]||{}).t||''),kg:x.kg||'',reps:x.reps||'',int:x.int||''}));
+  const L=plan.length?plan:h.sets.map(()=>({}));const g=nx.kg||nx.reps||nx.int;
+  return (L.length?L:[{}]).map(pl=>({t:pl.t||'',kg:g?nx.kg||'':'',reps:g?nx.reps||'':'',int:g?nx.int||'':''}))}
+function pautaHTML(n,k,nm,plan,h,nx,re,inS){const R=pRows(n,plan,h,nx);const opt=(v)=>SET_T.map(([id,l])=>`<option value="${id}" ${id===v?'selected':''}>${l}</option>`).join('');
+  const loc=re?(()=>{for(let di=0;di<S.routine.length;di++){const ei=S.routine[di].ex.indexOf(re);if(ei>=0)return {di,ei}}return null})():null;
+  const day=loc?S.routine[loc.di]:null;
+  return `<div class="tbl-w"><table class="ptbl"><thead><tr><th>Serie</th><th>Tipo</th><th>Kg</th><th>Reps</th><th>RIR / RPE</th><th></th></tr></thead><tbody>${R.map((v,si)=>{const lastS=h.sets.find(x=>(x.i??-1)===si)||h.sets[si]||{};const pl=plan[si]||{};
+    return `<tr><td>${si+1}</td><td><select id="nst-${k}-${si}" aria-label="Tipo de serie ${si+1}">${opt(v.t)}</select></td><td><input id="nsk-${k}-${si}" value="${esc(v.kg)}" placeholder="${esc(lastS.kg??'')}" inputmode="decimal" ${inS}></td><td><input id="nsr-${k}-${si}" value="${esc(v.reps)}" placeholder="${esc(pl.reps||lastS.reps||'')}" ${inS}></td><td><input id="nsi-${k}-${si}" value="${esc(v.int)}" placeholder="${esc(pl.rpe||'')}" ${inS}></td><td>${R.length>1?`<button type="button" class="btn ghost sm" onclick="pDel('${nm}',${k},${si})" aria-label="Quitar serie ${si+1}">✕</button>`:''}</td></tr>`}).join('')}</tbody></table></div>
+    <div class="row pextra"><button type="button" class="btn ghost sm" onclick="pAdd('${nm}',${k})">+ Añadir serie</button>
+      ${day?`<label class="small muted">Bloque en su rutina <select aria-label="Agrupar con otro ejercicio" onchange="blkEdit(${loc.di},${loc.ei},this.value)"><option value="">Sin agrupar</option>${BLK_L.slice(0,6).map(l=>`<option value="${l}" ${re.blk===l?'selected':''}>${l}${(()=>{const m=day.ex.filter(x=>x.blk===l&&x!==re).map(x=>x.n);return m.length?' · con '+esc(m.join(', ')):''})()}</option>`).join('')}</select></label>
+      ${re.blk?`<label class="small muted">Tipo <select aria-label="Tipo de bloque" onchange="blkType(${loc.di},'${re.blk}',this.value)">${BLK_T.map(([id,l])=>`<option value="${id}" ${re.blkT===id?'selected':''}>${l}</option>`).join('')}</select></label>`:''}`:''}</div>
+    <label class="sw pfix"><input type="checkbox" id="nfx-${k}" ${nx.fix!==false?'checked':''}> <span class="small">Dejar este número de series y tipos fijo en su rutina (se aplica cuando haga este entreno)</span></label>
+    <div class="range"><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente</label><input id="nn-${k}" value="${esc(nx.nota||'')}" placeholder="Top set a 100 kg y back-offs al 90 %"></div><button class="btn sm" type="button" onclick="setNext('${nm}',${k})">Pautar</button></div>`}
+function pGrab(n,k){const R=[];for(let si=0;;si++){const t=document.getElementById(`nst-${k}-${si}`);if(!t)break;const g=id=>(document.getElementById(id)||{}).value||'';R.push({t:t.value,kg:g(`nsk-${k}-${si}`).trim(),reps:g(`nsr-${k}-${si}`).trim(),int:g(`nsi-${k}-${si}`).trim()})}return R}
+function pAdd(n,k){const R=pGrab(n,k);const last=R[R.length-1]||{t:''};R.push({t:last.t==='top'?'backoff':last.t,kg:'',reps:'',int:''});PDRAFT[n]=R;renderCoach()}
+function pDel(n,k,si){const R=pGrab(n,k);R.splice(si,1);PDRAFT[n]=R;renderCoach()}
 // pauta visible para el cliente: si es «desde el lunes», no aparece hasta ese día
 function nxOf(n){const x=S.next[n];if(!x)return undefined;if(view==='client'&&x.from&&iso(new Date())<x.from)return undefined;return x}
 const nextMonday=()=>{const d=new Date();d.setHours(12);d.setDate(d.getDate()+((8-d.getDay())%7||7));return iso(d)};
 let PAUTA_MODE=(()=>{try{return localStorage.getItem('pautaMode')||'lunes'}catch(e){return 'lunes'}})();
 function setPautaMode(m){PAUTA_MODE=m;try{localStorage.setItem('pautaMode',m)}catch(e){}renderCoach()}
-function setNext(n,k,ns){const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};const nota=g('nn-'+k);
-  if(ns){const sets=[];for(let si=0;si<ns;si++)sets.push({kg:g(`nsk-${k}-${si}`),reps:g(`nsr-${k}-${si}`),int:g(`nsi-${k}-${si}`)});
-    if(!nota&&!sets.some(x=>x.kg||x.reps||x.int))delete S.next[n];else S.next[n]=Object.assign({sets,nota,ts:Date.now()},PAUTA_MODE==='lunes'?{from:nextMonday()}:{})}
-  else{const kg=g('nk-'+k),reps=g('nr-'+k),int=g('ni-'+k);if(!kg&&!reps&&!nota&&!int)delete S.next[n];else S.next[n]=Object.assign({kg,reps,nota,int,ts:Date.now()},PAUTA_MODE==='lunes'?{from:nextMonday()}:{})}
+function setNext(n,k){const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};const nota=g('nn-'+k);const sets=pGrab(n,k);const fx=document.getElementById('nfx-'+k);
+  delete PDRAFT[n];
+  if(!nota&&!sets.some(x=>x.kg||x.reps||x.int)&&!sets.some(x=>x.t)){delete S.next[n]}
+  else S.next[n]=Object.assign({sets,nota,ts:Date.now(),fix:fx?fx.checked:true},PAUTA_MODE==='lunes'?{from:nextMonday()}:{});
   FICHA.pautadoAt=new Date().toISOString();save();toast(PAUTA_MODE==='lunes'?'Pautado: lo verá desde el lunes '+new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'Pautado para su próximo entreno');refreshItem();renderCoach()}
 // Plan automático según kcal (tu forma de trabajar: plantilla Yaronska escalada)
 let planPrev=null;

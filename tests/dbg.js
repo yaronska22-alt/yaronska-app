@@ -1,0 +1,3 @@
+const {chromium}=require('playwright');const fs=require('fs');const R=require('path').resolve(__dirname,'..');(async()=>{const b=await chromium.launch();const p=await b.newPage();
+await p.route('**/*',async r=>{const u=new URL(r.request().url());if(u.hostname!=='app.test')return r.abort();let q=u.pathname==='/'?'/index.html':u.pathname;if(q==='/js/db.js')return r.fulfill({path:__dirname+'/mockdb.js'});if(q==='/js/supabase-2.117.0.js')return r.fulfill({body:''});const f=R+q;return fs.existsSync(f)?r.fulfill({path:f}):r.fulfill({status:404,body:''})});
+p.on('pageerror',e=>console.log('PE',e.message,e.stack.split('\n')[1]));await p.goto('http://app.test/');await p.waitForTimeout(800);await b.close()})();
