@@ -724,3 +724,4 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .adjc input{accent-color:var(--y);width:100%}
 .adjc.none{aspect-ratio:3/4;display:grid;place-items:center;border:1px dashed var(--line-2);border-radius:6px;color:var(--muted);font-size:12px}
 .ptbl .pnota{width:100%;min-width:150px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px}
+.failchip{position:fixed;z-index:60;background:var(--bad,#FF6B5B);color:#fff;border:0;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}
