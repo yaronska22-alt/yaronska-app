@@ -65,19 +65,31 @@ function rpChartPng(A,B,ref){return new Promise(res=>{
   svg=svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="500" ').replace('>',`><style>text{font:10px Onest,Arial,sans-serif;fill:#aaa}</style><rect width="100%" height="100%" fill="#0a0a0a"/>`);
   const im=new Image();im.onload=()=>{const cv=document.createElement('canvas');cv.width=1400;cv.height=500;const g=cv.getContext('2d');g.drawImage(im,0,0,1400,500);res(cv.toDataURL('image/png'))};im.onerror=()=>res('');
   im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
-async function rpPhotos(c){const P={};const paths=(c&&c.fotosP)||[];if(!paths.length)return P;
+async function rpPhotos(c){const P={_p:{}};const paths=(c&&c.fotosP)||[];if(!paths.length)return P;
   let urls=[];try{urls=await db.photoUrls(paths)}catch(e){return P}
   await Promise.all(paths.map(async(p,i)=>{const k=/frontal/.test(p)?'frontal':/lateral/.test(p)?'lateral':/espalda/.test(p)?'espalda':'otra'+i;
-    try{const b=await (await fetch(urls[i])).blob();P[k]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}catch(e){}}));return P}
-// recorta cada foto al mismo formato vertical 3:4 (centrada) para que antes/después se vean igual de grandes
-function rpCrop(src,ratio=3/4){return new Promise(res=>{const im=new Image();im.onload=()=>{const w=im.naturalWidth,h=im.naturalHeight;let cw=w,ch=h;if(w/h>ratio)cw=Math.round(h*ratio);else ch=Math.round(w/ratio);
-  const sx=Math.round((w-cw)/2),sy=Math.round((h-ch)*0.4);const W=Math.min(900,cw),H=Math.round(W/ratio);const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,sx,sy,cw,ch,0,0,W,H);res(cv.toDataURL('image/jpeg',0.9))};im.onerror=()=>res(src);im.src=src})}
+    P._p[k]=p;try{const b=await (await fetch(urls[i])).blob();P[k]=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)})}catch(e){}}));return P}
+// recorta cada foto al mismo formato vertical 3:4 para que antes/después se vean igual de grandes.
+// Encuadre ajustable por foto (zoom y posición) desde la ventana del informe; se recuerda en este ordenador.
+const ADJ_K='ys-crop';let ADJ={};try{ADJ=JSON.parse(localStorage.getItem(ADJ_K)||'{}')}catch(e){}
+const adjSave=()=>{try{localStorage.setItem(ADJ_K,JSON.stringify(ADJ))}catch(e){}};
+function cropBox(w,h,a,ratio){let cw=w,ch=h;if(w/h>ratio)cw=h*ratio;else ch=w/ratio;const z=Math.max(1,(a&&a.z)||1);cw/=z;ch/=z;
+  const cx=(a&&a.x!=null?a.x:0.5)*w,cy=(a&&a.y!=null?a.y:0.45)*h;const sx=Math.min(Math.max(0,cx-cw/2),w-cw),sy=Math.min(Math.max(0,cy-ch/2),h-ch);return {sx,sy,cw,ch}}
+function rpCrop(src,ratio=3/4,a){return new Promise(res=>{const im=new Image();im.onload=()=>{const w=im.naturalWidth,h=im.naturalHeight;const B=cropBox(w,h,a,ratio);const cw=Math.round(B.cw),ch=Math.round(B.ch);
+  const sx=Math.round(B.sx),sy=Math.round(B.sy);const W=Math.min(900,cw),H=Math.round(W/ratio);const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,sx,sy,cw,ch,0,0,W,H);res(cv.toDataURL('image/jpeg',0.9))};im.onerror=()=>res(src);im.src=src})}
 const rpPhotoCks=()=>S.checkins.filter(c=>c.fotosP&&c.fotosP.length).slice().sort((a,b)=>a.date.localeCompare(b.date));
 function rpWeek(date){const W=allWeights();const start=FICHA.alta||(W[0]&&W[0].date);if(!start)return 1;return Math.max(1,Math.floor((new Date(date+'T12:00')-new Date(start+'T12:00'))/6048e5)+1)}
-function rpTrend(c){const W=allWeights().filter(w=>w.date<=c.date);if(W.length<2)return 'Primera medición';
-  const last=W.slice(-4);const d=last[last.length-1].peso-last[0].peso;const d1=W[W.length-1].peso-W[W.length-2].peso;const lose=CLIENT.goal==='perder';
-  if(Math.abs(d)<=0.4)return Math.abs(d1)<=0.3?'Estable':d1<0?'Estable con indicios descendentes':'Estable con indicios ascendentes';
-  return d<0?(lose?'Descendente · vamos bien':'Bajando'):(lose?'Subiendo':'Ascendente · vamos bien')}
+function rpTrend(c){const W=allWeights().filter(w=>w.date<=c.date);if(W.length<2)return 'Primera medición';const lose=CLIENT.goal==='perder';
+  // pendiente (kg/semana) por mínimos cuadrados: global y de las últimas 4 semanas
+  const slope=P=>{if(P.length<2)return 0;const t0=+new Date(P[0].date+'T12:00');const X=P.map(p=>(+new Date(p.date+'T12:00')-t0)/6048e5),Y=P.map(p=>p.peso);const mx=X.reduce((a,b)=>a+b)/X.length,my=Y.reduce((a,b)=>a+b)/Y.length;let n=0,d=0;X.forEach((x,i)=>{n+=(x-mx)*(Y[i]-my);d+=(x-mx)**2});return d?n/d:0};
+  const lim=new Date(c.date+'T12:00');lim.setDate(lim.getDate()-28);const R=W.filter(w=>w.date>=iso(lim));
+  const g=slope(W),r=slope(R),tot=W[W.length-1].peso-W[0].peso;const thr=0.1;
+  const gDir=Math.abs(tot)<1&&Math.abs(g)<thr?0:Math.sign(g||tot),rDir=R.length<2||Math.abs(r)<thr?0:Math.sign(r);
+  const name=d=>d<0?'Descendente':d>0?'Ascendente':'Estable';const ok=d=>lose?d<0:d>0;
+  if(gDir===0)return rDir===0?'Estable':(rDir<0?'Estable con indicios descendentes':'Estable con indicios ascendentes');
+  let t=name(gDir)+(ok(gDir)?' · vamos bien':'');
+  if(rDir===0)t+=' · estable las últimas semanas';else if(rDir!==gDir)t+=rDir>0?' · ligero repunte las últimas semanas':' · bajando las últimas semanas';
+  return t}
 // ---- ventana de opciones
 let RP=null;
 function openReport(mode){
@@ -90,16 +102,39 @@ function openReport(mode){
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Informe"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>${isR?'📄 Informe semanal':'📸 Comparativa del físico'}</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
   <form class="form" onsubmit="event.preventDefault();makeReport(this.querySelector('button[type=submit]'))">
   ${isR?`<div class="fgrid"><div class="field"><label for="rpCk">Revisión</label><select id="rpCk">${opt(cks,RP.ck)}</select></div><div class="field"><label for="rpWk">Semana</label><input id="rpWk" type="number" min="1" value="${rpWeek(RP.ck)}"></div>
-    <div class="field"><label for="rpGoal">Peso objetivo (kg)</label><input id="rpGoal" inputmode="decimal" value="${esc(FICHA.pesoObj||'')}" placeholder="Vacío = No hay"></div><div class="field"><label for="rpFrom">Gráfica desde</label><input id="rpFrom" type="date" value="${FICHA.wFrom||from}"></div></div>
+    <div class="field"><label for="rpGoal">Peso objetivo (kg)</label><input id="rpGoal" inputmode="decimal" value="${esc(FICHA.pesoObj||'')}" placeholder="Vacío = No hay"></div><div class="field"><label for="rpFrom">Gráfica desde</label><input id="rpFrom" type="date" value="${(allWeights()[0]||{}).date||from}"></div></div>
     <div class="field"><label for="rpTr">Tendencia</label><input id="rpTr" value="${esc(rpTrend(last))}"></div>
     <div class="field"><label for="rpNotes">Valoración y notas</label><textarea id="rpNotes" rows="5" placeholder="Cómo ha ido la semana, qué mejora, qué ajustamos…"></textarea></div>
     <label class="prow"><span>Mostrar % graso en la gráfica</span><input class="sw" type="checkbox" id="rpFat" ${RP.fat?'checked':''}></label>
     <label class="prow"><span>Incluir valoración de hábitos y bienestar<small>Estrés, sueño, energía, hambre, motivación, recuperación, seguimiento… del check-in</small></span><input class="sw" type="checkbox" id="rpWell" checked></label>
     <label class="prow"><span>Incluir comparativa del físico<small>${pcs.length>1?'Fotos de una fecha frente a otra, en una segunda página':'Hacen falta al menos 2 check-ins con fotos'}</small></span><input class="sw" type="checkbox" id="rpCmp" ${RP.cmp?'checked':''} ${pcs.length>1?'':'disabled'} onchange="document.getElementById('rpCmpBox').hidden=!this.checked"></label>`:''}
-  <div id="rpCmpBox" ${isR&&!RP.cmp?'hidden':''}>${pcs.length>1?`<div class="fgrid"><div class="field"><label for="rpA">Antes</label><select id="rpA">${opt(pcs,RP.a)}</select></div><div class="field"><label for="rpB">Después</label><select id="rpB">${opt(pcs,RP.b)}</select></div></div>`:`<p class="small muted">Hacen falta al menos 2 check-ins con fotos para comparar.</p>`}</div>
+  <div id="rpCmpBox" ${isR&&!RP.cmp?'hidden':''}>${pcs.length>1?`<div class="fgrid"><div class="field"><label for="rpA">Antes</label><select id="rpA">${opt(pcs,RP.a)}</select></div><div class="field"><label for="rpB">Después</label><select id="rpB">${opt(pcs,RP.b)}</select></div></div>
+    <button class="btn ghost sm" type="button" onclick="adjOpen()">✂️ Ajustar encuadre de las fotos</button><div id="adjBox"></div>`:`<p class="small muted">Hacen falta al menos 2 check-ins con fotos para comparar.</p>`}</div>
   <button class="btn" type="submit" ${!isR&&pcs.length<2?'disabled':''}>⬇️ Descargar PDF</button></form></div></div>`;
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};
 }
+// ---- editor de encuadre: arrastra para mover, rueda o deslizador para zoom
+let ADJP=null;
+async function adjOpen(){const box=document.getElementById('adjBox');if(!box)return;box.innerHTML='<p class="small muted">Cargando fotos…</p>';
+  const a=document.getElementById('rpA').value,b=document.getElementById('rpB').value;const [aD,bD]=a<b?[a,b]:[b,a];
+  const A=S.checkins.find(c=>c.date===aD),B=S.checkins.find(c=>c.date===bD);const [PA,PB]=await Promise.all([rpPhotos(A),rpPhotos(B)]);
+  const keys=[['frontal','Frontal'],['lateral','Lateral'],['espalda','Espalda']].filter(([k])=>PA[k]||PB[k]);ADJP=[];
+  const cell=(P,k,l,t)=>{if(!P[k])return `<div class="adjc none"><span>Sin foto</span></div>`;const i=ADJP.length;ADJP.push({src:P[k],path:P._p[k]});
+    return `<div class="adjc"><canvas id="adjC${i}" width="225" height="300" data-i="${i}"></canvas><span class="adjt">${t} · ${l}</span><input type="range" min="1" max="3" step="0.02" value="${(ADJ[P._p[k]]||{}).z||1}" aria-label="Zoom ${t} ${l}" oninput="adjZoom(${i},this.value)"></div>`};
+  box.innerHTML=`<p class="small muted" style="margin:6px 0">Arrastra cada foto para centrar el cuerpo y usa la barra para acercar. Intenta que en todas la persona ocupe lo mismo de alto. Se guarda solo.</p>
+    <div class="adjg" style="grid-template-columns:repeat(${keys.length},1fr)">${keys.map(([k,l])=>cell(PA,k,l,'Antes')).join('')}${keys.map(([k,l])=>cell(PB,k,l,'Después')).join('')}</div>
+    <button class="btn ghost sm" type="button" onclick="adjReset()">↺ Volver al encuadre automático</button>`;
+  ADJP.forEach((p,i)=>{const im=new Image();im.onload=()=>{p.im=im;adjDraw(i)};im.src=p.src;const cv=document.getElementById('adjC'+i);let drag=null;
+    cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,a:Object.assign({x:0.5,y:0.45,z:1},ADJ[p.path])}};
+    cv.onpointermove=e=>{if(!drag||!p.im)return;const B=cropBox(p.im.naturalWidth,p.im.naturalHeight,drag.a,3/4);const k=B.cw/cv.clientWidth;
+      ADJ[p.path]=Object.assign({},drag.a,{x:(drag.a.x*p.im.naturalWidth-(e.clientX-drag.x)*k)/p.im.naturalWidth,y:(drag.a.y*p.im.naturalHeight-(e.clientY-drag.y)*k)/p.im.naturalHeight});adjClamp(p);adjDraw(i)};
+    cv.onpointerup=cv.onpointercancel=()=>{if(drag){drag=null;adjSave()}};
+    cv.onwheel=e=>{e.preventDefault();const a=Object.assign({x:0.5,y:0.45,z:1},ADJ[p.path]);a.z=Math.min(3,Math.max(1,a.z*(e.deltaY<0?1.06:1/1.06)));ADJ[p.path]=a;adjClamp(p);adjDraw(i);adjSave();const r=cv.parentNode.querySelector('input');if(r)r.value=a.z}})}
+function adjClamp(p){if(!p.im)return;const a=ADJ[p.path];const w=p.im.naturalWidth,h=p.im.naturalHeight;const B=cropBox(w,h,a,3/4);a.x=(B.sx+B.cw/2)/w;a.y=(B.sy+B.ch/2)/h}
+function adjDraw(i){const p=ADJP[i];const cv=document.getElementById('adjC'+i);if(!p||!p.im||!cv)return;const B=cropBox(p.im.naturalWidth,p.im.naturalHeight,ADJ[p.path],3/4);const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);g.drawImage(p.im,B.sx,B.sy,B.cw,B.ch,0,0,cv.width,cv.height);
+  g.strokeStyle='rgba(255,214,10,.35)';g.setLineDash([4,4]);[1/3,2/3].forEach(f=>{g.beginPath();g.moveTo(0,cv.height*f);g.lineTo(cv.width,cv.height*f);g.stroke()})}
+function adjZoom(i,v){const p=ADJP[i];ADJ[p.path]=Object.assign({x:0.5,y:0.45,z:1},ADJ[p.path],{z:+v});adjClamp(p);adjDraw(i);adjSave()}
+function adjReset(){(ADJP||[]).forEach((p,i)=>{delete ADJ[p.path];adjDraw(i)});adjSave();document.querySelectorAll('.adjc input[type=range]').forEach(r=>r.value=1)}
 function rpLoadLibs(){const L=src=>new Promise((r,j)=>{const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=()=>j(new Error('No se pudo cargar '+src));document.head.appendChild(s)});
   return Promise.all([window.html2canvas?1:L('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'),window.jspdf?1:L('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')])}
 const rpHead=(kicker,week,date)=>`<div class="ysr-top">Yaronska · @Yaronska_Fit<span class="r">${esc(kicker)}</span></div><div class="ysr-stripe"></div><div class="ysr-body">
@@ -107,7 +142,7 @@ const rpHead=(kicker,week,date)=>`<div class="ysr-top">Yaronska · @Yaronska_Fit
 const rpFoot='<div class="ysr-foot">yaronska22@gmail.com · @Yaronska_Fit · #ComeConGusto · Documento privado</div>';
 async function rpCmpPage(aD,bD,week){
   const A=S.checkins.find(c=>c.date===aD),B=S.checkins.find(c=>c.date===bD);const [PA,PB]=await Promise.all([rpPhotos(A),rpPhotos(B)]);
-  for(const P of [PA,PB])for(const k of Object.keys(P))P[k]=await rpCrop(P[k]);
+  for(const P of [PA,PB])for(const k of Object.keys(P))if(!k.startsWith('_'))P[k]=await rpCrop(P[k],3/4,ADJ[P._p[k]]);
   const F=fatSeries();const fa=(F.find(x=>x.date===aD)||{}).v,fb=(F.find(x=>x.date===bD)||{}).v;
   const ph=(P,k,lab)=>`<div class="ysr-ph">${P[k]?`<img src="${P[k]}" alt="">`:'<span class="none">Sin foto</span>'}<span class="tag">${lab}</span></div>`;
   const keys=[['frontal','Frontal'],['lateral','Lateral'],['espalda','Espalda']].filter(([k])=>PA[k]||PB[k]);
@@ -183,7 +218,7 @@ function openSocial(){const pcs=rpPhotoCks();if(pcs.length<2){toast('Hacen falta
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};soBtns();soDraw(1)}
 function soBtns(){const ok=document.getElementById('soOk').checked;['soDl','soSh'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=!ok})}
 async function soLoad(date){if(SO.img[date])return SO.img[date];const c=S.checkins.find(x=>x.date===date);const P=await rpPhotos(c);const out={};
-  await Promise.all(Object.entries(P).map(([k,src])=>new Promise(r=>{const im=new Image();im.onload=()=>{out[k]=im;r()};im.onerror=r;im.src=src})));SO.img[date]=out;return out}
+  await Promise.all(Object.entries(P).filter(([k])=>k[0]!=='_').map(([k,src])=>new Promise(r=>{const im=new Image();im.onload=()=>{out[k]=im;r()};im.onerror=r;im.src=src})));SO.img[date]=out;return out}
 async function soDraw(reload){if(!SO)return;const g=id=>document.getElementById(id);SO.a=g('soA').value;SO.b=g('soB').value;SO.kg=g('soKg').checked;SO.wk=g('soWk').checked;SO.name=g('soName').checked;SO.face=g('soFace').checked;
   const msg=g('soMsg');if(reload)msg.textContent='Cargando fotos…';const [IA,IB]=await Promise.all([soLoad(SO.a),soLoad(SO.b)]);
   const W=1080,H=SO.fmt==='story'?1920:1350;const cv=g('soCv');if(!cv)return;cv.width=W;cv.height=H;const x=cv.getContext('2d');
