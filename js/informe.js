@@ -60,8 +60,8 @@ function rpWellRows(c){const r=c.r||{};const rows=[];
   if(c.hs){const v=Math.min(5,c.hs/8*5);rows.push({t:'Horas de sueño',v,txt:c.hs<6?'Descanso insuficiente':c.hs<7?'Justo, hay margen de mejora':'Descanso correcto',n:nf(c.hs)+' h'})}
   return rows}
 // gráfica (SVG → PNG para el PDF)
-function rpChartPng(A,B){return new Promise(res=>{
-  let svg=dualChart(A,B,{w:700,h:250});svg=svg.slice(0,svg.indexOf('</svg>')+6);
+function rpChartPng(A,B,ref){return new Promise(res=>{
+  let svg=dualChart(A,B,{w:700,h:250,marks:true,ref});svg=svg.slice(0,svg.indexOf('</svg>')+6);
   svg=svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="500" ').replace('>',`><style>text{font:10px Onest,Arial,sans-serif;fill:#aaa}</style><rect width="100%" height="100%" fill="#0a0a0a"/>`);
   const im=new Image();im.onload=()=>{const cv=document.createElement('canvas');cv.width=1400;cv.height=500;const g=cv.getContext('2d');g.drawImage(im,0,0,1400,500);res(cv.toDataURL('image/png'))};im.onerror=()=>res('');
   im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})}
@@ -131,7 +131,7 @@ async function makeReport(btn){
       FICHA.pesoObj=isNaN(goal)?'':goal;save();
       const c=S.checkins.find(x=>x.date===ckD);const W=allWeights().filter(w=>w.date<=ckD);const cur=W.length?W[W.length-1]:null;const prev=W.length>1?W[W.length-2]:null;
       const Wr=W.filter(w=>!from||w.date>=from);const F=showFat?fatSeries().filter(x=>x.date<=ckD&&(!from||x.date>=from)):[];
-      const png=Wr.length+F.length>1?await rpChartPng(Wr.map(w=>({d:w.date,v:w.peso})),F.map(x=>({d:x.date,v:x.v}))):'';
+      const png=Wr.length+F.length>1?await rpChartPng(Wr.map(w=>({d:w.date,v:w.peso})),F.map(x=>({d:x.date,v:x.v})),W[0]?{d:W[0].date,v:W[0].peso}:null):'';
       const fc=F.length?F[F.length-1].v:null;const rows=well?rpWellRows(c||{}):[];const half=Math.ceil(rows.length/2);
       const row=r=>`<div class="ysr-row"><div><div class="t">${esc(r.t)}</div>${rpBar(r.v)}<div class="s">${esc(r.txt)}</div></div><div class="n">${r.n||nf(r.v,1)+' / 5'}</div></div>`;
       pages.push(`<div class="ysr-page">${rpHead('Informe semanal',week,'· Revisión: '+rpLong(ckD))}

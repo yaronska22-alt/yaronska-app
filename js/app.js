@@ -271,7 +271,8 @@ function dualChart(A,B,opt){opt=opt||{};if(A.length<2&&B.length<2)return '<p cla
   const W=opt.w||340,H=opt.h||170,L=36,R=38,T=14,Bm=22;const all=A.concat(B).map(p=>p.d).sort();const t0=+new Date(all[0]+'T12:00'),t1=+new Date(all[all.length-1]+'T12:00');
   const x=d=>t1>t0?L+(new Date(d+'T12:00')-t0)/(t1-t0)*(W-L-R):(L+W-R)/2;
   const sc=P=>{const v=P.map(p=>p.v);let mn=Math.min(...v),mx=Math.max(...v);const pd=(mx-mn)*0.15||1;return [mn-pd,mx+pd]};
-  const [a0,a1]=A.length?sc(A):[0,1],[b0,b1]=B.length?sc(B):[0,1];
+  const ref=opt.marks&&opt.ref!=null&&A.length&&Math.abs(opt.ref.v-A[0].v)>0.001&&opt.ref.d<A[0].d?opt.ref:null;
+  const [a0,a1]=A.length?sc(ref?A.concat([ref]):A):[0,1],[b0,b1]=B.length?sc(B):[0,1];
   const ya=v=>T+(1-(v-a0)/(a1-a0))*(H-T-Bm),yb=v=>T+(1-(v-b0)/(b1-b0))*(H-T-Bm);
   const ca=opt.color||'#FFD60A',cb='#FF8C28';
   const grid=[0,.5,1].map(f=>{const y=T+f*(H-T-Bm);return `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#2E2A24"/>${A.length?`<text x="${L-6}" y="${y+3}" text-anchor="end">${nf(a1-f*(a1-a0))}</text>`:''}${B.length?`<text x="${W-R+6}" y="${y+3}" fill="${cb}">${nf(b1-f*(b1-b0))}%</text>`:''}`}).join('');
@@ -279,7 +280,13 @@ function dualChart(A,B,opt){opt=opt||{};if(A.length<2&&B.length<2)return '<p cla
   const la=A.length?`<polygon points="${x(A[0].d)},${H-Bm} ${ln(A,ya)} ${x(A[A.length-1].d)},${H-Bm}" fill="${ca}" opacity=".10"/><polyline points="${ln(A,ya)}" fill="none" stroke="${ca}" stroke-width="2.2" stroke-linejoin="round"/>${A.map((p,i)=>`<circle cx="${x(p.d)}" cy="${ya(p.v)}" r="${i===A.length-1?4:2.5}" fill="${ca}"><title>${fdate(p.d)}: ${nf(p.v)} kg</title></circle>`).join('')}`:'';
   const lb=B.length?`<polyline points="${ln(B,yb)}" fill="none" stroke="${cb}" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>${B.map((p,i)=>`<rect x="${x(p.d)-3}" y="${yb(p.v)-3}" width="6" height="6" fill="${cb}" transform="rotate(45 ${x(p.d)} ${yb(p.v)})"><title>${fdate(p.d)}: ${nf(p.v)} % graso</title></rect>`).join('')}`:'';
   const lab=`<text x="${L}" y="${H-6}">${fdate(all[0])}</text><text x="${W-R}" y="${H-6}" text-anchor="end">${fdate(all[all.length-1])}</text>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Peso y % graso">${grid}${la}${lb}${lab}</svg>
+  // etiquetas de peso inicial y actual (informe semanal)
+  let mk='';if(opt.marks&&A.length){const tag=(px,py,txt,anchor,up)=>{const w=txt.length*6.1+12,bx=anchor==='end'?px-w:anchor==='middle'?px-w/2:px,by=up?py-26:py+10;return `<line x1="${px}" y1="${py}" x2="${px}" y2="${up?by+18:by}" stroke="${ca}" stroke-width="1"/><rect x="${bx}" y="${by}" width="${w}" height="18" rx="3" fill="${ca}"/><text x="${bx+w/2}" y="${by+12.5}" text-anchor="middle" style="fill:#000;font-weight:700;font-size:10px">${txt}</text>`};
+    const f=A[0],l=A[A.length-1],ini=ref||f;const midY=(T+H-Bm)/2;
+    if(ref){const y=ya(ref.v);mk+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="${ca}" stroke-dasharray="3 4" opacity=".7"/><rect x="${L+4}" y="${y-(y<midY?-4:22)}" width="${('Inicial '+nf(ref.v)+' kg').length*6.1+12}" height="18" rx="3" fill="#0a0a0a" stroke="${ca}"/><text x="${L+10}" y="${y-(y<midY?-16.5:9.5)}" style="fill:${ca};font-weight:700;font-size:10px">Inicial ${nf(ref.v)} kg</text>`}
+    else mk+=tag(x(f.d),ya(f.v),'Inicial '+nf(f.v)+' kg','start',ya(f.v)>midY);
+    if(A.length>1||ref)mk+=tag(x(l.d),ya(l.v),'Actual '+nf(l.v)+' kg','end',ya(l.v)>midY)}
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Peso y % graso">${grid}${la}${lb}${mk}${lab}</svg>
   <div class="legend"><span><i style="background:${ca}"></i>Peso (kg)</span>${B.length?`<span><i class="dash" style="border-color:${cb}"></i>% graso</span>`:''}</div>`}
 const clientWeights=()=>{const W=allWeights();const a=FICHA.wFrom||'',b=FICHA.wTo||'';return W.filter(w=>(!a||w.date>=a)&&(!b||w.date<=b))};
 const allWeights=()=>S.weights.concat(S.checkins.filter(c=>c.peso).map(c=>({date:c.date,peso:c.peso}))).sort((a,b)=>a.date.localeCompare(b.date));
