@@ -715,4 +715,4 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .wksum{color:var(--y);text-transform:none;letter-spacing:0}
 .pmode{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .pfrom{color:var(--ok);text-transform:none;letter-spacing:0;font-weight:600}
-.ptbl select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;min-width:110px}.pextra{gap:10px;align-items:center}.pextra select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:5px;margin-left:4px}.pfix{display:flex;gap:8px;align-items:flex-start}.pfix input{accent-color:var(--y);margin-top:2px}
+.ptbl select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;min-width:110px}.pextra{gap:10px;align-items:center}.pextra select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:5px;margin-left:4px}.pfix{display:flex;gap:8px;align-items:flex-start;cursor:pointer;max-width:100%}.pfix input{accent-color:var(--y);margin-top:3px;width:16px;height:16px;flex:none}.pfix span{flex:1;min-width:0}
