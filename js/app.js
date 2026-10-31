@@ -302,7 +302,7 @@ function recipeHas(r,g,key){const def=SRC[g].find(x=>x[0]===key);const tag=(r.ta
 function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POSTRE/i.test(r.tags.join(' '))&&['p','f','c'].every(g=>!F[g]||recipeHas(r,g,F[g])))}
 
 // ================= VISTA CLIENTE =================
-function setView(v){view=v;document.getElementById('app').classList.toggle('vc',v==='client');setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
+function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById('app').classList.toggle('vc',v==='client');setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
 function go(t){tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
@@ -523,7 +523,7 @@ function wkTrain(){const W=volWeek(0);const R=S.routine;const optN=new Set(R.fil
   const dayDone=d=>{const x=L.filter(y=>y.day===d.d).sort((a,b)=>b.date.localeCompare(a.date))[0];return x?x.date:null};
   return {done,target,left:Math.max(0,target-done),opt:opt.length,dayDone}}
 const wdName=dt=>new Date(dt+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'});
-function wkBar(){const T=wkTrain();if(!S.routine.length)return '';
+function wkBar(){const T=wkTrain();if(!S.routine.length||PREV_FROM)return '';
   return `<div class="wkt ${T.left?'':'full'}"><div><span class="lbl">Entrenos de esta semana</span><b>${T.done} de ${T.target}${T.opt?` <small class="muted">+ ${T.opt} opcional</small>`:''}</b></div><div class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</div><small>${T.left?`Te ${T.left===1?'queda':'quedan'} <b>${T.left}</b> entreno${T.left===1?'':'s'}`:'✅ ¡Semana completada!'}</small></div>`}
 let trainTab='rutina';
 const trainTabs=()=>`<div class="tabs">${[['rutina','Mi rutina'],['progreso','📈 Progreso'],['volumen','📊 Volumen'],['rangos','🏅 Rangos']].map(([k,l])=>`<button type="button" class="${trainTab===k?'on':''}" onclick="trainTab='${k}';render()">${l}</button>`).join('')}</div>`;
@@ -533,12 +533,13 @@ function vTrain(){
   if(trainTab==='volumen')return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>volumen</em></h1></div>${trainTabs()}${vVolume(false)}`;
   const R=S.routine;if(!R.length)return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div><div class="empty">Tu rutina aparecerá aquí en cuanto Yaron te la asigne.</div>`;if(dayIdx>=R.length)dayIdx=0;const d=R[dayIdx];const WK=wkTrain();
   return `<div class="hello"><span class="lbl">Entrenamiento</span><h1>Tu <em>rutina</em></h1></div>
+  ${PREV_FROM?`<div class="prevbar"><div><b>👁️ Vista previa · semana del ${new Date(PREV_FROM+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</b><small>Así verá ${esc(CLIENT.name.split(' ')[0])} su rutina con lo que le has pautado. Aquí no se guarda nada.</small></div><button class="btn sm" type="button" onclick="previewExit()">Volver al panel</button></div>`:''}
   ${trainTabs()}
   ${wkBar()}
-  <div class="daysel">${R.map((r,i)=>{const dn=WK.dayDone(r);return `<button type="button" class="chip ${r.opt?'opt':''} ${dn?'done':''} ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${dn?'✓ ':''}${esc(r.d.split('·')[0].trim())}${r.opt?' <small>(opcional)</small>':''}</button>`}).join('')}</div>
+  <div class="daysel">${R.map((r,i)=>{const dn=!PREV_FROM&&WK.dayDone(r);return `<button type="button" class="chip ${r.opt?'opt':''} ${dn?'done':''} ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${dn?'✓ ':''}${esc(r.d.split('·')[0].trim())}${r.opt?' <small>(opcional)</small>':''}</button>`}).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}${d.opt?' <span class="optb">Opcional</span>':''}</h2>
   ${d.opt?`<div class="band optband">${esc(d.optTxt||OPT_TXT)}</div>`:''}
-  ${WK.dayDone(d)?`<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(WK.dayDone(d)))}. Si lo repites, se guarda como otra sesión.</div>`:''}
+  ${!PREV_FROM&&WK.dayDone(d)?`<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(WK.dayDone(d)))}. Si lo repites, se guarda como otra sesión.</div>`:''}
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
   <div class="sesdate"><label for="sesD" class="small muted">¿Cuándo lo hiciste?</label><select id="sesD" onchange="SES_D=this.value">${[0,1,2,3,4,5,6].map(i=>{const k=iso(daysAgo(i));return `<option value="${k}" ${(SES_D||iso(new Date()))===k?'selected':''}>${i===0?'Hoy':i===1?'Ayer':esc(daysAgo(i).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}))}</option>`}).join('')}</select></div>
@@ -547,6 +548,7 @@ function vTrain(){
 }
 let SES_D=null;
 async function saveSession(btn){
+  if(PREV_FROM){toast('Estás en la vista previa: aquí no se guarda nada');return}
   if(saveSession.busy)return;
   const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
   d.ex.forEach((e,ei)=>{const sets=[];const NX=nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`)),fail=isFail(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
@@ -807,7 +809,7 @@ function cRutina(){
   return `<div class="panel"><span class="lbl">Asignar rutina preparada · un clic</span>
     <div class="tpl">${all.map((t,i)=>`<button type="button" class="tplc" onclick="assignTpl(${i})"><b>${esc(t.name)}</b><small>${esc(t.desc||'')} · ${t.days.length} días · ${t.days.reduce((a,d)=>a+d.ex.length,0)} ejercicios</small><span class="small y">Asignar →</span></button>`).join('')}</div>
     <p class="small muted" style="margin:0">Se copia al cliente y luego la ajustas aquí abajo sin tocar la plantilla original.</p></div>
-  <div class="panel"><div class="sec-h"><span class="lbl">Rutina actual del cliente</span><div class="row"><button class="btn ghost sm" type="button" onclick="saveAsTpl()">Guardar como plantilla</button><button class="btn ghost sm" type="button" onclick="setView('client');go('train')">Ver como el cliente</button></div></div>
+  <div class="panel"><div class="sec-h"><span class="lbl">Rutina actual del cliente</span><div class="row"><button class="btn ghost sm" type="button" onclick="saveAsTpl()">Guardar como plantilla</button><button class="btn ghost sm" type="button" onclick="previewNext()">👁️ Próxima semana</button><button class="btn ghost sm" type="button" onclick="setView('client');go('train')">Ver como el cliente</button></div></div>
   <p class="small muted" style="margin:0"><b style="color:var(--fg)">Bloque:</b> pon la misma letra a ejercicios seguidos para hacer superseries, biseries o circuitos. <b style="color:var(--fg)">Series ▾:</b> detalla cada serie (top set, back-off, drop set…).</p>
   ${S.routine.map((d,di)=>{const used=[...new Set(d.ex.map(x=>x.blk).filter(Boolean))];const LB={};blocksOf(d.ex).forEach(b=>b.items.forEach(it=>LB[it.ei]=it.label));const shut=shutDays.has(di);return `<div class="panel edday ${d.opt?'isopt':''}" style="--dc:${DAYC[di%DAYC.length]}"><div class="edday-h"><span class="daypill">Día ${di+1}</span><input aria-label="Nombre del día" id="dn-${di}" value="${esc(d.d)}" onchange="S.routine[${di}].d=this.value;save()" style="flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:6px 0;font-family:var(--display);font-weight:800;font-size:16px;text-transform:uppercase"><small class="muted daysum">${d.ex.length} ejercicios · ${d.ex.reduce((a,e)=>a+effSets(e),0)} series</small><button type="button" class="mini" id="dfold-${di}" onclick="togDay(${di})" aria-expanded="${!shut}">${shut?'▾ Abrir':'▴ Plegar'}</button><button type="button" class="chip ${d.opt?'on':''}" id="dopt-${di}" onclick="S.routine[${di}].opt=!S.routine[${di}].opt;save();renderCoach()" aria-pressed="${!!d.opt}">☆ Opcional</button><button class="btn ghost sm" type="button" onclick="S.routine.splice(${di},1);save();renderCoach()">Quitar día</button></div>
     ${shut?'':`<div class="edday-b">
@@ -901,7 +903,7 @@ function cSes(){
   const NT=exNotes(30);
   return `${NT.length?`<div class="panel"><span class="lbl">💬 Notas del cliente · últimos 30 días</span><div class="ntlist">${NT.map(x=>`<button type="button" class="ntrow ${x.date+'|'+(x.day||'')===sesSel?'on':''}" onclick="sesSel=${esc(JSON.stringify(x.date+'|'+(x.day||'')))};renderCoach()"><small class="muted">${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.n)}</small><span>${esc(x.nota)}</span></button>`).join('')}</div></div>`:''}<div class="panel"><div class="range"><div class="field"><label for="sesS">Sesión</label><select id="sesS" onchange="sesSel=this.value;renderCoach()">${L.map(x=>`<option value="${esc(x.date+'|'+x.day)}" ${x.date+'|'+x.day===sesSel?'selected':''}>${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.day||'Entreno')} · ${x.items.length} ejercicios</option>`).join('')}</select></div></div>
     <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p>
-    <div class="pmode"><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
+    <div class="pmode"><button class="btn ghost sm" type="button" onclick="previewNext()">👁️ Ver su próxima semana como el cliente</button><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
   ${se.items.map(({n,hi,h},k)=>{const nx=S.next[n]||{};const re=routineEx(n,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
     const blk=re&&re.blk?`<span class="stag" style="background:var(--surface-2);color:var(--y)">${esc(blkName(re.blkT))} ${esc(re.blk)}</span>`:'';
     const tOf=(st,si)=>st.t!==undefined?st.t:(plan[st.i??si]||{}).t||'';
@@ -933,7 +935,10 @@ function pGrab(n,k){const R=[];for(let si=0;;si++){const t=document.getElementBy
 function pAdd(n,k){const R=pGrab(n,k);const last=R[R.length-1]||{t:''};R.push({t:last.t==='top'?'backoff':last.t,kg:'',reps:'',int:'',nota:''});PDRAFT[n]=R;renderCoach()}
 function pDel(n,k,si){const R=pGrab(n,k);R.splice(si,1);PDRAFT[n]=R;renderCoach()}
 // pauta visible para el cliente: si es «desde el lunes», no aparece hasta ese día
-function nxOf(n){const x=S.next[n];if(!x)return undefined;if(view==='client'&&x.from&&iso(new Date())<x.from)return undefined;return x}
+let PREV_FROM=null;// vista previa del entrenador: ver la rutina como la verá el cliente ese día
+function nxOf(n){const x=S.next[n];if(!x)return undefined;if(view==='client'&&x.from&&(PREV_FROM||iso(new Date()))<x.from)return undefined;return x}
+function previewNext(){PREV_FROM=nextMonday();setView('client');trainTab='rutina';go('train');scrollTo(0,0)}
+function previewExit(){PREV_FROM=null;setView('coach');coachTab='sesiones';renderCoach()}
 const nextMonday=()=>{const d=new Date();d.setHours(12);d.setDate(d.getDate()+((8-d.getDay())%7||7));return iso(d)};
 let PAUTA_MODE=(()=>{try{return localStorage.getItem('pautaMode')||'lunes'}catch(e){return 'lunes'}})();
 function setPautaMode(m){PAUTA_MODE=m;try{localStorage.setItem('pautaMode',m)}catch(e){}renderCoach()}
