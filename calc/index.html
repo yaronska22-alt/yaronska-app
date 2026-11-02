@@ -335,7 +335,8 @@
   .pv2-add-inline{border:none;background:transparent;color:#888;padding:2px 4px;font-size:10.5px;margin-top:2px}
   .pv2-add-inline:hover{color:#FFD60A}
   .pv2-notes{margin-top:6px;background:#1a1a1a;border:1px solid #444;color:#fff;padding:6px 8px;border-radius:4px;font-size:11px;font-family:inherit;width:100%;min-height:36px;resize:vertical}
-  .pv2-gopt{position:relative;background:#262626;border:1px solid #333;border-radius:5px;padding:6px 20px 4px 6px;margin-bottom:6px}
+  .pv2-salad{border-color:#3d6b3a!important}
+.pv2-gopt{position:relative;background:#262626;border:1px solid #333;border-radius:5px;padding:6px 20px 4px 6px;margin-bottom:6px}
   .pv2-veg{display:flex;align-items:center;gap:6px;font-size:11px;color:#10b981;font-weight:700;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:5px;padding:4px 10px;margin-bottom:10px}
   .pv2-veg input{flex:1;background:transparent;border:none;color:#10b981;font-weight:700;font-size:11px;font-family:inherit}
   .pv2-fruit{margin-top:4px}
@@ -4106,11 +4107,33 @@ const PV2_VEG_DEFAULT='Verduras para wok (bolsa), Brócoli, Judías verdes, Cala
 // Verduras y hortalizas a elegir (vinculadas por kcal, igual que la fruta)
 const PV2_VEG_LIST=[['Verduras para wok (bolsa congelada)','Verduras para wok'],['Brócoli'],['Judías verdes'],['Calabacín'],['Coliflor'],['Espinacas'],['Champiñones'],['Pimiento rojo','Pimiento'],['Espárragos'],['Berenjena'],['Lechuga','Ensalada / lechuga'],['Tomate'],['Zanahoria']];
 const PV2_VEG_TARGET=50;
+// Ensaladas predeterminadas: proporciones base en gramos; se escalan solas a las kcal del grupo de verduras
+const PV2_SALADS=[
+  ['Ensalada mixta',[['Lechuga',100],['Tomate',100],['Pepino',60],['Cebolla',20],['Zanahoria',30]]],
+  ['Ensalada mediterránea',[['Tomate',150],['Pepino',80],['Pimiento verde',50],['Cebolla',30]]],
+  ['Ensalada verde',[['Lechuga',80],['Rúcula',30],['Endibia',50],['Pepino',60],['Apio',30]]],
+  ['Ensalada de espinacas',[['Espinacas',60],['Tomate',120],['Champiñones',60],['Cebolla',20]]],
+  ['Ensalada de remolacha',[['Lechuga',80],['Remolacha cocida',80],['Zanahoria',40],['Rábano',30]]],
+  ['Ensalada de kale',[['Kale (col rizada)',50],['Zanahoria',50],['Pimiento rojo',50],['Pepino',60]]]
+];
+function pv2SaladOpt(name,parts){return {type:'salad',name,alts:[],parts:parts.filter(([f])=>pv2Food(f)).map(([f,b])=>Object.assign(pv2Alt(f,b),{base:b}))}}
+function pv2SaladKcal(opt,base){return (opt.parts||[]).reduce((s,a)=>s+pv2Kcal(base?Object.assign({},a,{g:a.base}):a),0)}
+function pv2SaladScale(opt,t){const k0=pv2SaladKcal(opt,true);const f=k0>0?t/k0:1;(opt.parts||[]).forEach(a=>{a.g=Math.max(5,Math.round(a.base*f/5)*5)})}
+function pv2AddSalads(group){const have=new Set(group.options.filter(o=>o.type==='salad').map(o=>o.name));PV2_SALADS.forEach(([n,p])=>{if(!have.has(n))group.options.push(pv2SaladOpt(n,p))});pv2ApplyGroupTarget(group)}
+function pv2AddSalad(key,name){const c=getCurrent();const g=c.protocol[key].vegs;const S=PV2_SALADS.find(x=>x[0]===name);if(!S)return;g.options.push(pv2SaladOpt(S[0],S[1]));pv2ApplyGroupTarget(g);persist();renderProtocol()}
+function pv2EditSaladName(key,gkey,oi,v){pv2Group(key,gkey).options[oi].name=v;persist()}
+function pv2EditSaladPart(key,gkey,oi,pi,v){const o=pv2Group(key,gkey).options[oi];const a=o.parts[pi];const g=Math.max(0,parseFloat(String(v).replace(',','.'))||0);
+  // cambiar un ingrediente reajusta la proporción base y vuelve a escalar a las kcal del grupo
+  const k=o.parts.map(x=>x.g);k[pi]=g;const tot=k.reduce((s,x)=>s+x,0)||1;o.parts.forEach((x,i)=>x.base=k[i]);pv2ApplyGroupTarget(pv2Group(key,gkey));persist();renderProtocol()}
+function pv2RemoveSaladPart(key,gkey,oi,pi){const o=pv2Group(key,gkey).options[oi];o.parts.splice(pi,1);if(!o.parts.length)pv2Group(key,gkey).options.splice(oi,1);pv2ApplyGroupTarget(pv2Group(key,gkey));persist();renderProtocol()}
+function pv2AddSaladPart(key,gkey,oi,name){name=(name||'').trim();if(!name||!pv2Food(name)){alert('Elige un alimento de la lista.');return}const o=pv2Group(key,gkey).options[oi];o.parts.push(Object.assign(pv2Alt(name,50),{base:50}));pv2ApplyGroupTarget(pv2Group(key,gkey));persist();renderProtocol()}
 function pv2DefaultVegs(){
-  const g={target:PV2_VEG_TARGET,options:PV2_VEG_LIST.map(([f,l])=>({alts:[pv2Alt(f,0,l?{label:l}:{})]}))};
+  const g={target:PV2_VEG_TARGET,options:PV2_VEG_LIST.map(([f,l])=>({alts:[pv2Alt(f,0,l?{label:l}:{})]})),sal:1};
+  PV2_SALADS.forEach(([n,p])=>g.options.push(pv2SaladOpt(n,p)));
   pv2ApplyGroupTarget(g);return g;
 }
 function pv2EnsureVegs(meal){
+  if(meal&&meal.vegs&&!meal.vegs.sal){meal.vegs.sal=1;pv2AddSalads(meal.vegs)}
   if(meal&&!meal.vegs){meal.vegs=pv2DefaultVegs();if(meal.veg&&/^AÑADIR SIEMPRE/i.test(meal.veg))meal.veg='Verduras hervidas, al horno, a la plancha o salteadas. Elige una opción (o mezcla varias sumando la misma cantidad).'}
   return meal;
 }
@@ -4184,11 +4207,13 @@ function pv2AltText(alt){
 function pv2OptKcal(opt){
   // kcal de referencia de una opción (la primera alternativa manda)
   if(opt.type==='eggs')return pv2Kcal(opt.base)+(opt.alts[0]?pv2Kcal(opt.alts[0]):0);
+  if(opt.type==='salad')return pv2SaladKcal(opt);
   return opt.alts[0]?pv2Kcal(opt.alts[0]):0;
 }
 function pv2ApplyGroupTarget(group,skip){
   const t=parseFloat(group.target)||0;
   group.options.forEach((opt,oi)=>{
+    if(opt.type==='salad'){pv2SaladScale(opt,t);return}
     if(opt.type==='eggs'){
       const rest=Math.max(0,t-pv2Kcal(opt.base));
       opt.alts.forEach((a,ai)=>{if(skip&&skip.oi===oi&&skip.ai===ai)return;a.g=rest>0?pv2QtyForKcal(a,rest):0});
@@ -4696,6 +4721,14 @@ function pv2KcalTag(a,target){
 function renderPv2Group(key,gkey,group,title,headCls){
   const RFg=ysRestInfo(getCurrent().protocol).f;
   const opts=group.options.map((opt,oi)=>{
+    if(opt.type==='salad'){const kk=Math.round(pv2SaladKcal(opt));
+      return `<div class="pv2-gopt pv2-salad">
+      <button class="pv2-x top" title="Eliminar ensalada" onclick="pv2RemoveGroupOpt('${key}','${gkey}',${oi})">×</button>
+      <div class="pv2-row"><span class="pv2-tag">🥗</span><input class="pv2-label" style="font-weight:700" value="${escapeHtml(opt.name||'Ensalada')}" onchange="pv2EditSaladName('${key}','${gkey}',${oi},this.value)"><span class="pv2-k">${kk} kcal</span></div>
+      ${(opt.parts||[]).map((a,pi)=>`<div class="pv2-row alt"><span class="pv2-o">+</span>${pv2Num(Math.round(a.g),'pv2EditSaladPart',[key,gkey,oi,pi])}<span class="pv2-unit">g</span><span class="pv2-txt">${escapeHtml(a.label||a.food)}</span><span class="pv2-k">${Math.round(pv2Kcal(a))} kcal</span><button class="pv2-x" title="Quitar" onclick="pv2RemoveSaladPart('${key}','${gkey}',${oi},${pi})">×</button></div>`).join('')}
+      <div style="font-size:11px;color:var(--text-dim,#999);margin:4px 0 2px">Total ${Math.round((opt.parts||[]).reduce((s,a)=>s+(parseFloat(a.g)||0),0))} g · se ajusta solo a las kcal del grupo</div>
+      <button class="pv2-add-inline" onclick='pv2OpenPicker("pv2AddSaladPart",["${key}","${gkey}",${oi}],"Ingrediente para la ensalada")'>+ ingrediente</button>
+    </div>`}
     let body='';
     if(opt.type==='eggs'){
       body+=`<div class="pv2-row fixed">
@@ -4735,6 +4768,7 @@ function renderPv2Group(key,gkey,group,title,headCls){
         </div>
         ${opts}
         <button class="pv2-add" onclick='pv2OpenPicker("pv2AddGroupOpt",["${key}","${gkey}"],"Añadir opción nueva")'>+ Añadir opción de la base de datos</button>
+        ${gkey==='vegs'?`<select class="pv2-add" onchange="if(this.value)pv2AddSalad('${key}',this.value);this.value=''"><option value="">🥗 + Añadir ensalada predeterminada…</option>${PV2_SALADS.map(([n])=>`<option>${escapeHtml(n)}</option>`).join('')}</select>`:''}
       </div>
     </div>`;
 }
@@ -4757,6 +4791,7 @@ function renderPv2Meal(key,meal){
 
 // ---------- Texto para impresión ----------
 function pv2OptText(opt){
+  if(opt.type==='salad')return `${opt.name||'Ensalada'}: ${(opt.parts||[]).map(pv2AltText).join(' + ')}`;
   if(opt.type==='eggs'){
     const comp=opt.alts.filter(a=>a.g>0).map(pv2AltText).join(' / ');
     return `${pv2AltText(opt.fixed)} o ${pv2AltText(opt.base)}${comp?' + '+comp:''}`;
@@ -4993,6 +5028,8 @@ function buildShoppingListFromProtocolV2(p,days,margin,distMode){
           add(o.base,o.base.g*fac*half);
           const n=o.alts.length||1;
           o.alts.forEach(a=>add(a,(parseFloat(a.g)||0)*fac*half/(full?1:n)));
+        }else if(o.type==='salad'){
+          (o.parts||[]).forEach(a=>add(a,(parseFloat(a.g)||0)*fac));
         }else{
           const n=o.alts.length;
           o.alts.forEach(a=>add(a,(parseFloat(a.g)||0)*fac/(full?1:n)));
@@ -8720,7 +8757,7 @@ function buildShoppingListFromProtocolPrefs(c,p,days,margin){
     ['protein','fat','carb','fruit','vegs'].forEach(g=>{
       const grp=meal[g];if(!grp||!grp.options||!grp.options.length)return;
       const opts=grp.options;
-      const ow=opts.map(o=>o.type==='eggs'?slpW(prefs,'Huevo entero'):Math.max(0,...(o.alts||[]).map(a=>slpAltW(prefs,a))));
+      const ow=opts.map(o=>o.type==='eggs'?slpW(prefs,'Huevo entero'):o.type==='salad'?Math.max(0,...(o.parts||[]).map(a=>slpAltW(prefs,a))):Math.max(0,...(o.alts||[]).map(a=>slpAltW(prefs,a))));
       const sh=slpShares(ow);
       opts.forEach((o,i)=>{
         const fac=days*sh[i]*margin;if(!fac)return;
@@ -8735,6 +8772,8 @@ function buildShoppingListFromProtocolPrefs(c,p,days,margin){
             const ash=slpShares(aw);
             alts.forEach((a,j)=>add(a,(parseFloat(a.g)||0)*fac*0.5*ash[j]));
           }
+        }else if(o.type==='salad'){
+          (o.parts||[]).forEach(a=>add(a,(parseFloat(a.g)||0)*fac));
         }else{
           const alts=o.alts||[];
           const ash=slpShares(alts.map(a=>slpAltW(prefs,a)));
@@ -8786,6 +8825,7 @@ function slpGroups(c){
       const grp=meal[g];if(!grp||!grp.options)return;
       grp.options.forEach(o=>{
         if(o.type==='eggs')addItem('Huevo entero','Huevos');
+        (o.parts||[]).forEach(a=>addItem(a.food,a.label||a.food));
         (o.alts||[]).forEach(a=>{
           if(a.buy&&a.buy.length)a.buy.forEach(b=>addItem('buy:'+b,b));
           else addItem(a.food,a.label||a.food);

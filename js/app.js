@@ -443,7 +443,8 @@ function vPlan(){
   <div class="macro"><div class="macro-h"><span class="pill p-prot">Proteína</span></div>${list(m.protein)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-fat">Grasa</span></div>${list(m.fat)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-carb">Hidratos</span></div>${list(m.carb)}</div>
-  <div class="band"><b style="color:var(--ok)">Añade siempre verdura</b>${esc((m.vegs&&m.vegs.length?m.vegs.slice(0,8).join(' · '):m.veg||'Verdura al gusto'))}</div>
+  ${(()=>{const V=(m.vegs||[]).filter(x=>!/^ensalada[^:]*:/i.test(x)),SAL=(m.vegs||[]).filter(x=>/^ensalada[^:]*:/i.test(x));
+    return `<div class="band"><b style="color:var(--ok)">Añade siempre verdura</b>${esc(V.length?V.join(' · '):m.veg||'Verdura al gusto')}</div>${SAL.length?`<div class="macro"><div class="macro-h"><span class="pill p-veg">🥗 O una ensalada</span></div><div class="opts">${SAL.map(t=>{const i=t.indexOf(':');return `<div><b>${esc(t.slice(0,i))}</b><br><small class="muted">${esc(t.slice(i+1).trim())}</small></div>`}).join('')}</div></div>`:''}`})()}
   ${m.fruit&&m.fruit.length?`<div class="band fruit"><b class="y">Postre · fruta a elegir</b>${esc(m.fruit.join(' · '))}</div>`:''}`;
 }
 function vRecipes(){

@@ -739,3 +739,4 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .subi{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center;text-align:left;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:6px;cursor:pointer;color:var(--fg);font:inherit}
 .subi:hover{border-color:var(--y)}.subi img{width:56px;height:56px;object-fit:cover;border-radius:6px;background:#000}.subi small{display:block;color:var(--muted);font-size:12px}
 #subQ{width:100%}
+.p-veg{background:rgba(124,227,139,.15);color:var(--ok)}
