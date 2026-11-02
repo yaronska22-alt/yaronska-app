@@ -1,4 +1,4 @@
-// Servidor de Yaronska App para Railway.
+// Servidor de Yaronska App (DigitalOcean, detrás de Caddy).
 // - Sirve la app (archivos estáticos) con las mismas cabeceras que tenía en Cloudflare.
 // - Hace de puente con Supabase en /sb/*: el móvil del cliente solo habla con este servidor,
 //   así los bloqueos de LaLiga a las IP de Cloudflare no le impiden entrar ni cargar datos.
@@ -92,7 +92,7 @@ async function proxy(req, res, url) {
   }
 }
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   let url; try { url = new URL(req.url, 'http://x'); } catch (e) { res.writeHead(400); return res.end(); }
   const p = decodeURIComponent(url.pathname);
   if (p === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
@@ -101,4 +101,10 @@ http.createServer((req, res) => {
   if (p === '/sb' || p.startsWith('/sb/')) return proxy(req, res, url);
   if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
   serveStatic(req, res, p);
-}).listen(PORT, () => console.log('Yaronska App en el puerto ' + PORT));
+});
+// Caddy reutiliza las conexiones con este servidor: si Node las cerrase antes (5 s por defecto),
+// algunas peticiones fallarían al azar y se verían en blanco. Las mantenemos abiertas más que Caddy.
+server.keepAliveTimeout = 125000;
+server.headersTimeout = 130000;
+server.requestTimeout = 0;
+server.listen(PORT, () => console.log('Yaronska App en el puerto ' + PORT));
