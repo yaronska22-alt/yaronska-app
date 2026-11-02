@@ -33,6 +33,8 @@ function resolveFile(p) {
   const f = path.join(ROOT, p);
   if (!f.startsWith(ROOT)) return null;
   if (fs.existsSync(f) && fs.statSync(f).isFile()) return f;
+  // carpetas: /calc/ → calc/index.html (Cloudflare redirigía calc/index.html a calc/ y el navegador lo recuerda)
+  if (fs.existsSync(f) && fs.statSync(f).isDirectory() && fs.existsSync(path.join(f, 'index.html'))) return path.join(f, 'index.html');
   if (!path.extname(p) && fs.existsSync(f + '.html')) return f + '.html';      // /rec → rec.html
   if (!path.extname(p)) return path.join(ROOT, 'index.html');                     // rutas de la app → index
   return null;
@@ -40,6 +42,7 @@ function resolveFile(p) {
 
 function serveStatic(req, res, p) {
   if (PRIVATE.test(p)) { res.writeHead(404); return res.end('No encontrado'); }
+  if (!p.endsWith('/')) { const d = path.join(ROOT, p); if (d.startsWith(ROOT) && fs.existsSync(path.join(d, 'index.html')) && fs.statSync(d).isDirectory()) { res.writeHead(301, { Location: p + '/' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '') }); return res.end(); } }
   const f = resolveFile(p);
   if (!f) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('No encontrado'); }
   const st = fs.statSync(f);
