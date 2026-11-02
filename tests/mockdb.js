@@ -50,6 +50,7 @@ window.db={
   async notify(cid,kind,msg,title){window.__notify=(window.__notify||[]).concat([{cid,kind,msg,title}]);return {sent:0}},
   async pending(since){if(!isCoach())deny('pend');return {ck:st.checkins.filter(c=>c.fecha>=since).map(c=>({id:c.id,client_id:c.client_id,fecha:c.fecha,rev:(c.data||{}).rev||null})).sort((a,b)=>b.fecha.localeCompare(a.fecha)),wl:st.workout_logs.filter(l=>l.fecha>=since).map(l=>({client_id:l.client_id,fecha:l.fecha,dia:l.dia,ejercicio:l.ejercicio,nota:l.nota||null,sets:l.sets}))}},
   async exportAll(){if(!isCoach())deny('exp');const o={};['clients','client_admin','weights','checkins','daily_logs','workout_logs','templates'].forEach(t=>o[t]=JSON.parse(JSON.stringify(st[t]||[])));o._photos=Object.keys(st.files);return o},
+  async allCheckins(){if(!isCoach())deny('ck');return st.checkins.map(c=>({client_id:c.client_id,fecha:c.fecha,data:JSON.parse(JSON.stringify(c.data||{}))})).sort((a,b)=>a.fecha.localeCompare(b.fecha))},
   async photoBlob(p){return new Blob(['x'],{type:'image/jpeg'})},
   async formResponses(){if(!isCoach())deny('forms');return JSON.parse(JSON.stringify((st.form_responses||[]).slice().reverse()))},
   async updateForm(id,row){const f=(st.form_responses||[]).find(x=>x.id===id);Object.assign(f,row);persist()},

@@ -1,0 +1,32 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(!['app.test','localhost'].includes(u.hostname))return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://localhost/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{
+  const a=await db.createClient('v@t.com',{nombre:'Víctor Luján',email:'v@t.com'},'2026-03-01');const b=await db.createClient('j@t.com',{nombre:'Josete González',email:'j@t.com'},'2026-03-01');const c=await db.createClient('n@t.com',{nombre:'Nuevo Cliente',email:'n@t.com'},'2026-03-01');
+  await db.insert('checkins',{client_id:a,fecha:'2026-10-24',data:{peso:102.6,cintura:110,r:{estres:3},nota:'Bien',fotosP:[a+'/2026-10-24/frontal-1.jpg',a+'/2026-10-24/lateral-1.jpg',a+'/2026-10-24/espalda-1.jpg']}});
+  await db.insert('checkins',{client_id:a,fecha:'2026-10-31',data:{peso:102.2,r:{},fotosP:[a+'/2026-10-31/frontal-1.jpg']}});
+  await db.insert('checkins',{client_id:b,fecha:'2026-10-30',data:{peso:80,r:{},fotosP:[b+'/x/frontal-1.jpg']}});
+  await refreshList();
+  const root=await navigator.storage.getDirectory();const d=await root.getDirectoryHandle('Plan',{create:true});
+  const v=await d.getDirectoryHandle('Victor Lujan',{create:true});await v.getDirectoryHandle('REVISION FISICO',{create:true});await v.getDirectoryHandle('REVISION TECNICA INTENSIDAD',{create:true});
+  const j=await d.getDirectoryHandle('Josete Gonzalez',{create:true});const jf=await j.getDirectoryHandle('Videos Fotos Fisico',{create:true});await jf.getDirectoryHandle('FISICO',{create:true});await jf.getDirectoryHandle('POSING',{create:true});const m26=await (await jf.getDirectoryHandle('FISICO')).getDirectoryHandle('26-10',{create:true});await m26.getFileHandle('30-10-26 FRONTAL80 KG.jpeg',{create:true});
+  d.queryPermission=async()=>'granted';d.requestPermission=async()=>'granted';GD.dir=d;window.__d=await gdSubdirs(d);window.__e=[];for await(const e of d.entries())window.__e.push(JSON.stringify([e[0],e[1].kind]));window.__v=[];for await(const e of v.entries())window.__v.push(e[0]);coachSel='__biz';await gdRun()});console.log('dirs',await p.evaluate(()=>[window.__d,window.__e,window.__v]));
+await p.evaluate(()=>openBiz());await w(800);
+console.log('panel:',(await p.textContent('.gdpanel')).replace(/\s+/g,' ').slice(0,700));
+const tree=await p.evaluate(async()=>{const out=[];const walk=async(h,pre)=>{for await(const [n,x] of h.entries()){out.push(pre+n);if(x.kind==='directory')await walk(x,pre+n+'/')}};await walk(GD.dir,'');return out});console.log(tree.join('\n'));
+await p.evaluate(()=>gdRun());await w(400);console.log('2ª:',await p.evaluate(()=>GD.msg));
+await p.evaluate(()=>gdCreate(CL.find(c=>c.name==='Nuevo Cliente').id));await w(600);console.log('crear:',await p.evaluate(()=>GD.msg));
+const csv=await p.evaluate(async()=>{const f=await (await (await (await GD.dir.getDirectoryHandle('Victor Lujan')).getDirectoryHandle('REVISION FISICO')).getFileHandle('Revisiones (peso y medidas).csv')).getFile();return (await f.text()).slice(0,300)});console.log(csv);
+await p.screenshot({path:OUT+'/gd1.png',fullPage:true});
+console.log('ERR',errs);await b.close()})();

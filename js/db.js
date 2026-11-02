@@ -111,6 +111,7 @@ const db = {
       for (const dd of days || []) { const { data: fs } = await sb.storage.from('checkins').list(d.name + '/' + dd.name, { limit: 1000 }); (fs || []).forEach(f => files.push(d.name + '/' + dd.name + '/' + f.name)); } }
     out._photos = files; return out;
   },
+  async allCheckins() { return ok(await sb.from('checkins').select('client_id,fecha,data').order('fecha')); },
   async photoBlob(path) { return ok(await sb.storage.from('checkins').download(path)); },
   async formResponses() { return ok(await sb.from('form_responses').select('*').order('created_at', { ascending: false }).limit(300)); },
   async updateForm(id, row) { ok(await sb.from('form_responses').update(row).eq('id', id)); },

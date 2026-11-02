@@ -1403,6 +1403,7 @@ function cBiz(){
   const k=(l,v,s,cls)=>`<div class="kpi"><small>${l}</small><b class="${cls||''}">${v}</b>${s?`<small>${s}</small>`:''}</div>`;
   return `<div class="chead"><div><span class="lbl">Panel general</span><h1>Mi negocio</h1></div></div>
   ${bkPanel()}
+  ${gdPanel()}
   <div class="kpis">${k('Facturado este mes',nf(month,0)+' €',new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'}))}${k('Ingreso recurrente mensual',nf(mrr,0)+' €/mes','Lo que generan tus activos al mes')}${k('Ticket medio',nf(tickA,0)+' €',`por cobro (${nf(tick,0)} € de media histórica)`)}${k('Valor medio por cliente',nf(ltv,0)+' €','Total cobrado ÷ clientes')}</div>
   <div class="kpis">${k('Clientes activos',act.length,`${pau.length} pausados · ${end.length} bajas · ${B.length} en total`)}${k('Duración media',nf(avgDur,1)+' meses','Desde el alta hasta hoy o hasta la baja')}${k('Renovaciones',totalRen,'Cobros de renovación en total')}${k('% de renovación',rate==null?'—':nf(rate,0)+' %',`${renewed.length} de ${elig.length} clientes renovaron al menos una vez`,rate==null?'':rate>=60?'good':rate>=40?'':'badc')}</div>
   <div class="panel"><span class="lbl">Facturación de los últimos 12 meses</span>${bars}</div>
@@ -1731,7 +1732,7 @@ const idb=(()=>{let P=null;const open=()=>P||(P=new Promise((r,j)=>{const q=inde
   return {get:async k=>{const d=await open();return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})},
     set:async(k,v)=>{const d=await open();return new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r()})}}})();
 const bkFS=()=>!!window.showDirectoryPicker;
-async function bkInit(){try{BK.dir=await idb.get('dir');BK.last=await idb.get('last')}catch(e){}
+async function bkInit(){gdInit();try{BK.dir=await idb.get('dir');BK.last=await idb.get('last')}catch(e){}
   if(BK.dir&&(!BK.last||Date.now()-Date.parse(BK.last)>20*3600e3)){try{if(await BK.dir.queryPermission({mode:'readwrite'})==='granted')await bkRun(true)}catch(e){console.warn(e)}}}
 function bkPanel(){const ago=BK.last?seenTxt(BK.last).t.replace('Activo ahora','Hace un momento'):'Nunca';const due=!BK.last||Date.now()-Date.parse(BK.last)>26*3600e3;
   return `<div class="panel bkpanel"><div class="sec-h"><div><span class="lbl">💾 Copias de seguridad</span><p class="small muted" style="margin:0">Última copia: <b class="${due?'badc':'good'}">${esc(ago)}</b>${BK.dir?` · carpeta «${esc(BK.dir.name)}»`:''}</p></div>
@@ -1991,3 +1992,54 @@ function vPrep(){const PO=prepOpts('protein'),CO=prepOpts('carb');
   <div class="panel prep"><div class="sec-h"><h2>Errores que te hacen abandonar</h2></div><div class="ptips">
     <div><b>Preparar 7 días de golpe</b><span>El día 6 ya no apetece. Mejor dos sesiones cortas.</span></div><div><b>Una sola proteína</b><span>Al tercer día de pollo buscas excusas. Mínimo dos.</span></div><div><b>Pesar cada táper</b><span>Pesa el total en crudo y reparte a ojo.</span></div><div><b>Echar la grasa al cocinar</b><span>Pierdes el control de la cantidad. El aceite, al servir.</span></div></div></div>`}
 function prepTog(kind,k){const L=PREP[kind];const i=L.indexOf(k);if(i>=0)L.splice(i,1);else{L.push(k);if(L.length>3)L.shift()}render()}
+
+// ================= REVISIONES → CARPETA DE CADA CLIENTE EN GOOGLE DRIVE =================
+// Copia las fotos de cada revisión y un resumen con peso y medidas en la carpeta privada del cliente
+// (Mi unidad › 1. MÉTODO - ANTI ESFUERZO › 3. Plan de Entrenamiento y Nutrición › [Cliente] › …FÍSICO › AA-MM).
+// Funciona con Google Drive para ordenador en Chrome/Edge. Las fotos se quedan también en la app.
+const GD={dir:null,last:null,busy:false,msg:'',res:null,map:{}};
+const gdNorm=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+async function gdInit(){try{GD.dir=await idb.get('gdir');GD.last=await idb.get('glast');GD.map=(await idb.get('gmap'))||{}}catch(e){}
+  if(GD.dir&&(!GD.last||Date.now()-Date.parse(GD.last)>20*3600e3)){try{if(await GD.dir.queryPermission({mode:'readwrite'})==='granted')await gdRun(true)}catch(e){console.warn(e)}}}
+async function gdPick(){try{const d=await window.showDirectoryPicker({id:'yaronska-gd',mode:'readwrite',startIn:GD.dir||'documents'});GD.dir=d;await idb.set('gdir',d);await gdRun()}catch(e){if(e.name!=='AbortError')toast('No se ha podido usar esa carpeta')}}
+async function gdSubdirs(h){const out=[];for await(const [n,x] of h.entries())if(x.kind==='directory')out.push(n);return out}
+function gdMatch(name,dirs){const n=gdNorm(name);if(!n)return null;const w=n.split(' ');
+  return dirs.find(d=>gdNorm(d)===n)||dirs.find(d=>{const g=gdNorm(d);return w.length>1&&g.startsWith(w[0]+' '+w[1])})||dirs.find(d=>{const g=gdNorm(d).split(' ');return g[0]===w[0]&&(g.length===1||w.length===1||g[1]===w[1]||g[1].startsWith(w[1].slice(0,3)))})||null}
+const gdPhysDir=dirs=>dirs.find(d=>/fisic/.test(gdNorm(d))&&!/tecnic/.test(gdNorm(d)))||null;
+const gdKg=v=>v!=null&&v!==''?' '+String(v).replace('.',',')+' KG':'';
+async function gdExists(dir,name){try{await dir.getFileHandle(name);return true}catch(e){return false}}
+async function gdWrite(dir,name,blob){const h=await dir.getFileHandle(name,{create:true});const w=await h.createWritable();await w.write(blob);await w.close()}
+function gdCsv(name,L){const cols=MEAS.map(m=>m[0]);const head=['Fecha',...MEAS.map(m=>m[1]+(m[2]?' ('+m[2]+')':'')),...SCALES.map(x=>x.t+' (1-5)'),'Orina','Fotos','Nota del cliente','Respuesta de Yaron'];
+  const q=v=>{v=v==null?'':String(v);return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const rows=L.map(c=>{const d=c.data||{};return [c.fecha.split('-').reverse().join('/'),...cols.map(k=>d[k]!=null?String(d[k]).replace('.',','):''),...SCALES.map(x=>(d.r||{})[x.k]||''),(d.r||{}).orina||'',(d.fotosP||[]).length,d.nota||'',(d.rev&&d.rev.txt)||'']});
+  return new Blob(['﻿'+[head,...rows].map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv'})}
+async function gdRun(silent){if(GD.busy||!GD.dir)return;GD.busy=true;GD.msg='Copiando revisiones…';if(!silent&&coachSel==='__biz')renderCoach();
+  try{if(await GD.dir.queryPermission({mode:'readwrite'})!=='granted'&&await GD.dir.requestPermission({mode:'readwrite'})!=='granted')throw new Error('Sin permiso para la carpeta');
+    const dirs=await gdSubdirs(GD.dir);const all=await db.allCheckins();const by={};all.forEach(c=>(by[c.client_id]=by[c.client_id]||[]).push(c));
+    let nf=0,nc=0;const res=[];
+    for(const c of CL){const L=by[c.id]||[];const folder=GD.map[c.id]&&dirs.includes(GD.map[c.id])?GD.map[c.id]:gdMatch(c.name,dirs);
+      if(!folder){res.push({id:c.id,n:c.name,folder:null,cks:L.length});continue}
+      if(!L.length){res.push({id:c.id,n:c.name,folder,cks:0,new:0});continue}
+      const cd=await GD.dir.getDirectoryHandle(folder);const sub=await gdSubdirs(cd);let pn=gdPhysDir(sub)||'REVISIÓN FÍSICO';let pd=await cd.getDirectoryHandle(pn,{create:true});{const inner=(await gdSubdirs(pd)).find(d=>gdNorm(d)==='fisico');if(inner){pd=await pd.getDirectoryHandle(inner);pn+=' › '+inner}}
+      let n=0;
+      for(const ck of L){const d=ck.data||{};const P=d.fotosP||[];if(!P.length)continue;const [y,m,dd]=ck.fecha.split('-');let md=null;
+        for(const path of P){const k=/frontal/.test(path)?'FRONTAL':/lateral/.test(path)?'PERFIL':/espalda/.test(path)?'ESPALDA':'FOTO';
+          const fname=`${dd}-${m}-${y.slice(2)} ${k}${gdKg(d.peso)}.jpg`;if(!md){md=await pd.getDirectoryHandle(`${y.slice(2)}-${m}`,{create:true});md._names=[];for await(const [nm,x] of md.entries())if(x.kind==='file')md._names.push(gdNorm(nm).replace(/ /g,''))}
+          const key=gdNorm(`${dd}-${m}-${y.slice(2)} ${k}`).replace(/ /g,'');if(md._names.some(x=>x.startsWith(key)||(k==='PERFIL'&&x.startsWith(key.replace('perfil','lateral')))))continue;try{const b=await db.photoBlob(path);await gdWrite(md,fname,b);md._names.push(gdNorm(fname).replace(/ /g,''));n++}catch(e){console.warn(e)}}}
+      await gdWrite(pd,'Revisiones (peso y medidas).csv',gdCsv(c.name,L));nf+=n;nc++;res.push({id:c.id,n:c.name,folder,phys:pn,cks:L.length,new:n})}
+    GD.res=res;GD.last=new Date().toISOString();await idb.set('glast',GD.last);
+    const miss=res.filter(r=>!r.folder).length;GD.msg=`✅ ${nf?nf+' foto'+(nf>1?'s':'')+' nueva'+(nf>1?'s':'')+' copiada'+(nf>1?'s':''):'Todo al día'} · ${nc} cliente${nc===1?'':'s'} actualizados${miss?` · ${miss} sin carpeta`:''}`;
+  }catch(e){console.error(e);GD.msg='No se ha podido copiar: '+(e.message||e)}
+  finally{GD.busy=false;if(coachSel==='__biz')renderCoach()}}
+async function gdSetMap(id,v){if(v)GD.map[id]=v;else delete GD.map[id];await idb.set('gmap',GD.map);gdRun()}
+async function gdCreate(id){const c=CL.find(x=>x.id===id);if(!c||!GD.dir)return;try{const d=await GD.dir.getDirectoryHandle(c.name.trim(),{create:true});await d.getDirectoryHandle('REVISIÓN FÍSICO',{create:true});GD.map[id]=c.name.trim();await idb.set('gmap',GD.map);toast('Carpeta creada');gdRun()}catch(e){toast('No se ha podido crear la carpeta')}}
+let GD_DIRS=null;
+function gdPanel(){if(!bkFS())return `<div class="panel"><span class="lbl">📁 Revisiones en Google Drive</span><p class="small muted" style="margin:0">Abre la app en Chrome o Edge en el ordenador para copiar las revisiones en la carpeta de cada cliente.</p></div>`;
+  const ago=GD.last?seenTxt(GD.last).t.replace('Activo ahora','Hace un momento'):'Nunca';const R=GD.res||[];
+  return `<div class="panel gdpanel"><div class="sec-h"><div><span class="lbl">📁 Revisiones en la carpeta de cada cliente (Google Drive)</span><p class="small muted" style="margin:0">Última copia: <b>${esc(ago)}</b>${GD.dir?` · carpeta «${esc(GD.dir.name)}»`:''}</p></div>
+    <div class="row"><button class="btn ${GD.dir?'ghost':''} sm" type="button" onclick="gdPick()">${GD.dir?'Cambiar carpeta':'📁 Elegir «3. Plan de Entrenamiento y Nutrición»'}</button>${GD.dir?`<button class="btn sm" type="button" onclick="gdRun()" ${GD.busy?'disabled':''}>${GD.busy?'Copiando…':'Copiar ahora'}</button>`:''}</div></div>
+    ${GD.msg?`<p class="small" style="margin:0">${esc(GD.msg)}</p>`:''}
+    <p class="small muted" style="margin:0">${GD.dir?'Cada día que abras la app como entrenador se copian solas las fotos nuevas de cada revisión en <b>[Cliente] › …FÍSICO › AA-MM</b>, con el nombre «DD-MM-AA FRONTAL 102,6 KG», y se actualiza el archivo <b>Revisiones (peso y medidas).csv</b> con todas sus revisiones (se abre con Excel o Google Sheets). Las fotos siguen también en la app.':'Elige la carpeta <b>Mi unidad › 1. MÉTODO - ANTI ESFUERZO › 3. Plan de Entrenamiento y Nutrición</b>. Solo hace falta la primera vez en cada ordenador.'}</p>
+    ${R.length?`<div class="tbl-w"><table class="gdtbl"><thead><tr><th>Cliente</th><th>Carpeta</th><th>Revisiones</th><th>Última copia</th></tr></thead><tbody>${R.map(r=>`<tr><td>${esc(r.n)}</td><td>${r.folder?`${esc(r.folder)} <span class="muted">› ${esc(r.phys||'')}</span>`:`<span class="badc">Sin carpeta</span> <button class="btn ghost sm" type="button" onclick="gdCreate('${r.id}')">Crear</button>`}<div><select aria-label="Elegir carpeta de ${esc(r.n)}" onfocus="gdFill(this,'${r.id}')" onchange="gdSetMap('${r.id}',this.value)"><option value="">${r.folder?'Cambiar…':'Elegir carpeta…'}</option></select></div></td><td>${r.cks}</td><td>${r.folder?(r.new?`<span class="good">+${r.new} fotos</span>`:'Al día'):'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
+  </div>`}
+async function gdFill(sel,id){if(sel.dataset.ok)return;sel.dataset.ok=1;try{GD_DIRS=GD_DIRS||await gdSubdirs(GD.dir);GD_DIRS.sort((a,b)=>a.localeCompare(b,'es')).forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;if(GD.map[id]===d)o.selected=true;sel.appendChild(o)})}catch(e){}}

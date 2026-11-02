@@ -731,3 +731,4 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .pauthd b{color:var(--ok);font-size:13.5px}.pauthd span{font-size:13px;color:var(--fg)}
 .setplan.paut{border:1px solid var(--ok);border-radius:0 0 10px 10px;padding:6px;background:rgba(124,227,139,.04)}
 .setplan.paut li.pz>span:not(.sn){color:var(--ok);font-weight:700}
+.gdtbl select{margin-top:4px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:4px;max-width:220px}
