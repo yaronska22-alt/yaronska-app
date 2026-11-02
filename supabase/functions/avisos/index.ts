@@ -67,15 +67,15 @@ Deno.serve(async (req) => {
   const { data: subs } = await db.from("push_subs").select("client_id");
   const withSub = new Set((subs || []).map((s) => s.client_id));
   const { data: cks } = await db.from("checkins").select("client_id").eq("fecha", now.date);
-  const { data: dls } = await db.from("daily_logs").select("client_id").eq("fecha", now.date);
-  const ckToday = new Set((cks || []).map((x) => x.client_id)), dlToday = new Set((dls || []).map((x) => x.client_id));
+  const { data: dls } = await db.from("daily_logs").select("client_id,data").eq("fecha", now.date);
+  const ckToday = new Set((cks || []).map((x) => x.client_id)), dlToday = new Set((dls || []).filter((x) => (x.data || {}).at).map((x) => x.client_id)); // solo cuenta si ha rellenado el seguimiento (no basta con guardar un entreno)
   const out: string[] = [];
   for (const c of clients || []) {
     if (!withSub.has(c.id)) continue;
     const f = c.ficha || {}, p = c.prefs || {};
     const adm = Array.isArray(c.client_admin) ? c.client_admin[0] : c.client_admin;
     if (adm && ["paused", "ended"].includes(adm.estado)) continue;
-    const first = String(f.nombre || "").trim().split(/\s+/)[0] || "";
+    const first0 = String(f.nombre || "").trim().split(/\s+/)[0] || "";const first = first0 ? first0[0].toUpperCase() + first0.slice(1).toLowerCase() : "";
     const revDay = DOW.indexOf(f.revFis || "Domingo");
     let sent = false;
     if (p.nCheck !== false && revDay >= 0) {
@@ -86,8 +86,8 @@ Deno.serve(async (req) => {
         await sendTo(c.id, { title: "📏 Hoy toca tu revisión", body: "Peso en ayunas tras ir al baño, medidas con la cinta y fotos con la misma luz. Envíala desde la app 💪", url: "/?go=check", tag: "revision" }); sent = true; out.push(c.id + ":dia");
       }
     }
-    if (!sent && p.nDaily !== false && !dlToday.has(c.id) && inWin(now.min, toMin(p.hora, "21:00")) && await once(c.id, "diario", now.date)) {
-      await sendTo(c.id, { title: "✅ ¿Cómo ha ido hoy?", body: "Apunta tus pasos, la dieta y el entreno de hoy. Te lleva 20 segundos.", url: "/?go=home", tag: "diario" }); out.push(c.id + ":diario");
+    if (!sent && p.nDaily !== false && !dlToday.has(c.id) && inWin(now.min, toMin(p.hora, "21:30")) && await once(c.id, "diario", now.date)) {
+      await sendTo(c.id, { title: "✅ ¿Cómo ha ido hoy?", body: `${first ? first + ", r" : "R"}ellena tu seguimiento de hoy: entreno, comidas, pasos y cómo te has sentido. Te lleva 20 segundos.`, url: "/?go=home", tag: "diario" }); out.push(c.id + ":diario");
     }
   }
   return json({ at: now, sent: out });

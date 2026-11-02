@@ -79,7 +79,7 @@ const MEAS=[['peso','Peso','kg'],['hs','Horas de sueño','h'],['cuello','Cuello'
 const pad2=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return d};
-const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nTrain:true,hora:'21:00',unid:'kg',consent:false};
+const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nTrain:true,hora:'21:30',unid:'kg',consent:false};
 const emptyS=()=>({weights:[],checkins:[],hist:{},daily:{},routine:[],kcal:1800,restOn:true,planOn:false,next:{},phase:0,week:1,weeksPhase:4,ficha:clone(FICHA_DEF),profile:clone(PROFILE_DEF)});
 let S=emptyS();FICHA=S.ficha;
 let ME=null;        // {id,email,role,clientId}
@@ -94,7 +94,7 @@ function clientRow(){return {email:(FICHA.email||CUR.email||'').trim().toLowerCa
 function adminRow(){const r={client_id:CUR.id};Object.entries(ADMIN_MAP).forEach(([k,col])=>{let v=FICHA[k];if(v===''||v==null)v=null;if(col==='pago'&&v!=null)v=+v;if(col==='cheatmeals'&&v!=null)v=Math.round(+v);r[col]=v});if(!r.estado)r.estado='active';return r}
 const wBody=w=>({client_id:CUR.id,fecha:w.date,peso:w.peso});
 const cBody=c=>{const {id,date,...data}=c;return {client_id:CUR.id,fecha:date,data}};
-const hBody=(n,h)=>({client_id:CUR.id,fecha:h.date,dia:h.day||null,ejercicio:n,sets:h.sets,nota:h.nota||null});
+const hBody=(n,h)=>({client_id:CUR.id,fecha:h.date,dia:h.day||null,ejercicio:n,sets:h.sets,nota:h.nota||null,sustituye:h.sub||null});
 const J=o=>JSON.stringify(o);
 
 function fromDb(d){
@@ -102,12 +102,12 @@ function fromDb(d){
   S.ficha=Object.assign(clone(FICHA_DEF),c.ficha||{});if(!Array.isArray(S.ficha.dias))S.ficha.dias=[];
   if(d.admin)Object.entries(ADMIN_MAP).forEach(([k,col])=>{S.ficha[k]=d.admin[col]==null?'':d.admin[col]});
   if(!S.ficha.email)S.ficha.email=c.email;
-  S.profile=Object.assign(clone(PROFILE_DEF),c.prefs||{});
+  S.profile=Object.assign(clone(PROFILE_DEF),c.prefs||{});if(!S.profile.hora2){S.profile.hora='21:30';S.profile.hora2=true}
   S.phase=c.fase;S.week=c.semana;S.weeksPhase=c.semanas_fase;S.kcal=c.kcal;S.restOn=c.rest_on;S.planOn=!!c.plan;S.shopList=c.plan&&c.plan.shop||null;S.planCalc=c.plan&&c.plan.source==='calc'?c.plan:null;if(S.planCalc&&S.planCalc.shop){S.planCalc=Object.assign({},S.planCalc);delete S.planCalc.shop}S.routine=c.rutina||[];
   S.weights=d.weights.map(w=>({id:w.id,date:w.fecha,peso:+w.peso}));
   S.checkins=d.checkins.map(x=>Object.assign({r:{}},x.data,{id:x.id,date:x.fecha}));
   d.daily.forEach(x=>{S.daily[x.fecha]=x.data});
-  d.logs.forEach(l=>{(S.hist[l.ejercicio]=S.hist[l.ejercicio]||[]).push({id:l.id,date:l.fecha,day:l.dia||'',sets:l.sets||[],nota:l.nota||'',ts:Date.parse(l.created_at)})});
+  d.logs.forEach(l=>{(S.hist[l.ejercicio]=S.hist[l.ejercicio]||[]).push({id:l.id,date:l.fecha,day:l.dia||'',sets:l.sets||[],nota:l.nota||'',sub:l.sustituye||'',ts:Date.parse(l.created_at)})});
   // Una pauta deja de mostrarse cuando el cliente ya ha entrenado ese ejercicio después de pautarla
   Object.entries(c.pautas||{}).forEach(([n,p])=>{const h=S.hist[n]||[];if(!p.ts||!h.some(x=>x.ts>p.ts&&(!p.from||x.date>=p.from)))S.next[n]=p});
   FICHA=S.ficha;CUR={id:c.id,email:c.email};
@@ -365,7 +365,7 @@ function vPerfil(){
   <section class="pcard"><span class="lbl">Recordatorios</span>
     <div id="pushBox">${pushStatusHTML()}</div>
     ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}
-    <div class="field"><label for="ph">Hora del recordatorio diario</label><input id="ph" type="time" value="${esc(p.hora||'21:00')}" onchange="pSet('hora',this.value)"></div></section>
+    <div class="field"><label for="ph">Hora del recordatorio diario</label><input id="ph" type="time" value="${esc(p.hora||'21:30')}" onchange="pSet('hora',this.value)"></div></section>
   <section class="pcard"><span class="lbl">Preferencias</span>
     <div class="field"><label for="pu">Unidades de peso</label><select id="pu" onchange="pSet('unid',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="kg" ${p.unid==='kg'?'selected':''}>Kilos (kg)</option><option value="lb" ${p.unid==='lb'?'selected':''}>Libras (lb)</option></select></div></section>
   <section class="pcard"><span class="lbl">Privacidad</span>
@@ -417,7 +417,7 @@ function vDaily(){
     <p class="small muted" style="margin:-4px 0 0;text-align:center">Toca un día para rellenarlo si se te olvidó${DMAX>7?' (usa ‹ para ir más atrás)':''}</p>
   </section>`;
 }
-function saveDaily(){const k=dKey();const prev=S.daily[k]||{};const v=Object.assign({steps:'',diet:false,train:false,stepsOk:false,estres:0,energia:0,animo:0},prev,today);v.steps=+v.steps||0;S.daily[k]=v;today={};const was=DSEL;DSEL=null;save();toast(was?'Guardado el '+new Date(was+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}):'Día guardado');render()}
+function saveDaily(){const k=dKey();const prev=S.daily[k]||{};const v=Object.assign({steps:'',diet:false,train:false,stepsOk:false,estres:0,energia:0,animo:0},prev,today);v.steps=+v.steps||0;v.at=new Date().toISOString();S.daily[k]=v;today={};const was=DSEL;DSEL=null;save();toast(was?'Guardado el '+new Date(was+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}):'Día guardado');render()}
 function vFood(){
   if(!S.planOn)return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div><div class="empty">Tu plan aparecerá aquí en cuanto Yaron lo prepare.</div>`;
   if(!S.restOn)dayType='T';
@@ -502,10 +502,28 @@ function suggestion(e){
 // filas de la pauta del día: lo pautado por Yaron sustituye a lo de la rutina (sin mostrar las dos cosas)
 function planRows(SS,nx){return SS.map((x,i)=>{const o=Object.assign({},x);if(!nx)return o;const y=nx.sets?(nx.sets[i]||{}):{kg:nx.kg,reps:nx.reps,int:nx.int};
   let p=false;if(y.kg){o.kg=y.kg;p=true}if(y.reps){o.reps=y.reps;p=true}if(y.int){o.rpe=y.int;p=true}if(y.nota!==undefined&&y.nota!==''){o.nota=y.nota;p=true}o.p=p;return o})}
-function exCard(e,ei,label){
-  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const nx=nxOf(e.n);const SS=sesSets(e,nx);
+// ---- cambiar un ejercicio solo por hoy (máquina ocupada): se guarda con el ejercicio nuevo y Yaron ve el cambio
+function subOf(di,ei){const D=draftGet();const v=D[`sub-${di}-${ei}`];if(!v)return null;try{return JSON.parse(v)}catch(e){return null}}
+function subSet(di,ei,v){const D=draftGet();const k=`sub-${di}-${ei}`;if(v)D[k]=JSON.stringify(v);else delete D[k];try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}draftCloud()}
+let SUBQ='',SUBTO=null;
+async function openSub(di,ei){SUBTO=[di,ei];const e=S.routine[di].ex[ei];SUBQ='';const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Cambiar ejercicio"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>🔄 Cambiar ejercicio</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+    <p class="small muted" style="margin:0">¿Está ocupada la máquina de <b style="color:var(--fg)">${esc(e.n)}</b>? Elige otro que trabaje lo mismo. Solo cambia para hoy y Yaron verá el cambio.</p>
+    <input id="subQ" placeholder="Busca: remo, prensa, mancuernas…" autocomplete="off" oninput="SUBQ=this.value;subList()">
+    <div id="subL" class="subl"><p class="small muted">Cargando ejercicios…</p></div>
+    <form class="row" onsubmit="event.preventDefault();subPick(document.getElementById('subT').value.trim())"><input id="subT" maxlength="60" placeholder="O escríbelo tú" style="flex:1;min-width:0"><button class="btn ghost sm" type="submit">Usar este</button></form></div></div>`;
+  sh.hidden=false;sh.onclick=ev=>{if(ev.target===sh)closeSheet()};await loadLib();subList()}
+function subList(){const box=document.getElementById('subL');if(!box||!SUBTO)return;const e=S.routine[SUBTO[0]].ex[SUBTO[1]];
+  const g=e.vid&&LIB?((LIB.find(x=>x.i===e.vid)||{}).g||''):'';const mus=gdNorm(musOf(e));
+  let L=(LIB||[]).map(x=>({x,sc:SUBQ?libScore(x,SUBQ):((g&&x.g===g)||(!g&&mus&&gdNorm(x.g).includes(mus.split(' ')[0]))?1:0)})).filter(r=>r.sc>0&&r.x.n!==e.n&&!/^variaciones/i.test(r.x.n));
+  const seen=new Set();L=L.sort((a,b)=>b.sc-a.sc||(a.x.s==='3D'?-1:1)).filter(r=>{const k=gdNorm(r.x.n);if(seen.has(k))return false;seen.add(k);return true}).slice(0,40);
+  box.innerHTML=L.length?L.map(({x})=>`<button type="button" class="subi" onclick='subPick(${esc(JSON.stringify(x.n))},${esc(JSON.stringify(x.i))})'><img src="${EJ}${esc(x.i)}.jpg" alt="" loading="lazy"><span><b>${esc(x.n)}</b><small>${esc(x.g||'')}</small></span></button>`).join(''):'<p class="small muted">No hay resultados. Escríbelo abajo.</p>'}
+function subPick(n,vid){if(!n||!SUBTO)return;subSet(SUBTO[0],SUBTO[1],{n,vid:vid||''});closeSheet();render();toast('Cambiado solo para hoy: '+n)}
+function subUndo(di,ei){subSet(di,ei,null);render()}
+function exCard(e0,ei,label){const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,vid:SB.vid||'',v:''}):e0;
+  const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const nx=SB?undefined:nxOf(e.n);const SS=sesSets(e,nx);
   const rk=exRank(e.n);
-  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e))}</small>${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div>${e.vid&&!e.v?'':`<a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a>`}</div>
+  return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e0))}</small>${SB?`<small class="subtag">🔄 Hoy en lugar de ${esc(e0.n)} · <button type="button" onclick="subUndo(${dayIdx},${ei})">Deshacer</button></small>`:''}${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div><div class="exbtns">${e.vid&&!e.v?'':`<a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a>`}${view==='client'&&!PREV_FROM?`<button type="button" class="vid subb" onclick="openSub(${dayIdx},${ei})" aria-label="Cambiar ejercicio">🔄 Cambiar</button>`:''}</div></div>
     ${e.vid?exVid(e.vid):''}
     ${(()=>{const PL=planRows(SS,nx);const show=det||nx;if(!show)return '';
       return `${nx?`<div class="pauthd"><b>✅ Pautado por Yaron</b>${nx.nota?`<span>${esc(nx.nota)}</span>`:''}</div>`:''}<ol class="setplan ${nx?'paut':''}">${PL.map((x,i)=>`<li class="${x.p?'pz':''}"><span class="sn">${i+1}</span>${x.t?`<em class="stag t-${x.t}">${esc((SET_T.find(t=>t[0]===x.t)||['',''])[1])}</em>`:''}<span>${x.kg?esc(String(x.kg).replace('.',','))+' kg × ':''}${esc(x.reps||'')}${/ s$/.test(x.reps||'')||!x.reps?'':' reps'}${x.rpe?' · '+esc(x.rpe):''}${x.rest?' · desc. '+esc(x.rest):''}</span>${x.nota?`<small>${esc(x.nota)}</small>`:''}</li>`).join('')}</ol>`})()}
@@ -556,10 +574,10 @@ async function saveSession(btn){
   if(PREV_FROM){toast('Estás en la vista previa: aquí no se guarda nada');return}
   if(saveSession.busy)return;
   const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
-  d.ex.forEach((e,ei)=>{const sets=[];const NX=nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`)),fail=isFail(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
+  d.ex.forEach((e0,ei)=>{const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`)),fail=isFail(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
-    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from)){const P=S.next[e.n];if(P.fix&&P.sets){e.s=P.sets.length;const base=exSets(Object.assign({},e,{s:P.sets.length}));e.sets=base.map((x,i)=>Object.assign(x,{t:P.sets[i].t||''},P.sets[i].nota!==undefined?{nota:P.sets[i].nota}:{}))}delete S.next[e.n]}}});
+    if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(SB)o.sub=e0.n;NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from)){const P=S.next[e.n];if(P.fix&&P.sets){e.s=P.sets.length;const base=exSets(Object.assign({},e,{s:P.sets.length}));e.sets=base.map((x,i)=>Object.assign(x,{t:P.sets[i].t||''},P.sets[i].nota!==undefined?{nota:P.sets[i].nota}:{}))}delete S.next[e.n]}}});
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
   rtStop();SAVED_AT=Date.now();
   const k=date;const prevDay=S.daily[k]?clone(S.daily[k]):undefined;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
@@ -571,7 +589,7 @@ async function saveSession(btn){
   if(!ok){NEW.forEach(([n,o])=>{if(!o.id){const L=S.hist[n]||[];const i=L.indexOf(o);if(i>=0)L.splice(i,1)}});if(!NEW.some(([n,o])=>o.id)){if(prevDay===undefined)delete S.daily[k];else S.daily[k]=prevDay}
     SES_D=date;render();
     const sh=document.getElementById('sheet');sh.innerHTML=`<div class="sheet-in" role="alertdialog" aria-label="No se ha subido"><div class="sheet-b"><h2>⚠️ No se ha podido subir</h2><p class="small muted" style="margin:0">Parece que no hay conexión ahora mismo. <b style="color:var(--fg)">No se ha borrado nada</b>: todo lo que has apuntado sigue en su sitio.</p><p class="small muted" style="margin:0">Comprueba tu conexión y vuelve a pulsar <b style="color:var(--fg)">Guardar entreno</b>.</p><button class="btn" type="button" onclick="closeSheet()">Entendido</button></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};return}
-  draftClear();save();render();const ws=[...d.ex].some(e=>(S.hist[e.n]||[]).some(h=>h.date===date&&h.sets&&h.sets.length));if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
+  draftClear();save();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
 function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
@@ -784,8 +802,8 @@ function cDiario(){
   const c=v=>v===null||v===undefined?'<span class="muted">—</span>':`<span class="ok-chip ${v?'y':'n'}">${v?'✓':'✗'}</span>`;
   const n=rows.length;const pct=k=>n?Math.round(rows.filter(r=>S.daily[r][k]).length/rows.filter(r=>S.daily[r][k]!==null&&S.daily[r][k]!==undefined).length*100)||0:0;
   return `<div class="kpis"><div class="kpi"><small>Dieta cumplida</small><b>${pct('diet')} %</b></div><div class="kpi"><small>Entrenos cumplidos</small><b>${pct('train')} %</b></div><div class="kpi"><small>Días con pasos</small><b>${pct('stepsOk')} %</b></div><div class="kpi"><small>Pasos medios</small><b>${n?Math.round(rows.reduce((a,r)=>a+(+S.daily[r].steps||0),0)/n).toLocaleString('es-ES'):'—'}</b></div></div>
-  <div class="panel"><span class="lbl">Últimos ${n} días</span><div class="tbl-w"><table><thead><tr><th>Día</th><th>Dieta</th><th>Entreno</th><th>Pasos</th><th>Estrés</th><th>Energía</th><th>Ánimo</th></tr></thead><tbody>
-  ${rows.map(r=>{const d=S.daily[r];return `<tr><td>${new Date(r+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</td><td>${c(d.diet)}</td><td>${c(d.train)}</td><td>${(+d.steps||0).toLocaleString('es-ES')} ${c(d.stepsOk)}</td><td>${d.estres||'—'}</td><td>${d.energia||'—'}</td><td>${d.animo||'—'}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  <div class="panel"><span class="lbl">Últimos ${n} días</span><div class="tbl-w"><table><thead><tr><th>Día</th><th>Dieta</th><th>Entreno</th><th>Pasos</th><th>Estrés</th><th>Energía</th><th>Ánimo</th><th>Rellenado</th></tr></thead><tbody>
+  ${rows.map(r=>{const d=S.daily[r];return `<tr><td>${new Date(r+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</td><td>${c(d.diet)}</td><td>${c(d.train)}</td><td>${(+d.steps||0).toLocaleString('es-ES')} ${c(d.stepsOk)}</td><td>${d.estres||'—'}</td><td>${d.energia||'—'}</td><td>${d.animo||'—'}</td><td>${d.at?(()=>{const t=new Date(d.at);const same=iso(t)===r;return `<span class="${same?'':'muted'}">${same?'':t.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' · '}${t.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</span>`})():'<span class="muted">—</span>'}</td></tr>`}).join('')}</tbody></table></div><p class="small muted" style="margin:0">«Rellenado»: hora a la que lo guardó. Si sale con fecha, lo rellenó otro día (días anteriores).</p></div>`;
 }
 function cChecks(){
   const cks=S.checkins.slice().reverse();
@@ -912,7 +930,7 @@ function cSes(){
   ${se.items.map(({n,hi,h},k)=>{const nx=S.next[n]||{};const re=routineEx(n,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
     const blk=re&&re.blk?`<span class="stag" style="background:var(--surface-2);color:var(--y)">${esc(blkName(re.blkT))} ${esc(re.blk)}</span>`:'';
     const tOf=(st,si)=>st.t!==undefined?st.t:(plan[st.i??si]||{}).t||'';
-    return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="small muted">${h.sets.length?h.sets.length+' series':'Sin series · solo nota'}</span></div>${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
+    return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="small muted">${h.sets.length?h.sets.length+' series':'Sin series · solo nota'}</span></div>${h.sub?`<div class="cnote">🔄 <b>Cambio:</b> hizo este ejercicio en lugar de <b>${esc(h.sub)}</b> (máquina ocupada u otro motivo)</div>`:''}${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
     <div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=plan[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${f==='rir'&&st.fail?'Fallo':String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
     <span class="lbl" style="margin-top:4px">Pautar próximo entreno${nx.ts?` <span class="pfrom">✓ pautado${nx.from?' · lo ve desde el '+new Date(nx.from+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):' · ya visible'}</span>`:''}</span>
     ${pautaHTML(n,k,nm,plan,h,nx,re,inS)}</div>`}).join('')}`;
@@ -1738,7 +1756,7 @@ function bkPanel(){const ago=BK.last?seenTxt(BK.last).t.replace('Activo ahora','
   return `<div class="panel bkpanel"><div class="sec-h"><div><span class="lbl">💾 Copias de seguridad</span><p class="small muted" style="margin:0">Última copia: <b class="${due?'badc':'good'}">${esc(ago)}</b>${BK.dir?` · carpeta «${esc(BK.dir.name)}»`:''}</p></div>
     <div class="row">${bkFS()?`<button class="btn ${BK.dir?'ghost':''} sm" type="button" onclick="bkPick()">${BK.dir?'Cambiar carpeta':'📁 Elegir «Copias Seguridad»'}</button>`:''}${BK.dir?`<button class="btn sm" type="button" onclick="bkRun()" ${BK.busy?'disabled':''}>${BK.busy?'Guardando…':'Hacer copia ahora'}</button>`:''}<button class="btn ghost sm" type="button" onclick="bkDownload()">⬇️ Descargar copia</button></div></div>
     ${BK.msg?`<p class="small" style="margin:0">${esc(BK.msg)}</p>`:''}
-    <p class="small muted" style="margin:0">${bkFS()?`${BK.dir&&BK.dir.name==='Copias Seguridad'?'Se guardan en <b>Escritorio › YaronskaFit › PLATAFORMA › Copias Seguridad</b>, que Google Drive sincroniza solo.':'Pulsa el botón y elige <b>Escritorio › YaronskaFit › PLATAFORMA › Copias Seguridad</b> (la ventana se abre ya en el Escritorio). Solo hace falta la primera vez en cada ordenador.'} Cada día que abras la app como entrenador se guarda sola una copia con todos los datos (clientes, fichas, dietas, rutinas, revisiones, entrenos, cobros) y las fotos nuevas, y Google Drive la sube a la nube. Se guardan las copias de los últimos 30 días.`:'Tu navegador no permite guardar en una carpeta automáticamente (usa Chrome o Edge en el ordenador). Mientras, puedes descargar la copia y guardarla en Google Drive.'}</p></div>`}
+    <p class="small muted" style="margin:0">${bkFS()?`${BK.dir&&BK.dir.name==='Copias Seguridad'?'Se guardan en <b>Escritorio › YaronskaFit › PLATAFORMA › Copias Seguridad</b>, que Google Drive sincroniza solo.':'Pulsa el botón y elige <b>Escritorio › YaronskaFit › PLATAFORMA › Copias Seguridad</b> (la ventana se abre ya en el Escritorio). Solo hace falta la primera vez en cada ordenador.'} Cada día que abras la app como entrenador se guarda sola una copia con todos los datos (clientes, fichas, dietas, rutinas, revisiones, entrenos, cobros) y las fotos nuevas, y Google Drive la sube a la nube. Se guardan las copias de los últimos 30 días.`:fsMsg()+' Mientras, puedes descargar la copia y guardarla en Google Drive.'}</p></div>`}
 async function bkPick(){try{const d=await window.showDirectoryPicker({id:'yaronska-bk',mode:'readwrite',startIn:BK.dir||'desktop'});if(d.name!=='Copias Seguridad'&&!BK.okOther){BK.okOther=true;BK.msg='Ojo: has elegido «'+d.name+'». La carpeta de copias es Escritorio › YaronskaFit › PLATAFORMA › Copias Seguridad. Si es la que quieres, sigue; si no, pulsa «Cambiar carpeta».'}BK.dir=d;await idb.set('dir',d);await bkRun()}catch(e){if(e.name!=='AbortError')toast('No se ha podido usar esa carpeta')}}
 async function bkData(){const d=await db.exportAll();return {app:'Yaronska App',version:1,fecha:new Date().toISOString(),tablas:d}}
 async function bkRun(silent){if(BK.busy)return;BK.busy=true;if(!silent&&coachSel==='__biz')renderCoach();
@@ -2034,7 +2052,9 @@ async function gdRun(silent){if(GD.busy||!GD.dir)return;GD.busy=true;GD.msg='Cop
 async function gdSetMap(id,v){if(v)GD.map[id]=v;else delete GD.map[id];await idb.set('gmap',GD.map);gdRun()}
 async function gdCreate(id){const c=CL.find(x=>x.id===id);if(!c||!GD.dir)return;try{const d=await GD.dir.getDirectoryHandle(c.name.trim(),{create:true});await d.getDirectoryHandle('REVISIÓN FÍSICO',{create:true});GD.map[id]=c.name.trim();await idb.set('gmap',GD.map);toast('Carpeta creada');gdRun()}catch(e){toast('No se ha podido crear la carpeta')}}
 let GD_DIRS=null;
-function gdPanel(){if(!bkFS())return `<div class="panel"><span class="lbl">📁 Revisiones en Google Drive</span><p class="small muted" style="margin:0">Abre la app en Chrome o Edge en el ordenador para copiar las revisiones en la carpeta de cada cliente.</p></div>`;
+const BRAVE=!!navigator.brave;
+const fsMsg=()=>BRAVE?'Brave bloquea el acceso a carpetas del ordenador. Para usarlo aquí: escribe <b>brave://flags/#file-system-access-api</b> en la barra, ponlo en <b>Enabled</b> y reinicia Brave. O abre la app en Chrome o Edge.':'Abre la app en Chrome o Edge en el ordenador para usarlo.';
+function gdPanel(){if(!bkFS())return `<div class="panel"><span class="lbl">📁 Revisiones en la carpeta de cada cliente (Google Drive)</span><p class="small muted" style="margin:0">${fsMsg()}</p></div>`;
   const ago=GD.last?seenTxt(GD.last).t.replace('Activo ahora','Hace un momento'):'Nunca';const R=GD.res||[];
   return `<div class="panel gdpanel"><div class="sec-h"><div><span class="lbl">📁 Revisiones en la carpeta de cada cliente (Google Drive)</span><p class="small muted" style="margin:0">Última copia: <b>${esc(ago)}</b>${GD.dir?` · carpeta «${esc(GD.dir.name)}»`:''}</p></div>
     <div class="row"><button class="btn ${GD.dir?'ghost':''} sm" type="button" onclick="gdPick()">${GD.dir?'Cambiar carpeta':'📁 Elegir «3. Plan de Entrenamiento y Nutrición»'}</button>${GD.dir?`<button class="btn sm" type="button" onclick="gdRun()" ${GD.busy?'disabled':''}>${GD.busy?'Copiando…':'Copiar ahora'}</button>`:''}</div></div>
