@@ -1,0 +1,79 @@
+#cloud-config
+# Yaronska App en un servidor de Hetzner (Ubuntu 24.04).
+# Pegar entero en «Cloud config» al crear el servidor. Lo deja todo listo solo:
+#  - Node + la app (server.js) como servicio
+#  - Caddy con HTTPS automático para app.yaronskafit.com (y una dirección de prueba <IP>.sslip.io)
+#  - Se actualiza sola cada minuto desde GitHub (rama main)
+#  - Cortafuegos: solo 22, 80 y 443
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - nodejs
+  - caddy
+  - ufw
+  - curl
+
+write_files:
+  - path: /etc/systemd/system/yaronska.service
+    content: |
+      [Unit]
+      Description=Yaronska App
+      After=network-online.target
+      Wants=network-online.target
+      [Service]
+      User=yaronska
+      WorkingDirectory=/opt/yaronska
+      Environment=PORT=8080
+      ExecStart=/usr/bin/node /opt/yaronska/server.js
+      Restart=always
+      RestartSec=3
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /usr/local/bin/yaronska-update
+    permissions: '0755'
+    content: |
+      #!/bin/sh
+      # Trae la última versión de GitHub y reinicia la app si ha cambiado
+      cd /opt/yaronska || exit 0
+      OLD=$(git rev-parse HEAD)
+      sudo -u yaronska git fetch -q origin main || exit 0
+      NEW=$(git rev-parse origin/main)
+      [ "$OLD" = "$NEW" ] && exit 0
+      sudo -u yaronska git reset -q --hard origin/main
+      systemctl restart yaronska
+      logger "yaronska actualizada a $NEW"
+
+  - path: /etc/systemd/system/yaronska-update.service
+    content: |
+      [Unit]
+      Description=Actualizar Yaronska App desde GitHub
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/yaronska-update
+
+  - path: /etc/systemd/system/yaronska-update.timer
+    content: |
+      [Unit]
+      Description=Actualizar Yaronska App cada minuto
+      [Timer]
+      OnBootSec=60
+      OnUnitActiveSec=60
+      [Install]
+      WantedBy=timers.target
+
+runcmd:
+  - useradd --system --create-home --shell /usr/sbin/nologin yaronska || true
+  - git clone --depth 1 https://github.com/yaronska22-alt/yaronska-app.git /opt/yaronska
+  - chown -R yaronska:yaronska /opt/yaronska
+  - git config --system --add safe.directory /opt/yaronska
+  - IP=$(curl -4 -s https://api.ipify.org || hostname -I | awk '{print $1}'); printf 'app.yaronskafit.com, %s.sslip.io {\n  encode gzip\n  reverse_proxy localhost:8080\n}\n' "$(echo $IP | tr . -)" > /etc/caddy/Caddyfile
+  - systemctl daemon-reload
+  - systemctl enable --now yaronska.service
+  - systemctl enable --now yaronska-update.timer
+  - systemctl restart caddy
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
