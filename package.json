@@ -1,0 +1,8 @@
+{
+  "name": "yaronska-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Yaronska App: servidor de la app y puente con Supabase (Railway)",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" }
+}

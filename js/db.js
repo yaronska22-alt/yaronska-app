@@ -1,13 +1,14 @@
 // Capa de datos: todo lo que habla con Supabase pasa por aquí.
 // La clave "publishable" es pública por diseño: la seguridad la ponen las reglas (RLS) de la base de datos.
-const SUPABASE_URL = 'https://gpiykjgziuxvjlmbgyds.supabase.co';
+// En Railway la app habla con Supabase a través del puente /sb (evita los bloqueos de LaLiga a Cloudflare)
+const SUPABASE_URL = window.YS_SB || 'https://gpiykjgziuxvjlmbgyds.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gQv24EzHgyXWlJdl7Lx30Q_mm6qX0nz';
 // Dirección oficial de la app: la que reciben los clientes y la de los emails de acceso
 const APP_URL = 'https://app.yaronskafit.com/';
 window.APP_URL = APP_URL;
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, experimental: { passkey: true } }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'sb-gpiykjgziuxvjlmbgyds-auth-token', experimental: { passkey: true } }
 });
 
 const ok = ({ data, error }) => { if (error) throw error; return data; };
