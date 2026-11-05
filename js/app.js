@@ -10,7 +10,7 @@ const FICHA_DEF={nombre:'',email:'',tel:'',sexo:'',nac:'',altura:'',objetivo:'pe
   omega3:'',vitD:'',b12:'',magnesio:'',vitC:'',hierro:'',calcio:'',zinc:'',folato:'',potasio:'',creatina:'',colageno:'',cafeina:'',multi:'no',supOtros:'',
   sal:'',sol:'',agua:'',cafe:'',alcohol:'',tabaco:'',aire:'',pantallas:'',lifeNotas:'',alDejar:'',alimActual:'',analiticas:'',antojos:'',apoyo:'',atracones:'',ciudad:'',cocina:'',comidasDia:'',compensa:'',compromiso:'',cuentaKcal:'',cuerpo:'',culpa:'',deportePasado:'',dietaActual:'',disfruta:'',donde:'',energia:'',entPrevio:'',entender:'',espejo:'',espejoRel:'',espera:'',evitaAct:'',franja:'',frustra:'',fuera:'',gimnasio:'',haceEj:'',hijos:'',horarios:'',horasTrabajo:'',material:'',musculos:'',noParar:'',objPrincipal:'',obstaculos:'',pesaje:'',pesoMax:'',pesoMin:'',pesoObj:'',plazo:'',porque:'',preguntas:'',prenda:'',primero:'',prohibidos:'',resultadoPrevio:'',sabeCocinar:'',talla:'',tiempoCocina:'',tiempoSesion:'',trabajo:'',trabajoTipo:'',turnos:'',yoyo:''};
 // Campos que SOLO ve el entrenador: se guardan aparte (tabla client_admin) y el cliente nunca los recibe
-const ADMIN_MAP={estado:'estado',alta:'alta',tipo:'tipo',renov:'renovacion',pago:'pago',cheat:'cheatmeals',pausa:'pausa',baja:'baja',notasCom:'notas',pautadoAt:'pautado_at'};
+const ADMIN_MAP={estado:'estado',alta:'alta',tipo:'tipo',renov:'renovacion',pago:'pago',cheat:'cheatmeals',pausa:'pausa',baja:'baja',notasCom:'notas',pautadoAt:'pautado_at',descargaAt:'descarga_at'};
 var FICHA=null;
 Object.defineProperties(CLIENT,{
   program:{get:()=>PROG().n},
@@ -661,7 +661,7 @@ function vRes(){
 
 // ================= PANEL ENTRENADOR =================
 // ---- lista de clientes del entrenador (datos reales)
-function statusOf(last){if(!last)return {st:'warn',t:'Sin check-ins'};const d=Math.round((new Date(iso(new Date())+'T12:00')-new Date(last+'T12:00'))/864e5);return d<=8?{st:'ok',t:'Al día'}:d<=15?{st:'warn',t:'Check-in pendiente'}:{st:'bad',t:d+' días sin check-in'}}
+function statusOf(last){if(!last)return {st:'warn',t:'Sin revisiones'};const d=Math.round((new Date(iso(new Date())+'T12:00')-new Date(last+'T12:00'))/864e5);return d<=8?{st:'ok',t:'Al día'}:d<=15?{st:'warn',t:'Revisión atrasada'}:{st:'bad',t:d+' días sin revisión'}}
 async function refreshList(){
   const {clients,admin,checkins}=await db.listClients();
   const A={};admin.forEach(a=>A[a.client_id]=a);const L={},LC={};checkins.forEach(c=>{if(!L[c.client_id]){L[c.client_id]=c.fecha;LC[c.client_id]={fecha:c.fecha,rev:!!c.rev}}});
@@ -672,15 +672,49 @@ async function refreshList(){
 }
 // Semana del cliente: ¿ha mandado revisión en los últimos 7 días? ¿la he revisado? ¿le he pautado el entreno después?
 function wkState(ck,pAt,hasRut){const lim=iso(daysAgo(7));const recent=ck&&ck.fecha>=lim?ck:null;
-  const rev=!recent?'none':recent.rev?'done':'todo';const since=recent?recent.fecha:lim;const pau=pAt&&pAt.slice(0,10)>=since?'done':(recent&&hasRut?'todo':'none');return {rev,pau}}
+  const rev=!recent?'none':recent.rev?'done':'todo';const since=recent?recent.fecha:lim;const pau=pAt&&pAt.slice(0,10)>=since?'done':(recent&&hasRut?'todo':'none');return {rev,pau,fecha:recent?recent.fecha:null,pAt:pAt||null}}
 function liveWk(){const L=[...S.checkins].sort((a,b)=>b.date.localeCompare(a.date))[0];return wkState(L?{fecha:L.date,rev:!!L.rev}:null,FICHA.pautadoAt||null,true)}
 function refreshItem(){if(!CUR)return;const s=CL.find(x=>x.id===CUR.id);if(s)s.wk=liveWk()}
-function wkChips(w){if(!w)return '';const R={none:['wk-n','📝 Sin revisión'],todo:['wk-t','📝 Revisar'],done:['wk-d','📝 Revisada ✓']}[w.rev],P={none:['wk-n','🏋️ —'],todo:['wk-t','🏋️ Pautar'],done:['wk-d','🏋️ Pautado ✓']}[w.pau];
-  return `<span class="wkc"><i class="${R[0]}">${R[1]}</i>${w.pau==='none'&&w.rev==='none'?'':`<i class="${P[0]}">${P[1]}</i>`}</span>`}
+const fmtDM=d=>d?new Date(d.slice(0,10)+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):'';
+// Qué toca con el cliente esta semana, en una sola frase
+function wkChips(w,dl){if(!w)return '';let t;
+  if(w.rev==='todo')t=`<i class="wk-t">👉 Corregir revisión del ${fmtDM(w.fecha)}</i>`;
+  else if(w.rev==='done'&&w.pau==='todo')t=`<i class="wk-d">✓ Revisión corregida</i><i class="wk-t">👉 Pautar semana del ${fmtDM(nextMonday())}</i>`;
+  else if(w.rev==='done')t=`<i class="wk-d">✅ Corregida y pautada</i>`;
+  else t=`<i class="wk-n">⏳ Esperando su revisión</i>`;
+  return `<span class="wkc">${t}${dlChip(dl)}</span>`}
+// ---- semanas sin descarga
+const monOf=d=>{const x=new Date(d.slice(0,10)+'T12:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return iso(x)};
+function dlInfo(desc,alta){const thisMon=monOf(iso(new Date()));
+  if(desc&&monOf(desc)>thisMon)return {fut:monOf(desc)};
+  const ref=desc?monOf(desc):alta?monOf(alta):null;if(!ref)return null;
+  const w=Math.round((new Date(thisMon+'T12:00')-new Date(ref+'T12:00'))/(7*864e5));
+  return desc?{n:w,now:w===0,desde:desc}:{n:w+1,alta:true,desde:alta}}
+function dlCls(n){return n>=7?'wk-b':n>=5?'wk-t':'wk-n'}
+function dlChip(dl){if(!dl)return '';if(dl.fut)return `<i class="wk-n">🔋 Descarga la sem. del ${fmtDM(dl.fut)}</i>`;if(dl.now)return `<i class="wk-d">🔋 Semana de descarga</i>`;
+  return `<i class="${dlCls(dl.n)}">🔋 ${dl.n} sem sin descarga</i>`}
+function liveDl(){return dlInfo(FICHA.descargaAt||'',FICHA.alta||'')}
+function setDescarga(v){if(v==='this')FICHA.descargaAt=monOf(iso(new Date()));else if(v==='next')FICHA.descargaAt=nextMonday();else FICHA.descargaAt=v||'';
+  save();refreshItem();renderCoach();toast(FICHA.descargaAt?'Descarga anotada: semana del '+fmtDM(FICHA.descargaAt):'Descarga borrada')}
+function weekPanel(){const w=liveWk(),dl=liveDl();
+  const step=(ok,title,txt,btn)=>`<div class="wkp-s ${ok}"><b>${title}</b><span>${txt}</span>${btn||''}</div>`;
+  const go=(t,l)=>`<button class="btn ghost sm" type="button" onclick="coachTab='${t}';renderCoach()">${l}</button>`;
+  const s1=w.rev==='todo'?step('todo','1 · Corregir revisión',`Tiene la revisión del <b>${fmtDM(w.fecha)}</b> sin corregir.`,go('checkins','Ir a Check-ins →'))
+    :w.rev==='done'?step('done','1 · Revisión ✓',`Corregiste la revisión del ${fmtDM(w.fecha)}.`)
+    :step('none','1 · Revisión','Aún no ha enviado la revisión de esta semana.');
+  const s2=w.pau==='todo'?step('todo','2 · Pautar entreno',`Falta pautar la <b>semana del ${fmtDM(nextMonday())}</b>.`,go('sesiones','Ir a Sesiones →'))
+    :w.pau==='done'?step('done','2 · Entreno pautado ✓',`Pautado el ${fmtDM(w.pAt)}.`)
+    :step('none','2 · Pautar entreno',w.rev==='none'?'Cuando corrijas su revisión, aquí verás si falta pautar.':'—');
+  let dt,cls;if(!dl){dt='Pon su fecha de alta en la Ficha o marca su última descarga.';cls='none'}
+  else if(dl.fut){dt=`Descarga programada la <b>semana del ${fmtDM(dl.fut)}</b>.`;cls='done'}
+  else if(dl.now){dt='<b>Esta semana está de descarga.</b>';cls='done'}
+  else{dt=`Lleva <b>${dl.n} semana${dl.n===1?'':'s'}</b> entrenando sin descarga (${dl.alta?'desde el alta':'última descarga: semana del '+fmtDM(dl.desde)}).${dl.n>=5?' <b>Toca valorar una descarga</b> (cada 4-6 semanas).':''}`;cls=dl.n>=7?'bad':dl.n>=5?'todo':'none'}
+  const s3=step(cls,'🔋 Descarga',dt,`<div class="row" style="gap:6px;margin-top:6px"><button class="btn ghost sm" type="button" onclick="setDescarga('this')">Esta semana es descarga</button><button class="btn ghost sm" type="button" onclick="setDescarga('next')">La próxima es descarga</button><input type="date" title="Otra fecha" value="${FICHA.descargaAt||''}" onchange="setDescarga(this.value)" style="padding:4px 6px"></div>`);
+  return `<div class="panel wkp"><span class="lbl">Esta semana con ${esc(CLIENT.name.split(' ')[0])}</span><div class="wkp-g">${s1}${s2}${s3}</div></div>`}
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':s.st==='warn'?'Pendiente':'Revisar'}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk,live?liveDl():dlInfo((s.adm||{}).descarga_at||'',(s.adm||{}).alta||''))}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':esc(s.t)}</span></button>`;
 }
 async function selectClient(id){
   refreshItem();PDRAFT={};
@@ -694,10 +728,10 @@ let RC_BUSY=false;
 function renderCoach(){if(RC_BUSY)return void setTimeout(renderCoach);RC_BUSY=true;try{_renderCoach()}finally{RC_BUSY=false}}
 function _renderCoach(){setTimeout(placeCalc);
   const el=document.getElementById('coachView');
-  const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina']];
+  const T=[['ficha','Ficha'],['dieta','Dieta'],['peso','Peso'],['sesiones','Sesiones'],['ejercicios','Ejercicios'],['diario','Diario'],['checkins','Check-ins'],['rutina','Rutina'],['pl','Powerlifting']];
   const c=String(coachSel).startsWith('__')?null:CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
-  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}${(()=>{const A=activeCL().map(c=>c.id===(CUR&&CUR.id)?liveWk():c.wk).filter(Boolean);const r=A.filter(w=>w.rev==='todo').length,pa=A.filter(w=>w.pau==='todo').length;return r||pa?` <span class="wksum">· ${r?r+' por revisar':''}${r&&pa?' · ':''}${pa?pa+' por pautar':''}</span>`:''})()}</span>
+  <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}${(()=>{const A=activeCL().map(c=>c.id===(CUR&&CUR.id)?liveWk():c.wk).filter(Boolean);const r=A.filter(w=>w.rev==='todo').length,pa=A.filter(w=>w.pau==='todo').length;return r||pa?` <span class="wksum">· ${r?r+' por corregir':''}${r&&pa?' · ':''}${pa?pa+' por pautar':''}</span>`:''})()}</span>
     ${CL.map(coachItem).join('')}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
     <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
@@ -705,6 +739,7 @@ function _renderCoach(){setTimeout(placeCalc);
   <section class="cmain">
     ${coachSel==='__pend'?cPend():coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
     <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${c.linked?`<small class="muted">Última vez en la app: ${seenBadge(c.seen)}</small>`:''}${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><button class="btn ghost sm" type="button" onclick="openSocial()">📲 Imagen para redes</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
+    ${weekPanel()}
     <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
       <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
       <div class="field" style="flex:2"><label for="phS">${PROG().w}</label><select id="phS" onchange="S.phase=+this.value;save();setTimeout(renderCoach)">${PH().map((p,i)=>`<option value="${i}" ${S.phase===i?'selected':''}>${PROG().w} ${i+1} · ${esc(p.n)}</option>`).join('')}</select></div>
@@ -712,7 +747,7 @@ function _renderCoach(){setTimeout(placeCalc);
       <div class="field"><label for="wtS">Semanas de esta fase</label><input id="wtS" type="number" min="1" max="52" value="${S.weeksPhase}" onchange="S.weeksPhase=Math.max(S.week,+this.value||1);save();setTimeout(renderCoach)"></div></div>
       <p class="small muted" style="margin:0">Alarga o acorta la fase cambiando «Semanas de esta fase». El cliente lo ve al momento en su Inicio.</p></div>
     <div class="tabs">${T.map(([k,l])=>`<button type="button" class="${coachTab===k?'on':''}" onclick="coachTab='${k}';renderCoach()">${l}${k==='sesiones'&&exNotes(7).length?` <span class="ntc" title="Notas de los últimos 7 días">💬 ${exNotes(7).length}</span>`:''}</button>`).join('')}</div>
-    ${({ficha:cFicha,dieta:cDieta,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,plan:cDieta})[coachTab]()}`}
+    ${({ficha:cFicha,dieta:cDieta,peso:cPeso,sesiones:cSes,ejercicios:cEj,diario:cDiario,checkins:cChecks,rutina:cRutina,pl:cPL,plan:cDieta})[coachTab]()}`}
   </section></div>`;
 }
 // ---- dar de alta un cliente nuevo
@@ -992,6 +1027,16 @@ function saveAsTpl(){const n=TPL_MINE.length+1;TPL_MINE.push({name:'Mi plantilla
 boot();
 
 // ================= CALCULADORA DE DIETAS DENTRO DEL PANEL =================
+// ---- Powerlifting Planner (pl/index.html) dentro de la ficha del cliente; se guarda en la tabla powerlifting
+let PL={frame:null,id:null,t:null};
+function cPL(){setTimeout(plMount);return `<div class="panel"><span class="lbl">Powerlifting Planner · ${esc(CLIENT.name)}</span><p class="small muted" style="margin:0">Programa de básicos (sentadilla, banca, muerto…) por bloques, con RPE, puntos débiles y competición. Se guarda solo en su ficha. ¿Ya lo tenías en el Planner del ordenador? Exporta el backup allí y pulsa <b>⬆ Importar del Planner del ordenador</b> aquí.</p></div><div id="plSlot"><p class="muted">Cargando el Planner…</p></div>`}
+function plMount(){const slot=document.getElementById('plSlot');if(!slot||!CUR)return;const f=document.createElement('iframe');f.src='pl/index.html?embed=1';f.title='Powerlifting Planner';f.className='calc-frame';slot.innerHTML='';slot.appendChild(f);PL.frame=f;PL.id=CUR.id}
+window.addEventListener('message',async e=>{if(e.origin!==location.origin||!e.data||!e.data.ys||!PL.frame||e.source!==PL.frame.contentWindow)return;const m=e.data,id=PL.id;
+  if(m.type==='ready'){let d=null;try{d=await db.getPL(id)}catch(x){toast('No se ha podido cargar su powerlifting: '+authMsg(x))}
+    const kg=(()=>{try{const W=allWeights();return W.length?W[W.length-1].peso:null}catch(x){return null}})();
+    PL.frame.contentWindow.postMessage({ys:true,type:'load',id,data:d,name:CLIENT.name,peso:kg,sexo:FICHA.sexo==='Mujer'?'F':'M'},location.origin)}
+  if(m.type==='save'&&m.data){clearTimeout(PL.t);PL.t=setTimeout(async()=>{try{await db.savePL(id,m.data)}catch(x){toast('No se ha guardado el powerlifting: '+authMsg(x))}},400)}
+});
 // La Calculadora original (calc/index.html) va en un marco que no se recarga al cambiar de pestaña.
 // Guarda sus datos de cada cliente en la tabla diet_calc; «Enviar plan a la app» pasa el protocolo al cliente.
 let CALC={frame:null,ready:false,forId:null,saveT:null,pending:null,exportCb:null,full:false};

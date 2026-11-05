@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Powerlifting Planner · Yaronska_Fit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--surface:#151515;--surface2:#1d1d1d;--border:#2e2e2e;--text:#f5f5f5;--dim:#a3a3a3;--mute:#6b6b6b;
+  --y:#FFD60A;--y2:#ffe55c;--ydim:rgba(255,214,10,.12);--red:#ef4444;--green:#22c55e;--orange:#f59e0b;--blue:#60a5fa;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+h1,h2,h3,h4,.cond{font-family:"Barlow Condensed",Inter,sans-serif;letter-spacing:.3px;margin:0}
+h2{font-size:26px;font-weight:800;text-transform:uppercase}
+h3{font-size:19px;font-weight:700;text-transform:uppercase;color:var(--y)}
+h4{font-size:16px;font-weight:700;text-transform:uppercase}
+a{color:var(--y)}
+header{position:sticky;top:0;z-index:50;background:#000;border-bottom:2px solid var(--y)}
+.hbar{display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap}
+.logo{font-family:"Barlow Condensed",Inter,sans-serif;font-weight:800;font-size:24px;letter-spacing:.5px;white-space:nowrap}
+.logo b{color:var(--y)}
+.logo small{display:block;font-size:11px;letter-spacing:3px;color:var(--dim);font-weight:600;margin-top:-4px}
+.hsp{flex:1}
+nav.tabs{display:flex;gap:2px;padding:0 12px;overflow-x:auto;background:#000}
+nav.tabs button{background:none;border:none;color:var(--dim);font:700 15px "Barlow Condensed",Inter,sans-serif;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button.on{color:var(--y);border-bottom-color:var(--y)}
+nav.tabs button:hover{color:var(--text)}
+main{max-width:1400px;margin:0 auto;padding:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card.y{border-color:var(--y)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font:inherit;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--y)}
+input[type=number]{width:100%}
+textarea{width:100%;min-height:70px;resize:vertical}
+input[type=checkbox]{accent-color:var(--y);width:16px;height:16px}
+.btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px 13px;font:600 13px Inter;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--y)}
+.btn.p{background:var(--y);color:#000;border-color:var(--y)}
+.btn.p:hover{background:var(--y2)}
+.btn.s{padding:4px 8px;font-size:12px}
+.btn.d{color:var(--red)}
+.btn.d:hover{border-color:var(--red)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--dim)}
+.chip.y{background:var(--ydim);border-color:var(--y);color:var(--y)}
+.chip.r{background:rgba(239,68,68,.12);border-color:var(--red);color:#fca5a5}
+.chip.g{background:rgba(34,197,94,.12);border-color:var(--green);color:#86efac}
+.muted{color:var(--dim)}.mute2{color:var(--mute)}
+.small{font-size:12px}
+.big{font:800 34px "Barlow Condensed",Inter,sans-serif;color:var(--y);line-height:1}
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px}
+.kpi .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.kpi .val{font:800 28px "Barlow Condensed",Inter,sans-serif;line-height:1.1}
+.kpi .sub{font-size:12px;color:var(--dim)}
+table{width:100%;border-collapse:collapse}
+th{font:700 12px "Barlow Condensed",Inter,sans-serif;text-transform:uppercase;letter-spacing:.6px;color:var(--y);text-align:left;padding:6px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:5px 6px;border-bottom:1px solid #222;vertical-align:middle}
+td input,td select{padding:4px 6px;font-size:13px}
+td input.n{width:58px;text-align:center}
+td input.n2{width:70px;text-align:center}
+.tbl-wrap{overflow-x:auto}
+.empty{padding:36px;text-align:center;color:var(--dim);border:1px dashed var(--border);border-radius:var(--r)}
+.note{border-left:3px solid var(--y);background:var(--ydim);padding:10px 12px;border-radius:0 8px 8px 0;margin:8px 0}
+.note.r{border-color:var(--red);background:rgba(239,68,68,.08)}
+.note.g{border-color:var(--green);background:rgba(34,197,94,.08)}
+ul.clean{margin:6px 0;padding-left:18px}
+ul.clean li{margin:3px 0}
+.timeline{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);min-height:58px}
+.tl-b{position:relative;padding:7px 8px;color:#000;font-weight:700;font-size:12px;overflow:hidden;border-right:2px solid #000;cursor:pointer;min-width:34px}
+.tl-b:last-child{border-right:none}
+.tl-b .t{font:800 14px "Barlow Condensed",Inter,sans-serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-b .w{font-size:11px;opacity:.8;white-space:nowrap}
+.tl-b.sel{outline:3px solid #fff;outline-offset:-3px}
+.weeks-scale{display:flex;font-size:10px;color:var(--mute);margin-top:4px}
+.weeks-scale div{flex:1;text-align:center;border-left:1px solid #222}
+.blist .bi{display:grid;grid-template-columns:30px 1.6fr 90px 120px 110px auto;gap:8px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface2)}
+.blist .bi.sel{border-color:var(--y)}
+.dot{width:14px;height:14px;border-radius:4px;display:inline-block}
+.day{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px}
+.day-h{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
+.day-h h4{color:var(--y)}
+.day-b{padding:6px 10px 10px}
+.role{font:700 11px Inter;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.role.H{background:var(--y);color:#000}
+.role.L{background:#3a3a3a;color:#ddd}
+.role.V{background:#2b2b10;color:var(--y);border:1px solid #6b5d00}
+.role.A{background:#1e1e1e;color:#aaa;border:1px solid #333}
+.role.C{background:var(--red);color:#fff}
+.wk-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.wk-tabs button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);padding:6px 11px;border-radius:7px;cursor:pointer;font:700 14px "Barlow Condensed",Inter,sans-serif;text-transform:uppercase}
+.wk-tabs button.on{background:var(--y);color:#000;border-color:var(--y)}
+.wk-tabs button.dl{border-style:dashed}
+.rec{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface2)}
+.rec.on{border-color:var(--y);background:#1a1806}
+.rec .sc{font:800 16px "Barlow Condensed",Inter,sans-serif;color:var(--y);min-width:26px;text-align:center}
+.bar{height:8px;border-radius:4px;background:#2a2a2a;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--y)}
+.pill-sel{display:flex;gap:4px}
+.pill-sel button{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--dim);padding:6px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px}
+.pill-sel button.on.debil{background:rgba(239,68,68,.15);border-color:var(--red);color:#fca5a5}
+.pill-sel button.on.normal{background:#262626;border-color:#777;color:#fff}
+.pill-sel button.on.fuerte{background:rgba(34,197,94,.15);border-color:var(--green);color:#86efac}
+.wp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:4px 14px}
+.wp-grid label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer;font-size:13px}
+.guide h3{margin-top:6px}
+.guide p{margin:6px 0}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--y);color:#000;padding:10px 16px;border-radius:8px;font-weight:700;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.5);transition:opacity .3s}
+svg text{font-family:Inter,sans-serif}
+.attempt{font:800 26px "Barlow Condensed",Inter,sans-serif}
+.sticky-actions{padding:6px 0 4px}
+@media (max-width:720px){
+  main{padding:12px}
+  .blist .bi{grid-template-columns:24px 1fr 70px;}
+  .blist .bi>*:nth-child(n+4){grid-column:span 3}
+  .hbar{padding:8px 12px}
+}
+@media print{
+  header,nav,.noprint,.btn{display:none!important}
+  body,html{background:#fff;color:#000}
+  .card,.day{border-color:#999;background:#fff;break-inside:avoid}
+  td,th{color:#000;border-color:#bbb}
+  input,select{border:none;background:none;color:#000;padding:0}
+  .day-h h4,h3{color:#000}
+  .role{border:1px solid #000;background:#fff!important;color:#000!important}
+  main{max-width:none;padding:0}
+}
+html.ys-embed #athSel,html.ys-embed .hbar>.btn:not(.ys-only),html.ys-embed .hbar .logo{display:none!important}
+html.ys-embed .hbar{padding:8px 12px}
+html.ys-embed main{padding:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo">YARONSKA<b>_FIT</b><small>POWERLIFTING PLANNER</small></div>
+    <select id="athSel" onchange="selectAthlete(this.value)" style="min-width:200px"></select>
+    <button class="btn p" onclick="newAthlete()">+ Atleta</button>
+    <div class="hsp"></div>
+    <button class="btn ys-only" style="display:none" onclick="document.getElementById('impFile').click()">⬆ Importar del Planner del ordenador</button>
+    <button class="btn" onclick="exportData()">⬇ Exportar backup</button>
+    <button class="btn" onclick="document.getElementById('impFile').click()">⬆ Importar</button>
+    <input type="file" id="impFile" accept=".json,.txt" style="display:none" onchange="importData(event)">
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="main"></main>
+<script>
+// ===================== DATOS BASE =====================
+const LIFTS={sq:'Sentadilla',bp:'Press banca',dl:'Peso muerto',ht:'Hip thrust',pu:'Dominadas lastradas',dp:'Fondos lastrados'};
+const LK=['sq','bp','dl'];            // levantamientos de competición IPF
+const ALL_L=['sq','bp','dl','ht','pu','dp']; // todos los básicos programables
+const BW_L=['pu','dp'];               // el RM se introduce como lastre; la carga se calcula sobre peso corporal + lastre
+const ACC_DUP={ht:'a_hipthrust',pu:'a_jalon',dp:'a_fondos'}; // accesorios que se ocultan si ese básico está activo
+const NIVELES={novato:'Novato (<1 año)',intermedio:'Intermedio (1-3 años)',avanzado:'Avanzado (3-6 años)',elite:'Élite / Nacional'};
+const WEEKDAYS={2:['Lun','Jue'],3:['Lun','Mié','Vie'],4:['Lun','Mar','Jue','Vie'],5:['Lun','Mar','Mié','Vie','Sáb'],6:['Lun','Mar','Mié','Jue','Vie','Sáb']};
+const WDPOS={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,4,5],6:[0,1,2,3,4,5]};
+
+// Tabla RPE (Tuchscherer / RTS) — % del 1RM según repeticiones efectivas (reps + RIR)
+const RTS=[null,100,95.5,92.2,89.2,86.3,83.7,81.1,78.6,76.2,73.9,70.7,68.0,65.3,62.6,59.9,57.4,55.0];
+
+// Categorías de peso IPF
+const IPF_CAT={M:[59,66,74,83,93,105,120,'120+'],F:[47,52,57,63,69,76,84,'84+']};
+
+// Reparto típico del total en raw clásico
+const SHARE_REF={M:{sq:.355,bp:.245,dl:.40},F:{sq:.36,bp:.215,dl:.425}};
+
+// ---------- PUNTOS DÉBILES ----------
+const WEAK=[
+ // Sentadilla
+ {id:'sq_hoyo',l:'sq',n:'Falla en el hoyo / salida desde abajo',tip:'Pausas y arranques desde parado. Evitar depender del rebote. Cuádriceps y aductores fuertes.'},
+ {id:'sq_mitad',l:'sq',n:'Falla a mitad de recorrido (sticking point)',tip:'Pines a la altura del fallo, pausas a mitad y resistencia acomodada. Revisar que no pierda posición del torso al salir.'},
+ {id:'sq_torso',l:'sq',n:'El torso se inclina ("good morning") al subir',tip:'Espalda alta y erectores: frontal, SSB, buenos días. Cue: "pecho y espalda alta contra la barra" al salir.'},
+ {id:'sq_valgo',l:'sq',n:'Rodillas hacia dentro (valgo)',tip:'Tempo y pausas para control, trabajo de glúteo medio y aductores. Si es leve y no duele, no obsesionarse.'},
+ {id:'sq_prof',l:'sq',n:'Problemas para alcanzar profundidad legal',tip:'Movilidad de tobillo/cadera, pausas en profundidad, revisar anchura de pies y calzado (tacón si es high-bar).'},
+ {id:'sq_quad',l:'sq',n:'Cuádriceps débiles',tip:'High-bar, frontal, prensa, hack y extensiones. Mucho volumen en bloques de hipertrofia.'},
+ {id:'sq_post',l:'sq',n:'Cadena posterior / cadera débil',tip:'Box squat, buenos días, rumano, hip thrust. Low-bar si el atleta va en high-bar.'},
+ {id:'sq_tec',l:'sq',n:'Técnica inconsistente / trayectoria',tip:'Más frecuencia con cargas submáximas (RPE 6-7), tempo y pausas, grabar todas las series top.'},
+ // Banca
+ {id:'bp_pecho',l:'bp',n:'Falla al separar la barra del pecho',tip:'Pausas largas, Spoto, agarre ancho y pectoral (inclinado, aperturas). Revisar leg drive en la orden "Press".'},
+ {id:'bp_mitad',l:'bp',n:'Falla a mitad de recorrido',tip:'Pin press a mitad, agarre cerrado, bandas/cadenas. Suele ser transición pecho→tríceps.'},
+ {id:'bp_bloqueo',l:'bp',n:'Falla en el bloqueo (tríceps)',tip:'Agarre cerrado, board press, pines altos, JM press, fondos y extensiones de tríceps.'},
+ {id:'bp_tension',l:'bp',n:'Pierde tensión, arco o leg drive',tip:'Larsen, pausas largas y Spoto. Setup sistemático: escápulas, arco, pies anclados antes de la salida.'},
+ {id:'bp_pausa',l:'bp',n:'Pierde mucha fuerza con la pausa de competición',tip:'Todo el trabajo principal con pausa. Pausas largas de 2-3 s. Nunca touch & go en series top.'},
+ {id:'bp_trayect',l:'bp',n:'Trayectoria inestable / codos',tip:'Tempo, Spoto y espalda (remos, jalones, face pulls) para estabilizar la base.'},
+ {id:'bp_hombro',l:'bp',n:'Hombros / estabilidad escapular',tip:'Face pulls, press militar, Larsen. Controlar volumen total de empuje si hay molestias.'},
+ // Peso muerto
+ {id:'dl_suelo',l:'dl',n:'Falla al despegar del suelo',tip:'Déficit, pausa a 2-5 cm, cuádriceps (frontal). En sumo: déficit sumo y cuña de cadera.'},
+ {id:'dl_rodilla',l:'dl',n:'Falla al pasar la rodilla',tip:'Pausa bajo rodilla, bloques bajo rodilla, bandas. Mantener barra pegada.'},
+ {id:'dl_bloqueo',l:'dl',n:'Falla en el bloqueo (cadera)',tip:'Rack pulls, hip thrust, rumano, bandas. Glúteo e isquios.'},
+ {id:'dl_espalda',l:'dl',n:'La espalda se redondea',tip:'Pausas, tempo, remos pesados y dorsal. Bracing y "cerrar axilas" antes del despegue.'},
+ {id:'dl_cadera',l:'dl',n:'Las caderas suben antes que los hombros',tip:'Pausa al despegue, déficit y cuádriceps (frontal, prensa). Cue: "empuja el suelo".'},
+ {id:'dl_agarre',l:'dl',n:'El agarre limita',tip:'Doble prono, holds pesados, farmer walks. Usar magnesio y valorar agarre mixto/gancho.'},
+ {id:'dl_barra',l:'dl',n:'La barra se separa del cuerpo',tip:'Pullover en polea (straight-arm), pausa bajo rodilla, tempo. Activar dorsal en el setup.'},
+ // General
+ {id:'g_masa',l:'g',n:'Falta de masa muscular general',tip:'Bloques de hipertrofia más largos, más accesorios y rango 6-12 reps. La fuerza máxima depende de la sección transversal.'},
+ {id:'g_tolerancia',l:'g',n:'Poca tolerancia a cargas pesadas (>90%)',tip:'Singles de exposición a RPE 7-8 durante fuerza/intensificación, holds y supramáximos parciales. Peaking más largo.'},
+ {id:'g_capacidad',l:'g',n:'Baja capacidad de trabajo / poco volumen tolerado',tip:'Empezar bloques con menos series e ir sumando. Subir volumen de forma progresiva bloque a bloque.'},
+ {id:'g_recup',l:'g',n:'Recuperación limitada (sueño, estrés, trabajo)',tip:'Descargas más frecuentes, menos accesorios y peso muerto pesado como máximo 1 vez/semana.'},
+ {id:'g_tecnica',l:'g',n:'Poca experiencia técnica',tip:'Alta frecuencia y cargas submáximas. Más variantes con pausa/tempo. Bloque de técnica al inicio.'},
+ {id:'g_core',l:'g',n:'Core / bracing débil',tip:'Rueda abdominal, Pallof, planchas con carga. Enseñar bracing 360º con cinturón.'},
+ {id:'g_movilidad',l:'g',n:'Movilidad limitada (cadera, tobillo, hombro)',tip:'Calentamientos específicos, goblet con pausa, búlgara. Ajustar técnica a la anatomía del atleta.'}
+];
+const STRONG=[
+ {id:'f_volumen',n:'Tolera mucho volumen',tip:'+1 serie en trabajo principal y variantes en bloques de volumen.'},
+ {id:'f_recupera',n:'Recupera rápido',tip:'Permite +1 sesión semanal en el levantamiento débil.'},
+ {id:'f_intensidad',n:'Rinde muy bien con cargas máximas',tip:'Peaking corto (2 semanas) suele bastar.'},
+ {id:'f_tecnica',n:'Técnica sólida y estable',tip:'Puede usar variantes menos específicas más tiempo sin perder patrón.'},
+ {id:'f_masa',n:'Buena base muscular',tip:'Bloques de hipertrofia más cortos, más tiempo en fuerza.'}
+];
+
+// ---------- BIBLIOTECA DE EJERCICIOS ----------
+// t: comp | var | acc ; e: especificidad 1-5 ; f: factor de carga vs 1RM de competición ; ln: levantamiento al que asiste (accesorios) ; only: estilo requerido
+const EX=[
+ {id:'sq_comp',n:'Sentadilla de competición',l:'sq',t:'comp',e:5,f:1,wp:[],w:'Movimiento de competición. Máxima especificidad.'},
+ {id:'sq_pausa',n:'Sentadilla con pausa (2-3 s)',l:'sq',t:'var',e:4,f:.88,wp:['sq_hoyo','sq_tec','sq_torso','sq_valgo','g_tecnica','sq_prof'],w:'Elimina el rebote y obliga a salir del hoyo con tensión y posición. La variante más transferible.'},
+ {id:'sq_pin_bajo',n:'Sentadilla desde pines (paralelo)',l:'sq',t:'var',e:3,f:.85,wp:['sq_hoyo'],w:'Concéntrica pura desde parado en el punto más bajo: fuerza de arranque.'},
+ {id:'sq_pin_medio',n:'Sentadilla desde pines (altura del sticking point)',l:'sq',t:'var',e:3,f:.95,wp:['sq_mitad'],w:'Sobrecarga específica del rango donde falla.'},
+ {id:'sq_pausa_mitad',n:'Sentadilla con pausa a mitad de subida',l:'sq',t:'var',e:3,f:.85,wp:['sq_mitad','sq_torso'],w:'Enseña a mantener posición y re-acelerar en el punto de estancamiento.'},
+ {id:'sq_tempo',n:'Sentadilla tempo (3 s bajada + 1 s pausa)',l:'sq',t:'var',e:3,f:.8,wp:['sq_tec','sq_valgo','sq_torso','g_tecnica','sq_prof'],w:'Control excéntrico, consciencia de posición y trayectoria.'},
+ {id:'sq_frontal',n:'Sentadilla frontal',l:'sq',t:'var',e:2,f:.8,wp:['sq_torso','sq_quad','sq_hoyo','dl_cadera','dl_suelo'],w:'Torso vertical, cuádriceps y espalda alta. Corrige el "good morning".'},
+ {id:'sq_ssb',n:'Sentadilla con barra Safety (SSB)',l:'sq',t:'var',e:3,f:.88,wp:['sq_torso','sq_hoyo','dl_espalda','bp_hombro'],w:'La barra empuja hacia delante: espalda alta y erectores. Descansa hombros y codos.'},
+ {id:'sq_highbar',n:'Sentadilla high-bar',l:'sq',t:'var',e:3,f:.92,wp:['sq_quad','sq_torso','sq_hoyo','g_masa'],w:'Más cuádriceps y torso más vertical que la low-bar.',only:'lowbar'},
+ {id:'sq_lowbar',n:'Sentadilla low-bar',l:'sq',t:'var',e:3,f:1.03,wp:['sq_post','g_tolerancia'],w:'Más cadera y cadena posterior; permite mover más carga.',only:'highbar'},
+ {id:'sq_box',n:'Sentadilla al cajón (box squat)',l:'sq',t:'var',e:2,f:.88,wp:['sq_post','sq_tec','sq_prof'],w:'Rompe el ciclo estiramiento-acortamiento y enseña a sentarse atrás con la cadera.'},
+ {id:'sq_14',n:'Sentadilla 1 y 1/4',l:'sq',t:'var',e:2,f:.78,wp:['sq_hoyo','sq_quad','sq_mitad'],w:'Doble paso por el rango más difícil; mucho tiempo bajo tensión.'},
+ {id:'sq_bandas',n:'Sentadilla con bandas o cadenas',l:'sq',t:'var',e:3,f:.8,wp:['sq_mitad'],w:'Resistencia acomodada: obliga a acelerar a través del sticking point.'},
+ {id:'sq_walkout',n:'Walkouts / holds pesados (105-120%)',l:'sq',t:'var',e:2,f:1.1,wp:['g_tolerancia'],w:'Habituación a cargas supramáximas sin el coste de un recorrido completo.'},
+
+ {id:'bp_comp',n:'Press banca de competición (pausa)',l:'bp',t:'comp',e:5,f:1,wp:[],w:'Movimiento IPF: pausa en el pecho hasta la orden "Press".'},
+ {id:'bp_pausa_larga',n:'Press banca con pausa larga (3 s)',l:'bp',t:'var',e:4,f:.93,wp:['bp_pecho','bp_pausa','bp_tension'],w:'Más tiempo en el pecho que en competición: arranque y control de tensión.'},
+ {id:'bp_spoto',n:'Spoto press (pausa a 2-3 cm del pecho)',l:'bp',t:'var',e:3,f:.9,wp:['bp_pecho','bp_trayect','bp_tension'],w:'Pausa sin apoyo: tensión y trayectoria justo antes del pecho.'},
+ {id:'bp_larsen',n:'Larsen press (piernas extendidas)',l:'bp',t:'var',e:3,f:.9,wp:['bp_tension','bp_trayect','bp_hombro'],w:'Sin leg drive: exige estabilidad escapular y tensión de tren superior.'},
+ {id:'bp_tempo',n:'Press banca tempo (3 s bajada)',l:'bp',t:'var',e:3,f:.87,wp:['bp_trayect','bp_pecho','g_tecnica'],w:'Control de la excéntrica y del punto de contacto.'},
+ {id:'bp_cerrado',n:'Press banca agarre cerrado',l:'bp',t:'var',e:3,f:.92,wp:['bp_bloqueo','bp_mitad','g_masa'],w:'Más tríceps; mejora la mitad superior y el bloqueo.'},
+ {id:'bp_ancho',n:'Press banca agarre ancho (máx. legal)',l:'bp',t:'var',e:3,f:.97,wp:['bp_pecho'],w:'Más pectoral y menos recorrido: fuerza desde el pecho.'},
+ {id:'bp_touchgo',n:'Press banca touch & go',l:'bp',t:'var',e:4,f:1.02,wp:['g_capacidad','g_masa'],w:'Más volumen y carga con alta especificidad.'},
+ {id:'bp_board',n:'Board press (2-3 tablas)',l:'bp',t:'var',e:2,f:1.05,wp:['bp_bloqueo','g_tolerancia'],w:'Sobrecarga del bloqueo y habituación a cargas altas.'},
+ {id:'bp_pin_alto',n:'Press desde pines altos',l:'bp',t:'var',e:2,f:1.07,wp:['bp_bloqueo'],w:'Concéntrica pura en el último tercio.'},
+ {id:'bp_pin_medio',n:'Pin press a mitad de recorrido',l:'bp',t:'var',e:2,f:.97,wp:['bp_mitad'],w:'Arranque desde parado justo en el sticking point.'},
+ {id:'bp_bandas',n:'Press banca con bandas o cadenas',l:'bp',t:'var',e:2,f:.82,wp:['bp_mitad','bp_bloqueo'],w:'Resistencia acomodada: aceleración en todo el recorrido.'},
+ {id:'bp_floor',n:'Floor press',l:'bp',t:'var',e:2,f:.93,wp:['bp_bloqueo','bp_mitad'],w:'Sin leg drive ni parte baja: tríceps y bloqueo.'},
+ {id:'bp_inclinado',n:'Press inclinado con barra',l:'bp',t:'var',e:2,f:.8,wp:['bp_pecho','bp_hombro','g_masa'],w:'Pectoral superior y deltoides anterior.'},
+
+ {id:'dl_comp',n:'Peso muerto de competición',l:'dl',t:'comp',e:5,f:1,wp:[],w:'Movimiento de competición. Máxima especificidad.'},
+ {id:'dl_deficit',n:'Peso muerto en déficit (3-5 cm)',l:'dl',t:'var',e:3,f:.88,wp:['dl_suelo','dl_cadera','sq_quad'],w:'Más recorrido y despegue más exigente: fuerza desde el suelo.'},
+ {id:'dl_pausa_suelo',n:'Peso muerto con pausa a 2-5 cm del suelo',l:'dl',t:'var',e:4,f:.85,wp:['dl_suelo','dl_cadera','dl_espalda'],w:'Enseña a mantener la posición en el despegue.'},
+ {id:'dl_pausa_rod',n:'Peso muerto con pausa bajo la rodilla',l:'dl',t:'var',e:4,f:.83,wp:['dl_espalda','dl_barra','dl_cadera','dl_rodilla','g_tecnica'],w:'Isometría en la posición más débil; corrige barra alejada y espalda redondeada.'},
+ {id:'dl_block',n:'Rack pull / bloques (sobre rodilla)',l:'dl',t:'var',e:2,f:1.08,wp:['dl_bloqueo','dl_agarre','g_tolerancia'],w:'Sobrecarga del bloqueo y del agarre con cargas supramáximas.'},
+ {id:'dl_block_bajo',n:'Peso muerto desde bloques (bajo rodilla)',l:'dl',t:'var',e:3,f:1.02,wp:['dl_rodilla','dl_bloqueo'],w:'Paso por la rodilla con más carga.'},
+ {id:'dl_bandas',n:'Peso muerto con bandas',l:'dl',t:'var',e:3,f:.8,wp:['dl_bloqueo','dl_rodilla'],w:'Obliga a acelerar hasta el bloqueo.'},
+ {id:'dl_tempo',n:'Peso muerto tempo (3 s bajada controlada)',l:'dl',t:'var',e:3,f:.8,wp:['dl_espalda','dl_barra','g_tecnica'],w:'Control de posición y trayectoria pegada al cuerpo.'},
+ {id:'dl_rdl',n:'Peso muerto rumano',l:'dl',t:'var',e:2,f:.7,wp:['dl_bloqueo','dl_espalda','sq_post','dl_barra','g_masa'],w:'Isquios, glúteo y erectores: cadena posterior para el bloqueo.'},
+ {id:'dl_stiff',n:'Peso muerto piernas rígidas (stiff-leg)',l:'dl',t:'var',e:2,f:.68,wp:['dl_bloqueo','sq_post','dl_suelo'],w:'Isquios desde estiramiento; fuerza desde el suelo.'},
+ {id:'dl_opuesto',n:'Peso muerto estilo opuesto (sumo↔convencional)',l:'dl',t:'var',e:2,f:.9,wp:['g_capacidad','dl_espalda','g_masa'],w:'Volumen de tirón con menos fatiga específica; refuerza la musculatura que el estilo propio usa menos.'},
+ {id:'dl_dobleprono',n:'Peso muerto agarre doble prono',l:'dl',t:'var',e:3,f:.8,wp:['dl_agarre'],w:'Fuerza de agarre con el patrón de competición.'},
+ {id:'dl_snatch',n:'Peso muerto agarre de arrancada',l:'dl',t:'var',e:2,f:.75,wp:['dl_suelo','dl_espalda','g_masa'],w:'Más recorrido y mucha espalda alta.',only:'conv'},
+
+ // Accesorios
+ // Básicos adicionales (otras modalidades)
+ {id:'ht_comp',n:'Hip thrust con barra',l:'ht',t:'comp',e:5,f:1,wp:[],w:'Básico de glúteo. Movimiento principal del bloque.'},
+ {id:'ht_pausa',n:'Hip thrust con pausa arriba (2 s)',l:'ht',t:'var',e:4,f:.85,wp:['dl_bloqueo'],w:'Control del bloqueo y extensión completa de cadera.'},
+ {id:'ht_tempo',n:'Hip thrust tempo (3 s bajada)',l:'ht',t:'var',e:3,f:.82,wp:[],w:'Tiempo bajo tensión y control excéntrico.'},
+ {id:'ht_bandas',n:'Hip thrust con bandas',l:'ht',t:'var',e:3,f:.8,wp:['dl_bloqueo'],w:'Resistencia acomodada: más exigencia arriba.'},
+ {id:'ht_puente',n:'Puente de glúteo con barra (desde el suelo)',l:'ht',t:'var',e:3,f:1.05,wp:[],w:'Menor recorrido, permite sobrecargar.'},
+ {id:'ht_maquina',n:'Hip thrust en máquina',l:'ht',t:'var',e:2,f:1,wp:['g_masa'],w:'Volumen estable con poca fatiga de setup.'},
+ {id:'ht_uni',n:'Hip thrust unilateral / B-stance',l:'ht',t:'var',e:2,f:.5,wp:['sq_valgo','g_masa'],w:'Corrige asimetrías y estabilidad de cadera.'},
+ {id:'pu_comp',n:'Dominadas lastradas (pronas)',l:'pu',t:'comp',e:5,f:1,wp:[],w:'Básico de tirón vertical. Kg = lastre.'},
+ {id:'pu_pausa',n:'Dominadas con pausa arriba (2 s)',l:'pu',t:'var',e:4,f:.9,wp:['bp_tension'],w:'Fuerza en la posición de bloqueo (barbilla sobre la barra).'},
+ {id:'pu_tempo',n:'Dominadas tempo (4 s bajada)',l:'pu',t:'var',e:3,f:.87,wp:['g_tecnica'],w:'Control excéntrico y trabajo de dorsal en estiramiento.'},
+ {id:'pu_supinas',n:'Dominadas supinas lastradas (chin-up)',l:'pu',t:'var',e:3,f:1.03,wp:['g_masa'],w:'Más bíceps; permite cargar algo más.'},
+ {id:'pu_neutras',n:'Dominadas agarre neutro lastradas',l:'pu',t:'var',e:3,f:1,wp:['bp_hombro'],w:'Más amable con hombros y codos.'},
+ {id:'pu_iso',n:'Isometría pesada arriba / negativas sobrecargadas',l:'pu',t:'var',e:2,f:1.1,wp:['g_tolerancia'],w:'Habituación a lastres por encima del RM.'},
+ {id:'dp_comp',n:'Fondos lastrados',l:'dp',t:'comp',e:5,f:1,wp:[],w:'Básico de empuje en paralelas. Kg = lastre.'},
+ {id:'dp_pausa',n:'Fondos con pausa abajo (2 s)',l:'dp',t:'var',e:4,f:.9,wp:['bp_pecho'],w:'Elimina el rebote en la posición baja.'},
+ {id:'dp_tempo',n:'Fondos tempo (3 s bajada)',l:'dp',t:'var',e:3,f:.87,wp:['g_tecnica'],w:'Control del recorrido y del hombro.'},
+ {id:'dp_anillas',n:'Fondos en anillas',l:'dp',t:'var',e:3,f:.75,wp:['bp_hombro'],w:'Estabilidad de hombro y control.'},
+ {id:'dp_parcial',n:'Fondos parciales / isometría arriba (sobrecarga)',l:'dp',t:'var',e:2,f:1.12,wp:['bp_bloqueo','g_tolerancia'],w:'Bloqueo y tolerancia a lastres altos.'},
+
+ {id:'a_prensa',n:'Prensa de piernas (profunda)',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_quad','sq_hoyo','g_masa'],w:'Cuádriceps con poca fatiga axial.'},
+ {id:'a_hack',n:'Sentadilla hack / péndulo',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_quad','g_masa'],w:'Hipertrofia de cuádriceps estable.'},
+ {id:'a_bulgara',n:'Sentadilla búlgara',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_valgo','sq_quad','g_movilidad','g_masa'],w:'Unilateral: control de rodilla, glúteo y cuádriceps.'},
+ {id:'a_extq',n:'Extensión de cuádriceps',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_quad','g_masa'],w:'Aislamiento de cuádriceps.'},
+ {id:'a_abd',n:'Abducción de cadera / monster walks',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_valgo'],w:'Glúteo medio para estabilidad de rodilla.'},
+ {id:'a_goblet',n:'Sentadilla goblet con pausa',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_prof','g_movilidad','g_tecnica'],w:'Movilidad activa y posición en profundidad.'},
+ {id:'a_aduct',n:'Aductores (máquina / Copenhague)',l:'acc',ln:'sq',t:'acc',e:1,wp:['sq_hoyo','sq_valgo'],w:'Los aductores son clave en la salida del hoyo.'},
+ {id:'a_gm',n:'Buenos días con barra',l:'acc',ln:'dl',t:'acc',e:1,wp:['sq_torso','sq_post','dl_bloqueo','dl_espalda'],w:'Erectores e isquios: torso fuerte en sentadilla y bloqueo en muerto.'},
+ {id:'a_hipthrust',n:'Hip thrust',l:'acc',ln:'dl',t:'acc',e:1,wp:['dl_bloqueo','sq_post','g_masa'],w:'Glúteo en acortamiento: bloqueo del peso muerto.'},
+ {id:'a_hiperext',n:'Hiperextensiones / back extension',l:'acc',ln:'dl',t:'acc',e:1,wp:['dl_bloqueo','dl_espalda','sq_torso'],w:'Erectores y glúteo con bajo coste.'},
+ {id:'a_femoral',n:'Curl femoral',l:'acc',ln:'dl',t:'acc',e:1,wp:['sq_post','g_masa'],w:'Isquios y salud de rodilla.'},
+ {id:'a_pendlay',n:'Remo Pendlay / remo con barra',l:'acc',ln:'dl',t:'acc',e:1,wp:['dl_espalda','sq_torso','bp_tension','g_masa'],w:'Espalda alta y media gruesa.'},
+ {id:'a_straight',n:'Pullover en polea (straight-arm)',l:'acc',ln:'dl',t:'acc',e:1,wp:['dl_barra','dl_espalda'],w:'Dorsal para mantener la barra pegada.'},
+ {id:'a_farmer',n:'Holds pesados / farmer walk',l:'acc',ln:'dl',t:'acc',e:1,wp:['dl_agarre'],w:'Agarre y tolerancia a carga.'},
+ {id:'a_remopecho',n:'Remo con apoyo en pecho / mancuerna',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_trayect','bp_tension','dl_espalda','g_masa'],w:'Espalda que estabiliza la banca sin fatigar lumbar.'},
+ {id:'a_jalon',n:'Jalón al pecho / dominadas',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_tension','bp_trayect','dl_barra','g_masa'],w:'Dorsal: base estable en banca y barra pegada en muerto.'},
+ {id:'a_pressmanc',n:'Press con mancuernas plano',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_pecho','bp_hombro','g_masa'],w:'Pectoral con rango amplio.'},
+ {id:'a_militar',n:'Press militar',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_hombro','bp_bloqueo','g_masa'],w:'Deltoides y tríceps.'},
+ {id:'a_jm',n:'JM press',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_bloqueo'],w:'Tríceps en patrón muy transferible al bloqueo.'},
+ {id:'a_triceps',n:'Extensiones de tríceps / press francés',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_bloqueo','g_masa'],w:'Hipertrofia de tríceps.'},
+ {id:'a_fondos',n:'Fondos lastrados',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_bloqueo','bp_pecho','g_masa'],w:'Pectoral inferior y tríceps.'},
+ {id:'a_aperturas',n:'Aperturas en polea / mancuernas',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_pecho','g_masa'],w:'Pectoral en estiramiento.'},
+ {id:'a_facepull',n:'Face pulls',l:'acc',ln:'bp',t:'acc',e:1,wp:['bp_hombro','bp_trayect'],w:'Manguito y deltoides posterior: salud de hombro.'},
+ {id:'a_rueda',n:'Rueda abdominal',l:'acc',ln:'core',t:'acc',e:1,wp:['g_core','sq_torso'],w:'Anti-extensión: bracing.'},
+ {id:'a_plancha',n:'Plancha con carga / dead bug',l:'acc',ln:'core',t:'acc',e:1,wp:['g_core'],w:'Estabilidad del tronco.'},
+ {id:'a_pallof',n:'Pallof press',l:'acc',ln:'core',t:'acc',e:1,wp:['g_core'],w:'Anti-rotación.'},
+ {id:'a_colgado',n:'Elevaciones de piernas colgado',l:'acc',ln:'core',t:'acc',e:1,wp:['g_core','dl_agarre'],w:'Core y agarre.'},
+ {id:'a_movil',n:'Bloque de movilidad cadera/tobillo/torácica',l:'acc',ln:'core',t:'acc',e:1,wp:['g_movilidad','sq_prof'],w:'Rango útil para posiciones de competición.'}
+];
+const EXMAP=Object.fromEntries(EX.map(e=>[e.id,e]));
+
+// ---------- TIPOS DE BLOQUE ----------
+// m: st (series rectas) | tb (top set + back-off) ; s/r/e: [inicio, fin] series, reps, RPE ; bs: series back-off ; drop: % de bajada ; br: reps back-off
+const BLOCKS={
+ tec:{n:'Técnica / Adaptación',c:'#7dd3fc',esp:[3,5],dur:'3-6 sem',
+  obj:'Aprender y automatizar el patrón de competición con cargas submáximas y mucha frecuencia.',
+  rng:'3-5 reps · RPE 6-7.5 · 65-78%',vol:'Moderado',
+  cuando:'Novatos o atletas que vienen de otro deporte. Primer bloque tras una lesión.',
+  P:{H:{m:'st',s:[5,5],r:[5,4],e:[6,7.5]},L:{m:'st',s:[4,4],r:[3,3],e:[6,6.5]},V:{m:'st',s:[3,3],r:[6,6],e:[6.5,7.5]},A:{s:[3,3],r:'10-12',e:[7,8],n:3}}},
+ hip:{n:'Hipertrofia / Acumulación',c:'#a3e635',esp:[1,3],dur:'3-6 sem',
+  obj:'Ganar masa muscular y capacidad de trabajo. Variantes menos específicas y mucho volumen.',
+  rng:'6-10 reps · RPE 6.5-8 · 65-77%',vol:'Alto',
+  cuando:'Lejos de la competición (>12 semanas) o cuando falta masa muscular. Off-season.',
+  P:{H:{m:'st',s:[4,4],r:[8,6],e:[6.5,8]},L:{m:'st',s:[3,3],r:[6,6],e:[6,7]},V:{m:'st',s:[3,4],r:[10,8],e:[6.5,8]},A:{s:[3,4],r:'10-15',e:[7,9],n:3}}},
+ vol:{n:'Volumen 5×5 → 3×3',c:'#2dd4bf',esp:[3,5],dur:'3-6 sem',
+  obj:'Volumen pesado en los básicos: series y repeticiones bajan cada semana (5×5 → 4×4 → 3×3) mientras sube la carga.',
+  rng:'5×5 → 3×3 · RPE 7-8.5 · 76-87%',vol:'Alto → moderado',
+  cuando:'Tras hipertrofia y antes de intensificación, o como bloque de fuerza principal. Muy fácil de seguir y de controlar.',
+  P:{H:{m:'st',s:[5,3],r:[5,3],e:[7,8.5]},L:{m:'st',s:[3,3],r:[3,3],e:[6,6.5]},V:{m:'st',s:[4,3],r:[6,5],e:[7,8]},A:{s:[3,3],r:'8-12',e:[8,8.5],n:2}}},
+ fue:{n:'Fuerza base / Transmutación',c:'#FFD60A',esp:[2,4],dur:'3-5 sem',
+  obj:'Convertir la masa en fuerza. Más carga, menos reps, variantes más cercanas a competición.',
+  rng:'4-6 reps · RPE 7-8.5 · 75-85%',vol:'Moderado-alto',
+  cuando:'Entre hipertrofia e intensificación. 8-16 semanas antes de competir.',
+  P:{H:{m:'tb',r:[5,4],e:[7.5,8.5],bs:[3,3],drop:.08},L:{m:'st',s:[3,3],r:[4,4],e:[6.5,7]},V:{m:'st',s:[4,4],r:[6,5],e:[7,8]},A:{s:[3,3],r:'8-12',e:[8,8.5],n:2}}},
+ int:{n:'Intensificación / Fuerza máxima',c:'#fb923c',esp:[3,5],dur:'3-4 sem',
+  obj:'Tolerar cargas altas (82-92%) con alta especificidad. Baja el volumen, sube la intensidad.',
+  rng:'2-3 reps · RPE 8-9 · 82-92%',vol:'Moderado-bajo',
+  cuando:'5-9 semanas antes de competir, justo antes del peaking.',
+  P:{H:{m:'tb',r:[3,2],e:[8,9],bs:[3,2],drop:.10},L:{m:'st',s:[3,3],r:[3,3],e:[6.5,7]},V:{m:'st',s:[3,3],r:[4,3],e:[7.5,8.5]},A:{s:[2,3],r:'6-10',e:[8,8],n:2}}},
+ pk:{n:'Peaking / Realización',c:'#ef4444',esp:[4,5],dur:'2-4 sem',
+  obj:'Expresar la fuerza máxima: singles pesados, máxima especificidad y mínimo volumen accesorio.',
+  rng:'1-2 reps · RPE 8-9.5 · 90-98%',vol:'Bajo',
+  cuando:'Las 2-4 semanas previas al taper. Novatos: 2 semanas. Avanzados o poca tolerancia a cargas altas: 3-4.',
+  P:{H:{m:'tb',r:[1,1],e:[8,9.5],bs:[3,2],br:2,drop:.10},L:{m:'st',s:[2,2],r:[2,2],e:[6,6]},V:{m:'st',s:[2,2],r:[2,1],e:[7.5,8]},A:{s:[2,2],r:'8-10',e:[7,7],n:1}}},
+ tap:{n:'Taper + Competición',c:'#e879f9',esp:[5,5],dur:'1-2 sem',
+  obj:'Disipar la fatiga manteniendo la intensidad. Volumen -40/60%, frecuencia similar, openers y competición.',
+  rng:'Singles a openers (~90%) · volumen mínimo',vol:'Muy bajo',
+  cuando:'Última(s) semana(s). 1 semana para novatos/ligeros; 2 para avanzados, pesados o atletas con mucha fatiga acumulada.',
+  P:{H:{m:'tb',r:[1,1],e:[8,8],bs:[2,2],br:2,drop:.10},L:{m:'st',s:[2,2],r:[2,2],e:[6,6]},V:{m:'st',s:[2,2],r:[2,2],e:[6,6]},A:{s:[2,2],r:'8',e:[6,6],n:1}}},
+ des:{n:'Descarga',c:'#94a3b8',esp:[3,5],dur:'1 sem',
+  obj:'Reducir fatiga acumulada: -40/50% de volumen, RPE ≤6. Mantener el patrón.',
+  rng:'3-5 reps · RPE 5-6',vol:'Muy bajo',
+  cuando:'Cada 4-6 semanas o al acabar un bloque duro. Antes del peaking si hay mucha fatiga.',
+  P:{H:{m:'st',s:[3,3],r:[5,5],e:[5.5,5.5]},L:{m:'st',s:[2,2],r:[3,3],e:[5,5]},V:{m:'st',s:[2,2],r:[5,5],e:[5.5,5.5]},A:{s:[2,2],r:'10',e:[6,6],n:1}}},
+ tra:{n:'Transición / GPP',c:'#64748b',esp:[1,2],dur:'1-3 sem',
+  obj:'Recuperación física y mental tras competir. Variantes, trabajo general y molestias a cero.',
+  rng:'6-15 reps · RPE 6-7',vol:'Moderado',
+  cuando:'Justo después de una competición o de un ciclo largo.',
+  P:{H:{m:'st',s:[3,3],r:[6,6],e:[6,6.5]},L:{m:'st',s:[2,2],r:[5,5],e:[6,6]},V:{m:'st',s:[3,3],r:[10,10],e:[6,7]},A:{s:[3,3],r:'12-15',e:[7,8],n:3}}}
+};
+const BLOCK_ORDER=['tra','tec','hip','vol','fue','int','pk','des','tap'];
+const WD_ALL=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+// Series efectivas semanales orientativas por levantamiento (trabajo de competición + variantes)
+const VOL_REF={novato:{sq:[6,12],bp:[8,14],dl:[3,8]},intermedio:{sq:[8,16],bp:[10,18],dl:[4,10]},avanzado:{sq:[10,20],bp:[12,22],dl:[5,12]},elite:{sq:[10,22],bp:[12,24],dl:[5,12]}};
+
+const ROLE_N={H:'Pesada',L:'Técnica',V:'Variante',V2:'Variante 2',A:'Accesorio',C:'Competición'};
+
+// ===================== ESTADO =====================
+const KEY='yf_powerlifting_v1';
+let S={athletes:[],cur:null,tab:'atleta'};
+let GF={lift:'all',wp:'all'}; // filtros guía
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&Array.isArray(d.athletes))S=Object.assign(S,d);}}catch(e){}}
+const EMBED=/[?&]embed=1/.test(location.search);
+if(EMBED)document.documentElement.classList.add('ys-embed');
+let _svT=null;
+function save(){if(EMBED){try{localStorage.setItem(KEY+'_tab',S.tab)}catch(e){}clearTimeout(_svT);_svT=setTimeout(()=>{const a=A();if(a)parent.postMessage({ys:true,type:'save',data:a},location.origin)},600);return}
+ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function A(){const a=S.athletes.find(x=>x.id===S.cur)||null;if(a)normA(a);return a}
+function LA(a){const s=a.lifts||LK;return ALL_L.filter(l=>s.includes(l))}
+function normA(a){if(!Array.isArray(a.lifts))a.lifts=['sq','bp','dl'];a.freqPref=a.freqPref||{};a.rm=a.rm||{};a.estado=a.estado||{};
+ ALL_L.forEach(l=>{if(!a.estado[l])a.estado[l]='normal'});
+ (a.bloques||[]).forEach(b=>{b.vars=b.vars||{};b.freq=b.freq||{};ALL_L.forEach(l=>{if(!b.vars[l])b.vars[l]=[]});
+  LA(a).forEach(l=>{if(b.freq[l]==null)b.freq[l]=defaultFreq(a,b.tipo)[l]});ALL_L.forEach(l=>{if(!LA(a).includes(l))b.freq[l]=0})})}
+const isBW=l=>BW_L.includes(l);
+function e1L(a,l,kg,reps,rpe){kg=num(kg);if(kg==null)return null;if(isBW(l)){const p=num(a.peso)||0;const e=e1rm(kg+p,reps,rpe);return e==null?null:e-p}return e1rm(kg,reps,rpe)}
+
+// ===================== UTILIDADES =====================
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r25=x=>Math.round(x/2.5)*2.5;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const num=v=>{const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n};
+const fx=(n,d=1)=>n==null||isNaN(n)?'–':(Math.round(n*10**d)/10**d).toLocaleString('es-ES');
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function parseD(s){if(!s)return null;const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function isoD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function addDays(s,n){const d=parseD(s);d.setDate(d.getDate()+n);return isoD(d)}
+function diffDays(a,b){return Math.round((parseD(b)-parseD(a))/864e5)}
+function fmtD(s){if(!s)return '–';const d=parseD(s);return d.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}
+function fmtDL(s){if(!s)return '–';const d=parseD(s);return d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}
+function pctRPE(reps,rpe){let e=(+reps||1)+(10-(rpe==null||rpe===''?10:+rpe));e=clamp(e,1,17);const lo=Math.floor(e),hi=Math.ceil(e);return (RTS[lo]+(RTS[hi]-RTS[lo])*(e-lo))/100}
+function e1rm(kg,reps,rpe){kg=num(kg);reps=num(reps);rpe=num(rpe);if(!kg||!reps)return null;if(rpe==null)rpe=10;return kg/pctRPE(reps,rpe)}
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>{t.style.opacity=0},1800);setTimeout(()=>t.remove(),2200)}
+function combos(n,k){const out=[];const rec=(s,arr)=>{if(arr.length===k){out.push(arr.slice());return}for(let i=s;i<n;i++){arr.push(i);rec(i+1,arr);arr.pop()}};rec(0,[]);return out}
+
+// ===================== PUNTUACIONES =====================
+function dots(total,bw,sex){const c=sex==='F'?[-0.0000010706,0.0005158568,-0.1126655495,13.6175032,-57.96288]:[-0.000001093,0.0007391293,-0.1918759221,24.0900756,-307.75076];bw=clamp(bw,40,sex==='F'?150:210);const d=c[0]*bw**4+c[1]*bw**3+c[2]*bw**2+c[3]*bw+c[4];return total*500/d}
+function glp(total,bw,sex){const [a,b,c]=sex==='F'?[610.32796,1045.59282,0.03048]:[1199.72839,1025.18162,0.00921];return total*100/(a-b*Math.exp(-c*bw))}
+function dotsLevel(d){if(d<250)return 'Principiante';if(d<325)return 'Intermedio';if(d<400)return 'Avanzado';if(d<450)return 'Nivel nacional';return 'Nivel internacional'}
+function ipfCat(bw,sex){const c=IPF_CAT[sex];for(const x of c){if(typeof x==='number'&&bw<=x)return '-'+x+' kg'}return '+'+c[c.length-2]+' kg'}
+
+// ===================== ATLETAS =====================
+function defAthlete(){return{id:uid(),nombre:'Nuevo atleta',sexo:'M',peso:83,nivel:'intermedio',edad:'',estiloSQ:'lowbar',estiloDL:'conv',rm:{sq:180,bp:120,dl:220},dias:4,estado:{sq:'normal',bp:'normal',dl:'normal'},debiles:[],fuertes:[],notas:'',inicio:todayISO(),comp:'',compNombre:'',semanasSinComp:12,bloques:[],logs:[],intentos:{pcts:[91,96,100.5],proj:{}},selB:null,planW:0}}
+function newAthlete(){const n=prompt('Nombre del atleta:','');if(n===null)return;const a=defAthlete();a.nombre=n.trim()||'Nuevo atleta';S.athletes.push(a);S.cur=a.id;S.tab='atleta';save();render()}
+function selectAthlete(id){S.cur=id;save();render()}
+function delAthlete(){if(EMBED){const a=A();if(!confirm('¿Borrar el programa de powerlifting de este cliente y empezar de cero?'))return;const n=defAthlete();n.id=a.id;n.nombre=a.nombre;n.peso=a.peso;n.sexo=a.sexo;S.athletes=[n];S.cur=n.id;S.tab='atleta';save();render();return}const a=A();if(!a)return;if(!confirm('¿Eliminar a '+a.nombre+' y todo su programa? Exporta un backup antes si lo necesitas.'))return;S.athletes=S.athletes.filter(x=>x.id!==a.id);S.cur=S.athletes[0]?.id||null;save();render()}
+function setA(path,val,isNum){const a=A();if(!a)return;const ks=path.split('.');let o=a;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks.at(-1)]=isNum?num(val):val;if(path==='dias'){a.dias=+val;a.wd=null}if(path.startsWith('rm.')){recalcAll(a)}save();render()}
+function toggleLift(l){const a=A();const i=a.lifts.indexOf(l);if(i>=0){if(a.lifts.length<=1)return toast('Debe quedar al menos un básico');a.lifts.splice(i,1)}else a.lifts.push(l);
+ a.bloques.forEach(b=>{b.freq[l]=LA(a).includes(l)?defaultFreq(a,b.tipo)[l]:0;if(Array.isArray(b.layout))b.layout.forEach(d=>{if(!LA(a).includes(l))d[l]='';else if(d[l]==null)d[l]=''});if(LA(a).includes(l)&&!b.vars[l].length){const rv=recVars(a,b,l);if(rv[0])b.vars[l]=[rv[0].e.id]}if(b.manual)syncFreq(a,b)});
+ save();render();toast(LA(a).includes(l)?LIFTS[l]+' añadido. Configura su frecuencia y distribución en Bloques.':LIFTS[l]+' quitado')}
+function setFreqPref(l,v){const a=A();const n=num(v);if(n==null)delete a.freqPref[l];else a.freqPref[l]=clamp(Math.round(n),0,6);
+ a.bloques.forEach(b=>{if(!manualOk(a,b))b.freq[l]=defaultFreq(a,b.tipo)[l]});save();render()}
+function defaultFreqAuto(a,l){const fp=a.freqPref[l];delete a.freqPref[l];const v=defaultFreq(a,'fue')[l];if(fp!=null)a.freqPref[l]=fp;return v}
+function toggleArr(key,id){const a=A();const arr=a[key];const i=arr.indexOf(id);if(i>=0)arr.splice(i,1);else arr.push(id);save();render()}
+
+function analysis(a){
+ const rm=a.rm,tot=(rm.sq||0)+(rm.bp||0)+(rm.dl||0);
+ const ref=SHARE_REF[a.sexo];const out={tot,share:{},dev:{},sug:{}};
+ LK.forEach(l=>{out.share[l]=tot?rm[l]/tot:0;out.dev[l]=out.share[l]-ref[l];out.sug[l]=out.dev[l]<-.015?'debil':out.dev[l]>.015?'fuerte':'normal'});
+ out.dots=tot&&a.peso?dots(tot,a.peso,a.sexo):0;out.gl=tot&&a.peso?glp(tot,a.peso,a.sexo):0;
+ out.bwx={};LK.forEach(l=>out.bwx[l]=a.peso?rm[l]/a.peso:0);
+ return out;
+}
+function applySug(){const a=A();const an=analysis(a);LK.forEach(l=>a.estado[l]=an.sug[l]);save();render();toast('Estado de levantamientos actualizado')}
+
+// ===================== MACROCICLO =====================
+function totalWeeks(a){return a.comp?Math.max(1,Math.ceil((diffDays(a.inicio,a.comp)+1)/7)):(a.semanasSinComp||12)}
+function blockStart(a,idx){let w=0;for(let i=0;i<idx;i++)w+=a.bloques[i].semanas;return addDays(a.inicio,w*7)}
+function plannedWeeks(a){return a.bloques.reduce((s,b)=>s+(+b.semanas||0),0)}
+
+function defaultFreq(a,tipo){
+ const base={novato:{sq:2,bp:3,dl:1},intermedio:{sq:2,bp:3,dl:2},avanzado:{sq:3,bp:3,dl:2},elite:{sq:3,bp:4,dl:2}}[a.nivel]||{sq:2,bp:3,dl:2};
+ const f={...base,ht:2,pu:2,dp:2};const act=LA(a);
+ act.forEach(l=>{if(a.estado[l]==='debil')f[l]++;if(a.estado[l]==='fuerte')f[l]--});
+ if(a.fuertes.includes('f_recupera')){const w=act.find(l=>a.estado[l]==='debil')||(act.includes('bp')?'bp':act[0]);if(w)f[w]++}
+ if(a.debiles.includes('g_recup')){f.dl=Math.min(f.dl,1);f.sq=Math.min(f.sq,3)}
+ if(a.debiles.includes('g_tecnica')){f.sq=Math.max(f.sq,2);f.bp=Math.max(f.bp,3)}
+ if(tipo==='pk'||tipo==='tap')f.dl=Math.min(f.dl,2);
+ f.sq=clamp(f.sq,1,4);f.bp=clamp(f.bp,2,4);f.dl=clamp(f.dl,1,3);['ht','pu','dp'].forEach(l=>f[l]=clamp(f[l],1,4));
+ act.forEach(l=>{const p=num(a.freqPref?.[l]);if(p!=null)f[l]=clamp(p,0,5)});
+ ALL_L.forEach(l=>f[l]=act.includes(l)?Math.min(f[l],a.dias):0);
+ return f;
+}
+function newBlock(a,tipo,semanas,descarga){const b={id:uid(),tipo,semanas,descarga:!!descarga,freq:defaultFreq(a,tipo),vars:{sq:[],bp:[],dl:[],ht:[],pu:[],dp:[]},acc:[],plan:null,nota:''};autoSelect(a,b);return b}
+
+function proposeMacro(){
+ const a=A();if(!a)return;
+ if(a.bloques.some(b=>b.plan)&&!confirm('Esto sustituye los bloques actuales (y sus planes generados). ¿Continuar?'))return;
+ const W=totalWeeks(a);const has=x=>a.debiles.includes(x),str=x=>a.fuertes.includes(x);
+ const adv=a.nivel==='avanzado'||a.nivel==='elite';
+ const out=[];let R=W,T=0,PK=0;
+ if(a.comp){
+  T=(adv||a.peso>=105||has('g_recup'))?2:1;
+  PK=W>=10?3:2;if(str('f_intensidad'))PK=2;if(has('g_tolerancia')&&W>=14)PK=4;if(a.nivel==='novato')PK=Math.min(PK,2);
+  if(W<=2){T=W;PK=0}else if(W<=5){T=1;PK=W-1}
+  R=W-T-PK;
+  if(R>0&&R<3){PK=Math.min(4,PK+R);R=W-T-PK}
+ }
+ if(R>0){
+  const wt={novato:{tec:3,hip:4,fue:3},intermedio:{hip:3,fue:3,int:2},avanzado:{hip:2,fue:3,int:3},elite:{hip:2,fue:3,int:3}}[a.nivel];
+  if(has('g_masa'))wt.hip+=2;if(str('f_masa'))wt.hip=Math.max(1,wt.hip-1);if(has('g_tolerancia')){if(wt.int)wt.int++;else wt.fue++}if(has('g_tecnica')&&wt.tec)wt.tec++;
+  let nb=R<3?1:clamp(Math.max(Math.round(R/4.5),Math.ceil(R/6)),1,Math.max(1,Math.floor(R/3)));nb=Math.min(nb,6);
+  const SEQ={1:['int'],2:['fue','int'],3:['hip','fue','int'],4:['hip','hip','fue','int'],5:['hip','fue','hip','fue','int'],6:['hip','fue','int','hip','fue','int']};
+  const SEQN={1:['fue'],2:['hip','fue'],3:['tec','hip','fue'],4:['tec','hip','hip','fue'],5:['tec','hip','fue','hip','fue'],6:['tec','hip','fue','hip','fue','fue']};
+  let types=(a.nivel==='novato'?SEQN:SEQ)[nb].slice();
+  if(!a.comp&&nb===1)types=['hip'];
+  if(a.prefVol)types=types.map(t=>t==='fue'?'vol':t);
+  types.forEach(t=>{if(wt[t]==null)wt[t]=t==='vol'?(wt.fue||3):3});
+  const sw=types.reduce((s,t)=>s+wt[t],0);let lens=types.map(t=>R<3*nb?Math.max(1,Math.round(R*wt[t]/sw)):clamp(Math.round(R*wt[t]/sw),3,6));
+  for(let it=0;it<80;it++){const s=lens.reduce((x,y)=>x+y,0);if(s===R)break;
+   if(s<R){let bi=-1,bv=-1;lens.forEach((L,i)=>{const v=wt[types[i]]/L;if(L<6&&v>bv){bv=v;bi=i}});if(bi<0)bi=lens.length-1;lens[bi]++}
+   else{let bi=-1,bv=1e9;lens.forEach((L,i)=>{const v=wt[types[i]]/L;if(L>(R>=3*nb?3:1)&&v<bv){bv=v;bi=i}});if(bi<0)bi=0;lens[bi]--}}
+  types.forEach((t,i)=>{const L=lens[i];out.push(newBlock(a,t,L,L>=(has('g_recup')?3:4)))});
+ }
+ if(PK>0)out.push(newBlock(a,'pk',PK,false));
+ if(T>0)out.push(newBlock(a,'tap',T,false));
+ a.bloques=out;a.selB=out[0]?.id||null;a.planW=0;save();render();toast('Macrociclo propuesto: '+W+' semanas');
+}
+function addBlock(){const a=A();const b=newBlock(a,'hip',4,true);a.bloques.push(b);a.selB=b.id;save();render()}
+function delBlock(id){const a=A();const b=a.bloques.find(x=>x.id===id);if(b.plan&&!confirm('Este bloque tiene plan generado. ¿Eliminar?'))return;a.bloques=a.bloques.filter(x=>x.id!==id);if(a.selB===id)a.selB=a.bloques[0]?.id||null;save();render()}
+function moveBlock(id,d){const a=A();const i=a.bloques.findIndex(x=>x.id===id);const j=i+d;if(j<0||j>=a.bloques.length)return;[a.bloques[i],a.bloques[j]]=[a.bloques[j],a.bloques[i]];save();render()}
+function setB(id,field,val){const a=A();const b=a.bloques.find(x=>x.id===id);if(!b)return;
+ if(field==='tipo'){b.tipo=val;b.freq=defaultFreq(a,val);autoSelect(a,b);if(val==='tap')b.semanas=Math.min(b.semanas,2);if(val==='des'){b.semanas=1;b.descarga=false}}
+ else if(field==='semanas')b.semanas=clamp(parseInt(val)||1,1,12);
+ else if(field==='descarga')b.descarga=!!val;
+ else if(field.startsWith('freq.'))b.freq[field.slice(5)]=clamp(parseInt(val)||0,0,Math.min(5,a.dias));
+ else b[field]=val;
+ syncFreq(a,b);save();render()}
+function selBlock(id,tab){const a=A();a.selB=id;a.planW=0;if(tab)S.tab=tab;save();render()}
+
+// ===================== RECOMENDACIONES =====================
+function exName(id,a){const e=EXMAP[id];if(!e)return id;if(!a)return e.n;
+ if(id==='sq_comp')return 'Sentadilla de competición ('+(a.estiloSQ==='highbar'?'high-bar':'low-bar')+')';
+ if(id==='dl_comp')return 'Peso muerto '+(a.estiloDL==='sumo'?'sumo':'convencional')+' de competición';
+ if(id==='dl_opuesto')return a.estiloDL==='sumo'?'Peso muerto convencional (estilo opuesto)':'Peso muerto sumo (estilo opuesto)';
+ if(id==='dl_deficit'&&a.estiloDL==='sumo')return 'Peso muerto sumo en déficit (2-3 cm)';
+ return e.n}
+function styleOk(e,a){if(!e.only)return true;return e.only===(e.l==='dl'?a.estiloDL:a.estiloSQ)}
+function recVars(a,b,l){const B=BLOCKS[b.tipo];const [lo,hi]=B.esp;
+ return EX.filter(e=>e.l===l&&e.t==='var'&&styleOk(e,a)).map(e=>{
+  const m=e.wp.filter(w=>a.debiles.includes(w));let sc=m.length*3;
+  if(e.e>=lo&&e.e<=hi)sc+=2;else sc-=Math.min(Math.abs(e.e-lo),Math.abs(e.e-hi))*1.5;
+  if(a.estado[l]==='debil'&&m.length)sc+=1;
+  if(a.fuertes.includes('f_tecnica')&&e.e<=2)sc+=.5;
+  if(a.debiles.includes('g_tecnica')&&e.e>=4)sc+=1;
+  if((b.tipo==='pk'||b.tipo==='tap')&&e.f>1.04)sc-=2;
+  return {e,sc:Math.round(sc*10)/10,m}}).sort((x,y)=>y.sc-x.sc)}
+const BACK=['a_remopecho','a_jalon','a_pendlay'],CORE=['a_rueda','a_plancha','a_pallof','a_colgado'];
+function recAcc(a,b){const heavy=['a_gm','a_pendlay','a_farmer','a_bulgara'];
+ const hide=LA(a).map(l=>ACC_DUP[l]).filter(Boolean);
+ return EX.filter(e=>e.t==='acc'&&!hide.includes(e.id)).map(e=>{const m=e.wp.filter(w=>a.debiles.includes(w));let sc=m.length*3;
+  if(BACK.includes(e.id))sc+=1.5;if(CORE.includes(e.id))sc+=.8;
+  if(['hip','tra'].includes(b.tipo)&&e.wp.includes('g_masa'))sc+=1;
+  if(LA(a).some(l=>a.estado[l]==='debil'&&e.ln===l))sc+=1;
+  if(['pk','tap','des'].includes(b.tipo)&&heavy.includes(e.id))sc-=2;
+  return {e,sc:Math.round(sc*10)/10,m}}).sort((x,y)=>y.sc-x.sc)}
+function autoSelect(a,b){
+ LA(a).forEach(l=>{const rv=recVars(a,b,l);const need=(b.freq[l]>=4)?2:1;let list=rv;if(b.tipo==='pk'||b.tipo==='tap')list=rv.filter(x=>x.e.e>=3);b.vars[l]=list.slice(0,need).map(x=>x.e.id)});
+ const n={hip:6,tra:6,tec:5,fue:5,int:4,pk:3,des:2,tap:2}[b.tipo]||4;const ra=recAcc(a,b);const sel=ra.slice(0,n).map(x=>x.e.id);
+ if(!['tap','des'].includes(b.tipo)){if(!sel.some(i=>BACK.includes(i))){sel.pop();sel.push(ra.find(x=>BACK.includes(x.e.id)).e.id)}
+  if(!sel.some(i=>CORE.includes(i))&&n>=4){sel.splice(sel.length-1,1,ra.find(x=>CORE.includes(x.e.id)).e.id)}}
+ b.acc=[...new Set(sel)];
+}
+function toggleVar(bid,l,id){const a=A();const b=a.bloques.find(x=>x.id===bid);const arr=l==='acc'?b.acc:b.vars[l];const i=arr.indexOf(id);if(i>=0)arr.splice(i,1);else arr.push(id);save();render()}
+function resetRecs(bid){const a=A();const b=a.bloques.find(x=>x.id===bid);b.freq=defaultFreq(a,b.tipo);autoSelect(a,b);save();render();toast('Recomendaciones restablecidas')}
+
+function blockAdvice(a,b){const B=BLOCKS[b.tipo];const out=[];
+ const tips={
+  tec:['Todas las series con técnica de competición y vídeo. Si la técnica se rompe, se baja la carga.','Progresión lineal semana a semana mientras el RPE lo permita.'],
+  hip:['Accesorios a RIR 1-3 (RPE 7-9). Aquí se construye el músculo que luego se convierte en fuerza.','Variantes poco específicas: atacan músculos y puntos débiles con menos fatiga del patrón de competición.','Si el RPE real supera en ≥1 punto al pautado, mantener la carga la semana siguiente.'],
+  fue:['Top set + back-offs: el top set marca la carga del día según RPE; los back-offs acumulan volumen de calidad.','Las variantes se acercan a la competición: pausas, pines, déficit.'],
+  int:['Volumen bajando, intensidad subiendo. Cuidar descanso entre series (3-5 min).','Si el top set sale 1 punto de RPE por encima de lo pautado, recortar back-offs ese día.'],
+  pk:['Último peso muerto pesado (≥90%) 10-14 días antes de competir; sentadilla y banca pesadas hasta ~7-10 días antes.','Practicar comandos de competición en todos los singles. Los singles NO son tests a RPE 10.','El top single de la última semana de peaking debe acercarse al 2º intento previsto.'],
+  tap:['Reducir volumen un 40-60% manteniendo la intensidad y la frecuencia. Nada de técnica nueva.','Openers ~5 días antes: deben salir a RPE ≤8. Los dos últimos días: descanso o activación muy ligera.','Planificar pesaje (2 h antes), comida y líquidos post-pesaje, equipamiento homologado IPF.'],
+  des:['-40/50% de volumen y RPE ≤6. Mantener los movimientos para no perder patrón.','Ideal para evaluar molestias y ajustar el siguiente bloque.'],
+  vol:['Mismo peso en todas las series: si la última sale a RPE ≥9, mantener la carga la semana siguiente.','Cada semana baja el volumen y sube la carga (~+3-5%). La variante acompaña con series de 5-6 reps.','Descanso 3-4 min entre series. Grabar la última serie de cada básico.'],
+  tra:['Prioridad: recuperar articulaciones y motivación. Variantes y trabajo general.','Buen momento para revisar técnica y puntos débiles para el siguiente ciclo.']
+ }[b.tipo]||[];
+ tips.forEach(t=>out.push({t,c:''}));
+ LA(a).forEach(l=>{if(a.estado[l]==='debil')out.push({t:`<b>${LIFTS[l]} es el levantamiento débil</b>: frecuencia ${b.freq[l]}×/sem, +1 serie en variantes y prioridad en el orden de la sesión.`,c:'r'});
+  if(a.estado[l]==='fuerte')out.push({t:`<b>${LIFTS[l]} es el punto fuerte</b>: volumen de mantenimiento (−1 serie). Redirige recursos al débil.`,c:'g'})});
+ a.fuertes.forEach(id=>{const s=STRONG.find(x=>x.id===id);if(s)out.push({t:`<b>${s.n}</b>: ${s.tip}`,c:'g'})});
+ if(a.debiles.includes('g_tolerancia')&&['fue','int'].includes(b.tipo))out.push({t:'<b>Poca tolerancia a cargas altas</b>: se añade un single de exposición (RPE 7.5-8) antes del top set en las sesiones pesadas.',c:'r'});
+ return out;
+}
+
+// ===================== GENERADOR DE PLAN =====================
+function wdPos(a){return (Array.isArray(a.wd)&&a.wd.length===a.dias)?a.wd:WDPOS[a.dias]}
+function wdName(a,di){return WD_ALL[wdPos(a)[di]]??''}
+function manualOk(a,b){return b.manual&&Array.isArray(b.layout)&&b.layout.length===a.dias}
+const LORD={sq:0,bp:1,dl:2,ht:3,pu:4,dp:5};
+function layoutFromManual(a,b){const rk={H:0,L:1,V:2,V2:3},lk=LORD;
+ return b.layout.map(d=>LA(a).filter(l=>d[l]).map(l=>({l,role:d[l]})).sort((x,y)=>(rk[x.role]-rk[y.role])||(lk[x.l]-lk[y.l])))}
+function computeLayout(a,b){
+ if(manualOk(a,b))return layoutFromManual(a,b);
+ const D=a.dias,pos=wdPos(a),load=Array(D).fill(0),asg={sq:[],bp:[],dl:[],ht:[],pu:[],dp:[]},wt={sq:1.3,bp:1,dl:1.5,ht:1.1,pu:.8,dp:.8};
+ ['dl','sq','ht','bp','pu','dp'].filter(l=>LA(a).includes(l)).forEach(l=>{const f=Math.min(b.freq[l]||0,D);if(!f){asg[l]=[];return}
+  let best=null,bc=1e9;
+  combos(D,f).forEach(cb=>{let c=0;cb.forEach(d=>{c+=(load[d]+wt[l])**2-load[d]**2;if(l==='sq'&&asg.dl?.includes(d))c+=2.5});
+   if(f>1)for(let i=0;i<f;i++){const g=((pos[cb[(i+1)%f]]-pos[cb[i]])+7)%7||7;if(g<2)c+=(l==='dl'?6:3);c+=Math.abs(g-7/f)*.4}
+   if(c<bc){bc=c;best=cb}});
+  asg[l]=best;best.forEach(d=>load[d]+=wt[l])});
+ const RL={1:['H'],2:['H','V'],3:['H','V','L'],4:['H','V','L','V2'],5:['H','V','L','V2','L']};
+ const roles={};
+ ['bp','ht','pu','dp'].forEach(l=>{roles[l]=asg[l].map((d,i)=>({d,role:RL[asg[l].length][i]}))});
+ {const f=asg.sq.length,dlH=asg.dl[0];let best=[],bc=1e9;for(let r=0;r<Math.max(1,f);r++){const rr=asg.sq.map((d,i)=>({d,role:RL[f]?.[(i-r+f)%f]}));const h=rr.find(x=>x.role==='H')?.d;const c=(h!=null&&h===dlH?5:0)+r*.1;if(c<bc){bc=c;best=rr}}roles.sq=best}
+ {const f=asg.dl.length;let best=null,bc=1e9;const sqH=roles.sq.find(x=>x.role==='H')?.d;
+  for(let r=0;r<Math.max(1,f);r++){const rr=asg.dl.map((d,i)=>({d,role:RL[f]?.[(i-r+f)%f]}));const h=rr.find(x=>x.role==='H')?.d;let c=0;if(h!=null&&h===sqH)c+=5;if(h!=null&&sqH!=null&&Math.abs(pos[h]-pos[sqH])===1)c+=1;if(c<bc){bc=c;best=rr}}
+  roles.dl=best||[]}
+ const days=Array.from({length:D},()=>[]);
+ ALL_L.forEach(l=>(roles[l]||[]).forEach(x=>days[x.d].push({l,role:x.role})));
+ const rk={H:0,L:1,V:2,V2:3},lk=LORD;
+ days.forEach(d=>d.sort((x,y)=>(rk[x.role]-rk[y.role])||(lk[x.l]-lk[y.l])));
+ return days;
+}
+function presc(a,b,role,l,w,nW,tipoOverride){
+ const tipo=tipoOverride||b.tipo;const B=BLOCKS[tipo];let src=B.P[role==='V2'?'V':role];const t=nW>1?w/(nW-1):1;
+ const fixedH=role==='H'&&tipo===b.tipo&&(!!b.prog||tipo==='vol');
+ if(role==='H'&&b.prog&&tipo===b.tipo)src={m:'st',s:b.prog.s,r:b.prog.r,e:b.prog.e};
+ const P={m:src.m||'st'};
+ if(role==='A'){P.s=Math.round(lerp(src.s[0],src.s[1],t));P.r=src.r;P.e=Math.round(lerp(src.e[0],src.e[1],t)*2)/2;P.n=src.n;
+  if(a.debiles.includes('g_masa')&&tipo==='hip')P.n++;if(a.debiles.includes('g_recup'))P.n=Math.max(1,P.n-1);return P}
+ P.r=Math.round(lerp(src.r[0],src.r[1],t));P.e=Math.round(lerp(src.e[0],src.e[1],t)*2)/2;
+ if(P.m==='tb'){P.bs=Math.round(lerp(src.bs[0],src.bs[1],t));P.drop=src.drop;P.br=src.br||P.r}else P.s=Math.round(lerp(src.s[0],src.s[1],t));
+ if(fixedH)return P;
+ const vol=['hip','vol','fue','tec','tra'].includes(tipo),isV=role==='V'||role==='V2';
+ const adj=d=>{if(P.m==='tb')P.bs=Math.max(1,P.bs+d);else P.s=Math.max(2,P.s+d)};
+ if(a.estado[l]==='debil'&&isV)adj(1);
+ if(a.estado[l]==='fuerte'&&(role==='H'||isV))adj(-1);
+ if(a.fuertes.includes('f_volumen')&&vol&&(role==='H'||isV))adj(1);
+ if(a.debiles.includes('g_recup')&&isV)adj(-1);
+ if(a.debiles.includes('g_capacidad')&&vol&&t<.5)adj(-1);
+ if(l==='dl'){if(role==='H'&&P.m==='st'){P.r=Math.min(P.r,6);P.s=Math.min(P.s,4)}if(isV)P.r=Math.min(P.r,8)}
+ return P;
+}
+function mkRow(ex,l,rol,sets,reps,rpe,pct,lbl){return{id:uid(),ex,l,rol,sets,reps,rpe,pct:pct??null,lbl:lbl||'',kg:null,kgMan:false,real:{kg:'',reps:'',rpe:''},nota:''}}
+function liftRows(a,b,l,role,P,exId,tipo){const rows=[];
+ if(a.debiles.includes('g_tolerancia')&&LK.includes(l)&&role==='H'&&['fue','int'].includes(tipo))rows.push(mkRow(exId,l,role,1,1,tipo==='fue'?7.5:8,null,'Single exposición'));
+ if(P.m==='tb'){rows.push(mkRow(exId,l,role,1,P.r,P.e,null,'Top set'));rows.push(mkRow(exId,l,role,P.bs,P.br,null,pctRPE(P.r,P.e)*(1-P.drop),'Back-off −'+Math.round(P.drop*100)+'%'))}
+ else rows.push(mkRow(exId,l,role,P.s,P.r,P.e,null,role==='L'?'Técnica':''));
+ return rows}
+function pickEx(b,l,role,tipo){const comp=l+'_comp';if(role==='H'||role==='L')return comp;if(tipo==='tap')return comp;const v=b.vars[l]||[];return role==='V2'?(v[1]||v[0]||comp):(v[0]||comp)}
+function buildWeek(a,b,lay,w,nW,tipo,dayNames){
+ const accUse={};const days=lay.map((items,di)=>({nombre:dayNames?dayNames[di]:`Día ${di+1} · ${wdName(a,di)}`,nota:'',rows:[]}));
+ lay.forEach((items,di)=>{const day=days[di];
+  items.forEach(it=>{let role=it.role;let tp=tipo;if(tipo==='tap'&&(role==='V'||role==='V2'))role='L';
+   const P=presc(a,b,role,it.l,w,nW,tp);const ex=pickEx(b,it.l,it.role,tipo);
+   const rws=liftRows(a,b,it.l,role,P,ex,tp);if(tipo==='tap'&&it.l==='dl'&&role==='H'){rws.forEach(r=>{if(r.lbl==='Top set')r.rpe=7.5})}
+   if(role==='L'){const PH=presc(a,b,'H',it.l,w,nW,tp);const hp=pctRPE(PH.r,PH.e);const lp=pctRPE(P.r,P.e);
+    if(lp>hp*.9)rws.forEach(r=>{r.pct=hp*.88;r.rpe=null;r.lbl='Técnica · 88% de la pesada'})}
+   rws.forEach(r=>{r.rol=it.role==='V2'?'V':r.rol});day.rows.push(...rws)});
+  const PA=presc(a,b,'A',null,w,nW,tipo);let n=items.length?PA.n:0;
+  const ls=items.map(x=>({ht:'dl',pu:'bp',dp:'bp'}[x.l]||x.l));let cand=b.acc.filter(id=>ls.includes(EXMAP[id]?.ln)||EXMAP[id]?.ln==='core');
+  if(cand.length<n)cand=cand.concat(b.acc.filter(id=>!cand.includes(id)));
+  cand.sort((x,y)=>(accUse[x]||0)-(accUse[y]||0));
+  cand.slice(0,n).forEach(id=>{accUse[id]=(accUse[id]||0)+1;day.rows.push(mkRow(id,'acc','A',PA.s,PA.r,PA.e,null,''))});
+ });
+ return days;
+}
+function compWeek(a){const at=attempts(a);const c=(ex,l,kg,lbl)=>{const r=mkRow(ex,l,'C',1,1,null,null,lbl);r.kg=kg;r.kgMan=true;return r};
+ const p=(ex,l,s,rp,pc,lbl)=>mkRow(ex,l,'L',s,rp,null,pc,lbl);
+ return [
+  {nombre:'Día −5 · Openers',off:-5,nota:'Simulación: comandos, calentamiento de competición y opener. Debe salir a RPE ≤8. Si sale lento, bajar el opener 2,5-5 kg.',rows:[c('sq_comp','sq',at.sq[0],'Opener'),c('bp_comp','bp',at.bp[0],'Opener'),c('dl_comp','dl',r25(at.dl[0]*.9),'90% opener (opcional)')]},
+  {nombre:'Día −3 · Técnica ligera',off:-3,nota:'Velocidad y técnica. Nada pesado.',rows:[p('sq_comp','sq',2,2,.70,'Velocidad'),p('bp_comp','bp',3,2,.70,'Velocidad')]},
+  {nombre:'Día −2 · Activación (opcional)',off:-2,nota:'Banca ligera o descanso según sensaciones.',rows:[p('bp_comp','bp',2,2,.60,'Activación')]},
+  {nombre:'Día −1 · Descanso + logística',off:-1,nota:'Pesaje IPF: empieza 2 h antes de la sesión y dura 1,5 h. Llevar comida/bebida para después. Revisar equipamiento homologado, alturas de rack y tarjeta de intentos.',rows:[]},
+  {nombre:'Día 0 · COMPETICIÓN',off:0,nota:'Ajustar 2º y 3º intento según el RPE del anterior (ver pestaña Competición).',rows:LK.filter(l=>LA(a).includes(l)).flatMap(l=>at[l].map((kg,i)=>c(l+'_comp',l,kg,(i+1)+'º intento')))}
+ ]}
+function genBlock(a,b,silent){
+ if(!b)return;
+ if(b.plan&&!silent&&b.plan.weeks.some(w=>w.days.some(d=>d.rows.some(r=>r.real.kg!=='')))&&!confirm('Este bloque tiene registros. Si regeneras se perderán. ¿Continuar?'))return;
+ const lay=computeLayout(a,b);const weeks=[];
+ if(b.tipo==='tap'){const T=b.semanas;
+  for(let w=0;w<T-1;w++)weeks.push({tipo:'tap',del:false,days:buildWeek(a,b,lay,w,1,'tap')});
+  weeks.push({tipo:'comp',del:false,comp:true,days:compWeek(a)});
+ }else{
+  const hasDel=b.descarga&&b.semanas>1;const nW=b.semanas-(hasDel?1:0);
+  for(let w=0;w<b.semanas;w++){const isDel=hasDel&&w===b.semanas-1;
+   weeks.push({tipo:isDel?'des':b.tipo,del:isDel,days:buildWeek(a,b,lay,isDel?0:w,isDel?1:nW,isDel?'des':b.tipo)})}
+ }
+ b.plan={weeks,gen:todayISO()};recalcBlock(a,b);
+ if(!silent){a.selB=b.id;a.planW=0;save();render();toast('Plan generado: '+BLOCKS[b.tipo].n)}
+}
+function genAll(){const a=A();if(!a.bloques.length)return toast('Primero crea o propone bloques');
+ if(a.bloques.some(b=>b.plan)&&!confirm('Se regenerarán TODOS los bloques (se pierden registros). ¿Continuar?'))return;
+ a.bloques.forEach(b=>genBlock(a,b,true));a.planW=0;S.tab='plan';save();render();toast('Plan completo generado')}
+
+function rowPct(r){if(!ALL_L.includes(r.l))return null;if(r.kgMan&&r.kg!=null){const a=A();const rm=num(a?.rm[r.l]);const f=EXMAP[r.ex]?.f??1;if(rm==null)return null;const bw=isBW(r.l)?(num(a.peso)||0):0;return (r.kg+bw)/((rm+bw)*f)}return r.pct!=null?r.pct:pctRPE(r.reps,r.rpe)}
+function rowKg(a,r){if(!ALL_L.includes(r.l))return null;if(r.kgMan)return r.kg;const f=EXMAP[r.ex]?.f??1;const p=rowPct(r);const rm=num(a.rm[r.l]);if(rm==null||(!rm&&!isBW(r.l)))return null;
+ if(isBW(r.l)){const bw=num(a.peso)||0;return Math.max(0,r25((rm+bw)*p*f-bw))}return r25(rm*p*f)}
+function recalcBlock(a,b){if(!b.plan)return;const at=attempts(a);b.plan.weeks.forEach(w=>w.days.forEach(d=>d.rows.forEach(r=>{
+  if(r.rol==='C'&&LK.includes(r.l)&&r.real.kg===''){const m=String(r.lbl).match(/^(\d)º intento/);if(r.lbl==='Opener')r.kg=at[r.l][0];else if(m)r.kg=at[r.l][+m[1]-1];else if(r.lbl.startsWith('90% opener'))r.kg=r25(at[r.l][0]*.9);return}
+  if(ALL_L.includes(r.l)&&!r.kgMan)r.kg=rowKg(a,r)})))}
+function recalcAll(a){a.bloques.forEach(b=>recalcBlock(a,b))}
+
+// ===================== INTENTOS =====================
+function projRM(a,l){const p=num(a.intentos?.proj?.[l]);return p||a.rm[l]||0}
+function attempts(a){const pc=a.intentos?.pcts||[91,96,100.5];const o={};LK.forEach(l=>{const rm=projRM(a,l);o[l]=pc.map(p=>r25(rm*p/100))});return o}
+const STRATS={conservadora:[88,94,99],estandar:[91,96,100.5],agresiva:[92,97.5,102.5]};
+
+// ===================== FECHAS DEL PLAN =====================
+function dayDate(a,bi,wi,di){const b=a.bloques[bi];const ws=addDays(blockStart(a,bi),wi*7);const wk=b.plan?.weeks[wi];
+ if(wk?.comp&&a.comp){const off=wk.days[di]?.off??0;return addDays(a.comp,off)}
+ return addDays(ws,wdPos(a)?.[di]??di)}
+function planLogs(a){const out=[];a.bloques.forEach((b,bi)=>b.plan?.weeks.forEach((w,wi)=>w.days.forEach((d,di)=>d.rows.forEach(r=>{
+ if(!ALL_L.includes(r.l)||EXMAP[r.ex]?.t!=='comp')return;const e=e1L(a,r.l,r.real.kg,r.real.reps,r.real.rpe);if(!e)return;
+ out.push({fecha:dayDate(a,bi,wi,di),l:r.l,kg:num(r.real.kg),reps:num(r.real.reps),rpe:num(r.real.rpe),e1:e,tRPE:r.rpe,src:'plan',lbl:BLOCKS[b.tipo].n+' S'+(wi+1)})}))));
+ a.logs.forEach(x=>{const e=e1L(a,x.l,x.kg,x.reps,x.rpe);if(e)out.push({...x,e1:e,src:'manual'})});
+ return out.sort((x,y)=>x.fecha<y.fecha?-1:1)}
+
+// ===================== RENDER =====================
+const TABS=[['atleta','Atleta'],['macro','Macrociclo'],['bloque','Bloques'],['plan','Plan semanal'],['progreso','Progreso'],['comp','Competición'],['guia','Guía']];
+function render(){
+ const sel=document.getElementById('athSel');
+ sel.innerHTML=S.athletes.length?S.athletes.map(a=>`<option value="${a.id}" ${a.id===S.cur?'selected':''}>${esc(a.nombre)}</option>`).join(''):'<option>— Sin atletas —</option>';
+ document.getElementById('tabs').innerHTML=TABS.map(([k,n])=>`<button class="${S.tab===k?'on':''}" onclick="go('${k}')">${n}</button>`).join('');
+ const m=document.getElementById('main');const a=A();
+ if(!a&&S.tab!=='guia'){m.innerHTML=`<div class="empty"><h2>Powerlifting Planner</h2><p>Crea tu primer atleta para empezar a programar bloques.</p><button class="btn p" onclick="newAthlete()">+ Crear atleta</button> <button class="btn" onclick="demo()">Cargar atleta de ejemplo</button></div>`;return}
+ const fn={atleta:rAtleta,macro:rMacro,bloque:rBloque,plan:rPlan,progreso:rProgreso,comp:rComp,guia:rGuia}[S.tab]||rAtleta;
+ m.innerHTML=fn(a);
+}
+function go(t){S.tab=t;save();render();window.scrollTo(0,0)}
+
+// ---------- ATLETA ----------
+function rAtleta(a){const an=analysis(a);const ref=SHARE_REF[a.sexo];
+ const sel=(path,opts,val)=>`<select onchange="setA('${path}',this.value)">${Object.entries(opts).map(([k,v])=>`<option value="${k}" ${val===k?'selected':''}>${v}</option>`).join('')}</select>`;
+ const wpBy=g=>WEAK.filter(w=>w.l===g).map(w=>`<label><input type="checkbox" ${a.debiles.includes(w.id)?'checked':''} onchange="toggleArr('debiles','${w.id}')"><span>${w.n}</span></label>`).join('');
+ return `
+ <div class="row between" style="margin-bottom:12px"><h2>${esc(a.nombre)}</h2><div class="row"><span class="chip y">${NIVELES[a.nivel]}</span><span class="chip">${ipfCat(a.peso||0,a.sexo)}</span><button class="btn d s" onclick="delAthlete()">Eliminar atleta</button></div></div>
+ <div class="grid g2">
+  <div class="card"><h3>Perfil</h3>
+   <div class="grid g4" style="margin-top:10px">
+    <label class="f">Nombre<input value="${esc(a.nombre)}" onchange="setA('nombre',this.value)"></label>
+    <label class="f">Sexo${sel('sexo',{M:'Hombre',F:'Mujer'},a.sexo)}</label>
+    <label class="f">Peso corporal (kg)<input type="number" step="0.1" value="${a.peso??''}" onchange="setA('peso',this.value,1)"></label>
+    <label class="f">Edad<input type="number" value="${a.edad??''}" onchange="setA('edad',this.value,1)"></label>
+    <label class="f">Nivel${sel('nivel',NIVELES,a.nivel)}</label>
+    <label class="f">Días / semana${sel('dias',{2:'2 días',3:'3 días',4:'4 días',5:'5 días',6:'6 días'},String(a.dias))}</label>
+    <label class="f">Sentadilla${sel('estiloSQ',{lowbar:'Low-bar',highbar:'High-bar'},a.estiloSQ)}</label>
+    <label class="f">Peso muerto${sel('estiloDL',{conv:'Convencional',sumo:'Sumo'},a.estiloDL)}</label>
+   </div>
+   <h4 style="margin-top:16px">RM actuales (kg)</h4>
+   <div class="grid g4" style="margin-top:6px">${LA(a).map(l=>`<label class="f">${LIFTS[l]}${isBW(l)?' (lastre)':''}<input type="number" step="2.5" value="${a.rm[l]??''}" onchange="setA('rm.${l}',this.value,1)"></label>`).join('')}
+    <div class="kpi"><div class="lbl">Total</div><div class="val" style="color:var(--y)">${fx(an.tot,1)} kg</div></div></div>
+   <p class="small muted" style="margin-top:8px">Si no tiene RM reciente, usa un e1RM: top set reciente con reps y RPE (pestaña Progreso → registro manual).</p>
+  </div>
+  <div class="card y"><h3>Análisis automático</h3>
+   <div class="grid g4" style="margin-top:10px">
+    <div class="kpi"><div class="lbl">DOTS</div><div class="val">${fx(an.dots,1)}</div><div class="sub">${an.dots?dotsLevel(an.dots):''}</div></div>
+    <div class="kpi"><div class="lbl">IPF GL</div><div class="val">${fx(an.gl,1)}</div><div class="sub">Classic</div></div>
+    <div class="kpi"><div class="lbl">Banca / Sentadilla</div><div class="val">${an.tot?fx(a.rm.bp/a.rm.sq*100,0)+'%':'–'}</div><div class="sub">típico 60-72%</div></div>
+    <div class="kpi"><div class="lbl">Sentadilla / Muerto</div><div class="val">${an.tot?fx(a.rm.sq/a.rm.dl*100,0)+'%':'–'}</div><div class="sub">típico 82-95%</div></div>
+   </div>
+   <table style="margin-top:12px"><tr><th>Levantamiento</th><th>× peso corp.</th><th>% del total</th><th>Referencia</th><th>Sugerencia</th></tr>
+   ${LK.map(l=>`<tr><td><b>${LIFTS[l]}</b></td><td>${fx(an.bwx[l],2)}×</td><td>${fx(an.share[l]*100,1)}%</td><td class="muted">${fx(ref[l]*100,1)}%</td><td><span class="chip ${an.sug[l]==='debil'?'r':an.sug[l]==='fuerte'?'g':''}">${an.sug[l]==='debil'?'Débil':an.sug[l]==='fuerte'?'Fuerte':'Equilibrado'}</span></td></tr>`).join('')}
+   </table>
+   <div class="row" style="margin-top:10px"><button class="btn s" onclick="applySug()">Aplicar sugerencia al estado de levantamientos</button><span class="small muted">Basado en el reparto típico del total en raw clásico. Tu criterio manda.</span></div>
+  </div>
+ </div>
+ <div class="card y"><h3>Movimientos básicos que realiza</h3><p class="small muted">Marca los básicos que programas a este atleta y, si quieres, fija su frecuencia semanal (vacío = la calcula el programa). En dominadas y fondos el RM es el <b>lastre</b>; la carga se calcula sobre peso corporal + lastre.</p>
+  <div class="tbl-wrap" style="margin-top:8px"><table><tr><th>Realiza</th><th>Movimiento</th><th>Frecuencia / semana</th><th>RM (kg)</th></tr>
+  ${ALL_L.map(l=>{const on=LA(a).includes(l);return `<tr><td><input type="checkbox" ${on?'checked':''} onchange="toggleLift('${l}')"></td><td><b>${LIFTS[l]}</b>${LK.includes(l)?' <span class="chip" style="font-size:10px">IPF</span>':''}</td>
+   <td>${on?`<input type="number" min="0" max="6" style="width:90px" placeholder="auto (${defaultFreqAuto(a,l)})" value="${a.freqPref[l]??''}" onchange="setFreqPref('${l}',this.value)">`:'<span class="muted small">—</span>'}</td>
+   <td>${on?`<input type="number" step="2.5" style="width:110px" value="${a.rm[l]??''}" placeholder="${isBW(l)?'lastre':''}" onchange="setA('rm.${l}',this.value,1)">`:''}</td></tr>`}).join('')}</table></div>
+ </div>
+ <div class="card"><h3>Estado de cada levantamiento</h3><p class="small muted">Define cuál priorizar. Afecta a frecuencia, volumen y selección de ejercicios en todos los bloques.</p>
+  <div class="grid g3" style="margin-top:8px">${LA(a).map(l=>`<div><h4 style="margin-bottom:6px">${LIFTS[l]}</h4><div class="pill-sel">${['debil','normal','fuerte'].map(s=>`<button class="${a.estado[l]===s?'on '+s:''}" onclick="setA('estado.${l}','${s}')">${s==='debil'?'Débil':s==='normal'?'Normal':'Fuerte'}</button>`).join('')}</div></div>`).join('')}</div>
+ </div>
+ <div class="card"><h3>Puntos débiles técnicos y físicos</h3><p class="small muted">Marca dónde y cómo falla. El programa elegirá variantes y accesorios para atacarlos.</p>
+  <div class="grid g3" style="margin-top:8px">
+   <div><h4 style="margin-bottom:4px">Sentadilla</h4><div class="wp-grid" style="grid-template-columns:1fr">${wpBy('sq')}</div></div>
+   <div><h4 style="margin-bottom:4px">Press banca</h4><div class="wp-grid" style="grid-template-columns:1fr">${wpBy('bp')}</div></div>
+   <div><h4 style="margin-bottom:4px">Peso muerto</h4><div class="wp-grid" style="grid-template-columns:1fr">${wpBy('dl')}</div></div>
+  </div>
+  <h4 style="margin:12px 0 4px">Generales</h4><div class="wp-grid">${wpBy('g')}</div>
+ </div>
+ <div class="card"><h3>Puntos fuertes</h3><div class="wp-grid" style="margin-top:6px">${STRONG.map(s=>`<label><input type="checkbox" ${a.fuertes.includes(s.id)?'checked':''} onchange="toggleArr('fuertes','${s.id}')"><span>${s.n}<br><span class="small muted">${s.tip}</span></span></label>`).join('')}</div></div>
+ <div class="card"><h3>Notas del atleta</h3><textarea onchange="setA('notas',this.value)" placeholder="Lesiones, horarios, material disponible, preferencias...">${esc(a.notas)}</textarea></div>
+ <div class="row"><button class="btn p" onclick="go('macro')">Siguiente: Macrociclo →</button></div>`}
+
+// ---------- MACROCICLO ----------
+function rMacro(a){const W=totalWeeks(a),PW=plannedWeeks(a);const today=todayISO();
+ const curW=Math.floor(diffDays(a.inicio,today)/7);
+ const bl=a.bloques;const tl=bl.length?`<div class="timeline">${bl.map((b,i)=>{const B=BLOCKS[b.tipo];return `<div class="tl-b ${a.selB===b.id?'sel':''}" style="flex:${b.semanas};background:${B.c}" onclick="selBlock('${b.id}')" title="${B.n}"><div class="t">${B.n.split(' / ')[0]}</div><div class="w">${b.semanas} sem${b.descarga?' · desc.':''}</div><div class="w">${fmtD(blockStart(a,i))}</div></div>`}).join('')}</div>
+  <div class="weeks-scale">${Array.from({length:PW},(_,i)=>`<div style="${i===curW?'color:var(--y);font-weight:700;border-left-color:var(--y)':''}">${i+1}</div>`).join('')}</div>`:'';
+ const warn=[];
+ if(a.comp&&PW!==W)warn.push(`Los bloques suman <b>${PW}</b> semanas pero hasta la competición hay <b>${W}</b>. Ajusta para que el taper acabe el día de competición.`);
+ if(a.comp&&bl.length&&bl.at(-1).tipo!=='tap')warn.push('Con competición, el último bloque debería ser <b>Taper + Competición</b>.');
+ if(bl.some(b=>b.tipo==='pk')&&!bl.some(b=>b.tipo==='tap')&&a.comp)warn.push('Tienes peaking pero no taper.');
+ let run=0;bl.forEach(b=>{if(b.tipo==='des'||b.descarga){run=0}else{run+=b.semanas;if(run>7&&!['pk','tap'].includes(b.tipo))warn.push(`Llevas ${run} semanas seguidas sin descarga al final de "${BLOCKS[b.tipo].n}". Valora una descarga.`)}});
+ const pkIdx=bl.findIndex(b=>b.tipo==='pk');
+ return `
+ <h2 style="margin-bottom:12px">Macrociclo · ${esc(a.nombre)}</h2>
+ <div class="grid g2">
+  <div class="card"><h3>Fechas</h3>
+   <div class="grid g4" style="margin-top:10px">
+    <label class="f">Inicio del ciclo<input type="date" value="${a.inicio}" onchange="setA('inicio',this.value)"></label>
+    <label class="f">Fecha de competición<input type="date" value="${a.comp||''}" onchange="setA('comp',this.value)"></label>
+    <label class="f">Nombre competición<input value="${esc(a.compNombre)}" onchange="setA('compNombre',this.value)" placeholder="Cto. de España..."></label>
+    ${a.comp?'':`<label class="f">Semanas (sin competición)<input type="number" min="3" max="52" value="${a.semanasSinComp}" onchange="setA('semanasSinComp',this.value,1)"></label>`}
+   </div>
+   <div class="grid g4" style="margin-top:12px">
+    <div class="kpi"><div class="lbl">${a.comp?'Semanas hasta competir':'Duración ciclo'}</div><div class="val" style="color:var(--y)">${W}</div><div class="sub">${a.comp?fmtDL(a.comp):'sin competición'}</div></div>
+    <div class="kpi"><div class="lbl">Semanas planificadas</div><div class="val">${PW}</div><div class="sub">${bl.length} bloques</div></div>
+    <div class="kpi"><div class="lbl">Semana actual</div><div class="val">${curW>=0&&curW<PW?curW+1:'–'}</div><div class="sub">${fmtD(today)}</div></div>
+    ${pkIdx>=0?`<div class="kpi"><div class="lbl">Inicio peaking</div><div class="val" style="font-size:22px">${fmtD(blockStart(a,pkIdx))}</div><div class="sub">${bl[pkIdx].semanas} sem</div></div>`:''}
+   </div>
+  </div>
+  <div class="card y"><h3>Propuesta automática</h3>
+   <p class="small" style="margin-top:6px">Calcula los bloques según semanas disponibles, nivel, puntos débiles y fuertes:</p>
+   <ul class="clean small muted">
+    <li><b>Taper</b>: 1 semana (novato/intermedio) · 2 semanas (avanzado, élite, +105 kg o recuperación limitada).</li>
+    <li><b>Peaking</b>: 2-3 semanas · 2 si rinde bien con cargas máximas · 4 si tolera mal cargas altas.</li>
+    <li><b>Resto</b>: Hipertrofia → Fuerza → Intensificación (novatos: Técnica → Hipertrofia → Fuerza). Más hipertrofia si falta masa.</li>
+    <li><b>Descarga</b> al final de cada bloque de ≥4 semanas (≥3 si recupera mal).</li>
+   </ul>
+   <div class="row" style="margin-top:8px"><label class="row small" style="gap:6px;width:100%"><input type="checkbox" ${a.prefVol?'checked':''} onchange="setA('prefVol',this.checked)"> Usar <b>Volumen 5×5 → 3×3</b> en lugar de Fuerza base</label><button class="btn p" onclick="proposeMacro()">⚡ Proponer macrociclo</button><button class="btn" onclick="addBlock()">+ Añadir bloque manual</button>${bl.length?`<button class="btn" onclick="genAll()">Generar plan de todos los bloques</button>`:''}</div>
+  </div>
+ </div>
+ ${warn.map(w=>`<div class="note r">${w}</div>`).join('')}
+ ${bl.length?`<div class="card"><h3 style="margin-bottom:10px">Línea temporal</h3>${tl}</div>
+ <div class="card"><h3 style="margin-bottom:10px">Bloques</h3><div class="blist">
+  ${bl.map((b,i)=>{const B=BLOCKS[b.tipo];return `<div class="bi ${a.selB===b.id?'sel':''}">
+   <span class="dot" style="background:${B.c}"></span>
+   <select onchange="setB('${b.id}','tipo',this.value)">${BLOCK_ORDER.map(k=>`<option value="${k}" ${k===b.tipo?'selected':''}>${BLOCKS[k].n}</option>`).join('')}</select>
+   <label class="row small" style="gap:4px"><input type="number" min="1" max="12" value="${b.semanas}" style="width:56px" onchange="setB('${b.id}','semanas',this.value)"> sem</label>
+   <label class="row small" style="gap:6px">${b.tipo==='tap'||b.tipo==='des'?'<span class="muted">—</span>':`<input type="checkbox" ${b.descarga?'checked':''} onchange="setB('${b.id}','descarga',this.checked)"> Última = descarga`}</label>
+   <span class="small muted">${fmtD(blockStart(a,i))} → ${fmtD(addDays(blockStart(a,i),b.semanas*7-1))}${b.plan?' · <span style="color:var(--green)">plan ✓</span>':''}</span>
+   <div class="row" style="gap:4px;justify-content:flex-end"><button class="btn s" onclick="moveBlock('${b.id}',-1)">↑</button><button class="btn s" onclick="moveBlock('${b.id}',1)">↓</button><button class="btn s" onclick="selBlock('${b.id}','bloque')">Configurar</button><button class="btn s d" onclick="delBlock('${b.id}')">✕</button></div>
+  </div>`}).join('')}
+ </div></div>`:`<div class="empty">Sin bloques. Usa <b>Proponer macrociclo</b> o añade bloques a mano.</div>`}
+ <div class="card"><h3>Cuándo hacer cada fase</h3>
+  <table style="margin-top:8px"><tr><th>Bloque</th><th>Duración</th><th>Rango</th><th>Cuándo</th></tr>
+  ${BLOCK_ORDER.map(k=>{const B=BLOCKS[k];return `<tr><td><span class="dot" style="background:${B.c}"></span> <b>${B.n}</b></td><td>${B.dur}</td><td class="small">${B.rng}</td><td class="small muted">${B.cuando}</td></tr>`}).join('')}
+  </table></div>`}
+
+
+// ---------- DISTRIBUCIÓN MANUAL / PROGRESIÓN ----------
+function freqUI(a,b){const man=manualOk(a,b);
+ return `<h4 style="margin-top:14px">Frecuencia semanal por movimiento <span class="small muted" style="text-transform:none">(${a.dias} días disponibles)</span></h4>
+ <div class="grid g3" style="margin-top:6px">${LA(a).map(l=>{const rec=defaultFreq(a,b.tipo)[l];return `<label class="f">${LIFTS[l]} <input type="number" min="0" max="${Math.min(5,a.dias)}" value="${b.freq[l]}" ${man?'disabled title="Definida por la distribución manual"':''} onchange="setB('${b.id}','freq.${l}',this.value)"><span class="small" style="text-transform:none;color:${b.freq[l]===rec?'var(--green)':'var(--orange)'}">${man?'Manual · ':''}Recomendado: ${rec}×</span></label>`}).join('')}</div>`}
+function distWarnings(a,b,lay){const w=[];const pos=wdPos(a);
+ LA(a).forEach(l=>{const ss=[];lay.forEach((d,di)=>d.forEach(it=>{if(it.l===l)ss.push({di,role:it.role})}));
+  if(ss.length&&!ss.some(x=>x.role==='H'))w.push(`${LIFTS[l]} no tiene sesión <b>Pesada</b>: no habrá top set ni progresión principal.`);
+  const hs=ss.filter(x=>x.role==='H');if(hs.length>1)w.push(`${LIFTS[l]} tiene ${hs.length} sesiones pesadas. Válido, pero vigila la fatiga.`);
+  for(let i=1;i<ss.length;i++){if(pos[ss[i].di]-pos[ss[i-1].di]===1&&(ss[i].role==='H'||ss[i-1].role==='H')&&l!=='bp')w.push(`${LIFTS[l]}: sesión pesada pegada a otra del mismo movimiento (${WD_ALL[pos[ss[i-1].di]]}-${WD_ALL[pos[ss[i].di]]}).`)}});
+ lay.forEach((d,di)=>{if(d.some(x=>x.l==='sq'&&x.role==='H')&&d.some(x=>x.l==='dl'&&x.role==='H'))w.push(`${WD_ALL[pos[di]]}: sentadilla pesada y peso muerto pesado el mismo día.`);if(d.length>4)w.push(`${WD_ALL[pos[di]]}: más de 4 básicos en la sesión.`)});
+ return w}
+function distUI(a,b,lay){const man=manualOk(a,b);const pos=wdPos(a);const act=LA(a);
+ const grid=lay.map(items=>{const o={};act.forEach(l=>o[l]='');items.forEach(it=>o[it.l]=it.role);return o});
+ const opt=v=>[['','—'],['H','Pesada'],['L','Técnica'],['V','Variante'],['V2','Variante 2']].map(([k,n])=>`<option value="${k}" ${v===k?'selected':''}>${n}</option>`).join('');
+ const warn=distWarnings(a,b,lay);const cnt=l=>grid.filter(d=>d[l]).length;
+ return `<div class="card y"><div class="row between"><div><h3>Distribución semanal de básicos</h3>
+   <div class="small muted">${man?'<b style="color:var(--y)">Manual</b> · la has definido tú.':'Propuesta automática · cambia cualquier casilla y pasa a ser manual.'} Elige en cada día qué básico se hace y si es sesión <b>Pesada</b>, <b>Técnica</b> o <b>Variante</b>.</div></div>
+   <div class="row">${man?`<button class="btn s" onclick="setManual('${b.id}',false)">↺ Volver a automática</button>`:''}<button class="btn s" onclick="copyLayout('${b.id}')">Aplicar a todos los bloques</button></div></div>
+  ${b.manual&&!man?`<div class="note r">La distribución manual era para otro número de días/semana. Se muestra la automática.</div>`:''}
+  <div class="tbl-wrap" style="margin-top:10px"><table><tr><th>Día</th>${act.map(l=>`<th>${LIFTS[l]} <span class="muted" style="font-family:Inter;text-transform:none">(${cnt(l)}×)</span></th>`).join('')}</tr>
+  ${grid.map((d,di)=>`<tr><td><select onchange="setWd(${di},this.value)">${WD_ALL.map((n,i)=>`<option value="${i}" ${pos[di]===i?'selected':''}>Día ${di+1} · ${n}</option>`).join('')}</select></td>${act.map(l=>`<td><select onchange="setLay('${b.id}',${di},'${l}',this.value)" style="min-width:110px;${d[l]==='H'?'border-color:var(--y);color:var(--y);font-weight:700':d[l]?'border-color:#777':''}">${opt(d[l])}</select></td>`).join('')}</tr>`).join('')}</table></div>
+  <p class="small muted" style="margin-top:6px"><b>Pesada</b> = movimiento principal con la progresión del bloque · <b>Técnica</b> = el mismo movimiento más ligero (≈88% de la pesada) · <b>Variante</b> / <b>Variante 2</b> = las variantes que marques más abajo. La frecuencia se cuenta sola. Para cambiar los días de entrenamiento por semana, ve a Atleta.</p>
+  ${warn.map(x=>`<div class="note r small">${x}</div>`).join('')}
+ </div>`}
+function setManual(bid,on){const a=A();const b=a.bloques.find(x=>x.id===bid);
+ if(on){if(!manualOk(a,b)){const lay=computeLayout(a,{...b,manual:false});b.layout=lay.map(d=>{const o={};ALL_L.forEach(k=>o[k]='');d.forEach(it=>o[it.l]=it.role);return o})}b.manual=true}else b.manual=false;
+ syncFreq(a,b);save();render()}
+function syncFreq(a,b){if(!manualOk(a,b))return;LA(a).forEach(l=>b.freq[l]=b.layout.filter(d=>d[l]).length)}
+function setLay(bid,di,l,v){const a=A();const b=a.bloques.find(x=>x.id===bid);if(!manualOk(a,b)){const lay=computeLayout(a,{...b,manual:false});b.layout=lay.map(d=>{const o={};ALL_L.forEach(k=>o[k]='');d.forEach(it=>o[it.l]=it.role);return o})}b.manual=true;b.layout[di][l]=v;syncFreq(a,b);if(b.freq[l]>=4&&b.vars[l].length<2)autoSelectVars(a,b,l);save();render()}
+function autoSelectVars(a,b,l){const rv=recVars(a,b,l).filter(x=>!b.vars[l].includes(x.e.id));if(rv[0])b.vars[l].push(rv[0].e.id)}
+function copyLayout(bid){const a=A();const b=a.bloques.find(x=>x.id===bid);let n=0;a.bloques.forEach(x=>{if(x.id===bid)return;x.manual=true;x.layout=JSON.parse(JSON.stringify(b.layout));syncFreq(a,x);n++});save();render();toast(`Distribución copiada a ${n} bloques. Regenera sus planes para aplicarla.`)}
+function setWd(di,v){const a=A();const p=wdPos(a).slice();p[di]=+v;if(new Set(p).size!==p.length){toast('Ese día ya está usado');render();return}
+ const order=p.map((x,i)=>i).sort((x,y)=>p[x]-p[y]);a.wd=order.map(i=>p[i]);
+ a.bloques.forEach(b=>{if(Array.isArray(b.layout)&&b.layout.length===a.dias)b.layout=order.map(i=>b.layout[i])});save();render()}
+function progUI(a,b){if(['tap','des'].includes(b.tipo))return '';const B=BLOCKS[b.tipo];const on=!!b.prog;
+ const nW=b.semanas-(b.descarga&&b.semanas>1?1:0);
+ const prev=LA(a).map(l=>`<tr><td class="small"><b>${LIFTS[l]}</b></td>${Array.from({length:nW},(_,w)=>{const P=presc(a,b,'H',l,w,nW);return `<td class="small">${P.m==='tb'?`1×${P.r} @${String(P.e).replace('.',',')} + ${P.bs}×${P.br}`:`${P.s}×${P.r} @${String(P.e).replace('.',',')}`}</td>`}).join('')}${nW<b.semanas?'<td class="small muted">Descarga</td>':''}</tr>`).join('');
+ const src=b.prog||{s:B.P.H.s||[1,1],r:B.P.H.r,e:B.P.H.e};
+ const inp=(k,i,step)=>`<input type="number" step="${step}" value="${src[k][i]}" onchange="setProgV('${b.id}','${k}',${i},this.value)" ${on?'':'disabled'}>`;
+ return `<div class="row between" style="margin-top:16px"><h4>Progresión del trabajo pesado</h4><label class="row small" style="gap:6px"><input type="checkbox" ${on?'checked':''} onchange="setProg('${b.id}',this.checked)"> Personalizar</label></div>
+ ${on?`<div class="grid g3" style="margin-top:6px"><label class="f">Series inicio → fin<div class="row" style="flex-wrap:nowrap">${inp('s',0,1)}→${inp('s',1,1)}</div></label><label class="f">Reps inicio → fin<div class="row" style="flex-wrap:nowrap">${inp('r',0,1)}→${inp('r',1,1)}</div></label><label class="f">RPE inicio → fin<div class="row" style="flex-wrap:nowrap">${inp('e',0,.5)}→${inp('e',1,.5)}</div></label></div>
+ <p class="small muted">Series rectas. Los valores intermedios se reparten entre las semanas del bloque (sin contar la descarga). Ej.: 5→3 series y 5→3 reps en 3 semanas = 5×5, 4×4, 3×3.</p>`:`<p class="small muted">Usa la progresión estándar del bloque. Marca <b>Personalizar</b> para definir tu propio esquema (5×5→3×3, 4×6→4×3, etc.).</p>`}
+ <div class="tbl-wrap"><table><tr><th></th>${Array.from({length:nW},(_,w)=>`<th>Sem ${w+1}</th>`).join('')}${nW<b.semanas?`<th>Sem ${b.semanas}</th>`:''}</tr>${prev}</table></div>`}
+function setProg(bid,on){const a=A();const b=a.bloques.find(x=>x.id===bid);const H=BLOCKS[b.tipo].P.H;
+ b.prog=on?{s:(H.s||[5,3]).slice(),r:H.m==='tb'?[5,3]:H.r.slice(),e:H.e.slice()}:null;if(on&&H.m==='tb')b.prog.s=[5,3];save();render()}
+function setProgV(bid,k,i,v){const a=A();const b=a.bloques.find(x=>x.id===bid);const n=num(v);if(n==null)return;b.prog[k][i]=k==='e'?clamp(Math.round(n*2)/2,5,10):clamp(Math.round(n),1,20);save();render()}
+
+// ---------- BLOQUES ----------
+function weeklyVolume(a,b){const v={sq:0,bp:0,dl:0,ht:0,pu:0,dp:0};const lay=computeLayout(a,b);const nW=b.semanas-(b.descarga&&b.semanas>1?1:0);
+ lay.forEach(items=>items.forEach(it=>{let role=it.role;if(b.tipo==='tap'&&role.startsWith('V'))role='L';const P=presc(a,b,role,it.l,0,nW,b.tipo);v[it.l]+=P.m==='tb'?1+P.bs:P.s}));return {v,lay}}
+function rBloque(a){
+ if(!a.bloques.length)return `<div class="empty">No hay bloques. Ve a <b>Macrociclo</b> y propón o crea bloques.<br><br><button class="btn p" onclick="go('macro')">Ir a Macrociclo</button></div>`;
+ const b=a.bloques.find(x=>x.id===a.selB)||a.bloques[0];a.selB=b.id;const B=BLOCKS[b.tipo];const bi=a.bloques.indexOf(b);
+ const chips=a.bloques.map((x,i)=>`<button class="${x.id===b.id?'on':''}" onclick="selBlock('${x.id}')" style="${x.id===b.id?'':'border-left:4px solid '+BLOCKS[x.tipo].c}">${i+1}. ${BLOCKS[x.tipo].n.split(' / ')[0]}</button>`).join('');
+ const {v,lay}=weeklyVolume(a,b);const ref=VOL_REF[a.nivel];
+ const recBox=l=>{const rv=recVars(a,b,l).slice(0,8);return rv.map(x=>{const on=b.vars[l].includes(x.e.id);return `<label class="rec ${on?'on':''}"><input type="checkbox" ${on?'checked':''} onchange="toggleVar('${b.id}','${l}','${x.e.id}')"><div style="flex:1"><b>${exName(x.e.id,a)}</b> <span class="chip" style="font-size:10px">esp. ${x.e.e}/5</span>${b.vars[l][0]===x.e.id?' <span class="chip y" style="font-size:10px">Variante 1</span>':b.vars[l][1]===x.e.id?' <span class="chip y" style="font-size:10px">Variante 2</span>':''}<div class="small muted">${x.e.w}</div>${x.m.length?`<div class="small" style="color:var(--y)">Ataca: ${x.m.map(id=>WEAK.find(w=>w.id===id).n).join(' · ')}</div>`:''}</div><div class="sc" title="Puntuación de recomendación">${x.sc}</div></label>`}).join('')};
+ const ra=recAcc(a,b).slice(0,14);
+ const adv=blockAdvice(a,b);
+/*dayPrev*/ const _dp=lay.map((items,di)=>`<div class="kpi"><div class="lbl">Día ${di+1} · ${WEEKDAYS[a.dias][di]}</div>${items.length?items.map(it=>`<div class="small" style="margin-top:3px"><span class="role ${it.role.startsWith('V')?'V':it.role}">${ROLE_N[it.role]}</span> ${LIFTS[it.l]}</div>`).join(''):'<div class="small muted">Accesorios / descanso</div>'}</div>`).join('');
+ return `
+ <div class="wk-tabs noprint" style="margin-bottom:12px">${chips}</div>
+ <div class="card" style="border-left:6px solid ${B.c}">
+  <div class="row between"><div><h2>${bi+1}. ${B.n}</h2><div class="muted small">${fmtDL(blockStart(a,bi))} · ${b.semanas} semanas${b.descarga?' (última de descarga)':''}</div></div>
+  <div class="row"><button class="btn" onclick="resetRecs('${b.id}')">↺ Restablecer recomendaciones</button><button class="btn p" onclick="genBlock(A(),A().bloques.find(x=>x.id==='${b.id}'))">⚡ Generar plan del bloque</button></div></div>
+  <div class="grid g4" style="margin-top:12px">
+   <div class="kpi"><div class="lbl">Objetivo</div><div class="small" style="margin-top:4px">${B.obj}</div></div>
+   <div class="kpi"><div class="lbl">Rango de trabajo</div><div class="small" style="margin-top:4px">${B.rng}</div></div>
+   <div class="kpi"><div class="lbl">Volumen</div><div class="val" style="font-size:22px">${B.vol}</div></div>
+   <div class="kpi"><div class="lbl">Especificidad variantes</div><div class="val" style="font-size:22px">${B.esp[0]}-${B.esp[1]} / 5</div></div>
+  </div>
+ </div>
+ ${distUI(a,b,lay)}
+ <div class="grid g2">
+  <div class="card"><h3>Configuración</h3>
+   <div class="grid g4" style="margin-top:10px">
+    <label class="f">Tipo<select onchange="setB('${b.id}','tipo',this.value)">${BLOCK_ORDER.map(k=>`<option value="${k}" ${k===b.tipo?'selected':''}>${BLOCKS[k].n}</option>`).join('')}</select></label>
+    <label class="f">Semanas<input type="number" min="1" max="12" value="${b.semanas}" onchange="setB('${b.id}','semanas',this.value)"></label>
+    ${b.tipo==='tap'||b.tipo==='des'?'':`<label class="f">Descarga final<select onchange="setB('${b.id}','descarga',this.value==='1')"><option value="1" ${b.descarga?'selected':''}>Sí</option><option value="0" ${!b.descarga?'selected':''}>No</option></select></label>`}
+   </div>
+   ${freqUI(a,b)}
+   ${progUI(a,b)}
+   <h4 style="margin-top:14px">Series de trabajo / semana (sem. 1)</h4>
+   ${LA(a).map(l=>{const [lo,hi]=ref[l]||[6,12];const val=v[l];const ok=val>=lo&&val<=hi;return `<div class="row" style="margin-top:6px"><span style="width:110px">${LIFTS[l]}</span><div class="bar" style="flex:1"><i style="width:${Math.min(100,val/(hi*1.3)*100)}%;background:${ok?'var(--y)':val<lo?'#64748b':'var(--orange)'}"></i></div><b style="width:40px;text-align:right">${val}</b><span class="small muted" style="width:120px">ref. ${lo}-${hi} (${a.nivel})</span></div>`}).join('')}
+   <p class="small muted" style="margin-top:6px">Referencias orientativas para bloques de volumen. En peaking/taper lo normal es estar por debajo.</p>
+   <label class="f" style="margin-top:10px">Notas del bloque<textarea onchange="setB('${b.id}','nota',this.value)">${esc(b.nota||'')}</textarea></label>
+  </div>
+  <div class="card y"><h3>Consejos para este bloque</h3>
+   ${adv.map(x=>`<div class="note ${x.c}">${x.t}</div>`).join('')}
+   ${a.debiles.length?`<h4 style="margin-top:12px">Puntos débiles a atacar</h4><ul class="clean small">${a.debiles.map(id=>{const w=WEAK.find(x=>x.id===id);return w?`<li><b>${w.n}</b> — <span class="muted">${w.tip}</span></li>`:''}).join('')}</ul>`:'<p class="small muted">Sin puntos débiles marcados en la ficha del atleta.</p>'}
+  </div>
+ </div>
+ <div class="card"><h3>Variantes recomendadas</h3><p class="small muted">Ordenadas por puntuación (puntos débiles que ataca + especificidad adecuada al bloque). La primera marcada es la Variante 1; la segunda se usa si la frecuencia es 4.</p>
+  <div class="grid g3" style="margin-top:10px">${LA(a).map(l=>`<div><h4 style="margin-bottom:6px">${LIFTS[l]}</h4>${recBox(l)}</div>`).join('')}</div>
+ </div>
+ <div class="card"><h3>Accesorios recomendados</h3><p class="small muted">Se reparten por los días según el movimiento que asisten. ${BLOCKS[b.tipo].P.A.n} accesorio(s) por sesión en este bloque.</p>
+  <div class="grid g3" style="margin-top:10px">${ra.map(x=>{const on=b.acc.includes(x.e.id);return `<label class="rec ${on?'on':''}"><input type="checkbox" ${on?'checked':''} onchange="toggleVar('${b.id}','acc','${x.e.id}')"><div style="flex:1"><b>${x.e.n}</b> <span class="chip" style="font-size:10px">${x.e.ln==='core'?'Core':LIFTS[x.e.ln]}</span><div class="small muted">${x.e.w}</div>${x.m.length?`<div class="small" style="color:var(--y)">Ataca: ${x.m.map(id=>WEAK.find(w=>w.id===id).n).join(' · ')}</div>`:''}</div><div class="sc">${x.sc}</div></label>`}).join('')}</div>
+ </div>
+ <div class="sticky-actions noprint"><button class="btn p" onclick="genBlock(A(),A().bloques.find(x=>x.id==='${b.id}'))">⚡ Generar plan del bloque</button> ${b.plan?`<button class="btn" onclick="go('plan')">Ver plan →</button>`:''}</div>`}
+
+// ---------- PLAN ----------
+function findRow(id){const a=A();for(const b of a.bloques){if(!b.plan)continue;for(const w of b.plan.weeks)for(const d of w.days){const r=d.rows.find(x=>x.id===id);if(r)return {a,b,w,d,r}}}return null}
+function updRow(id,field,val){const f=findRow(id);if(!f)return;const {a,r}=f;
+ if(field==='ex'){r.ex=val;const e=EXMAP[val];r.l=e.t==='acc'?'acc':e.l;if(r.l==='acc'){r.pct=null}r.kgMan=false;r.kg=rowKg(a,r);save();render();return}
+ if(field.startsWith('real.')){r.real[field.slice(5)]=val;save();refreshRow(a,r);return}
+ if(field==='kg'){const n=num(val);if(n==null){r.kgMan=false;r.kg=rowKg(a,r)}else{r.kg=n;r.kgMan=true}}
+ else if(field==='pct'){const n=num(val);r.pct=n==null?null:n/100;r.kgMan=false;r.kg=rowKg(a,r)}
+ else if(field==='reps'||field==='rpe'){
+  if(field==='reps')r.reps=r.l==='acc'?val:(num(val)??r.reps);else r.rpe=num(val);
+  // Si la fila tiene RPE pautado, el % vuelve a calcularse por tabla RPE; back-offs y filas a % fijo lo mantienen
+  if(r.rpe!=null&&!String(r.lbl).startsWith('Back'))r.pct=null;
+  if(!r.kgMan)r.kg=rowKg(a,r)}
+ else if(field==='sets')r.sets=num(val)??r.sets;
+ else r[field]=val;
+ save();refreshRow(a,r)}
+function refreshRow(a,r){const set=(k,v)=>{const el=document.getElementById(k+'_'+r.id);if(el){if('value' in el&&el.tagName==='INPUT')el.value=v;else el.innerHTML=v}};
+ if(ALL_L.includes(r.l)){const p=rowPct(r);set('pct',p!=null?fx(p*100,1):'');set('kg',r.kg??'');}
+ const e=ALL_L.includes(r.l)?e1L(a,r.l,r.real.kg,r.real.reps,r.real.rpe):null;const f=EXMAP[r.ex]?.f??1;
+ set('e1',e?`<b>${fx(e,1)}</b>${f!==1?`<div class="small muted">≈${fx(e/f,0)} comp</div>`:''}${devTag(r)}`:'')}
+function devTag(r){const tr=num(r.rpe),rr=num(r.real.rpe),rk=num(r.real.kg);if(tr==null||rr==null||!rk||r.kg==null)return '';if(Math.abs(rk-r.kg)>2.5)return '';const d=rr-tr;if(d>=1)return `<div class="small" style="color:var(--red)">+${fx(d,1)} RPE</div>`;if(d<=-1)return `<div class="small" style="color:var(--green)">${fx(d,1)} RPE</div>`;return ''}
+function delRow(id){const f=findRow(id);if(!f)return;f.d.rows=f.d.rows.filter(x=>x.id!==id);save();render()}
+function addRow(bid,wi,di){const a=A();const b=a.bloques.find(x=>x.id===bid);b.plan.weeks[wi].days[di].rows.push(mkRow('a_remopecho','acc','A',3,'10',8,null,''));save();render()}
+function moveRow(id,d){const f=findRow(id);const rows=f.d.rows;const i=rows.findIndex(x=>x.id===id),j=i+d;if(j<0||j>=rows.length)return;[rows[i],rows[j]]=[rows[j],rows[i]];save();render()}
+function setDayNote(bid,wi,di,v){const a=A();a.bloques.find(x=>x.id===bid).plan.weeks[wi].days[di].nota=v;save()}
+function setPlanW(w){A().planW=w;save();render()}
+function copyWeekLoads(){window.print()}
+function roleOpts(v){const o=[['H','Pesada'],['L','Técnica'],['V','Variante'],['A','Accesorio']];if(v==='C')o.push(['C','Competición']);return o.map(([k,n])=>`<option value="${k}" ${v===k?'selected':''}>${n}</option>`).join('')}
+function setRole(id,role){const f=findRow(id);if(!f)return;const {a,b,w,d,r}=f;r.rol=role;
+ const wi=b.plan.weeks.indexOf(w);const hasDel=b.descarga&&b.semanas>1&&b.tipo!=='tap';const nW=b.semanas-(hasDel?1:0);
+ const tipo=w.comp?null:(w.del?'des':b.tipo);
+ if(tipo&&BLOCKS[tipo]){
+  if(role==='A'){const P=presc(a,b,'A',r.l,w.del?0:wi,w.del?1:nW,tipo);r.sets=P.s;r.reps=ALL_L.includes(r.l)?parseInt(P.r)||10:P.r;r.rpe=P.e;r.pct=null;r.lbl=''}
+  else if(ALL_L.includes(r.l)){const P=presc(a,b,role,r.l,w.del?0:wi,w.del?1:nW,tipo);r.pct=null;r.kgMan=false;
+   if(P.m==='tb'){r.sets=1;r.reps=P.r;r.rpe=P.e;r.lbl='Top set';const bo=mkRow(r.ex,r.l,role,P.bs,P.br,null,pctRPE(P.r,P.e)*(1-P.drop),'Back-off −'+Math.round(P.drop*100)+'%');d.rows.splice(d.rows.indexOf(r)+1,0,bo);bo.kg=rowKg(a,bo)}
+   else{r.sets=P.s;r.reps=P.r;r.rpe=P.e;r.lbl=role==='L'?'Técnica':''}}
+ }
+ if(ALL_L.includes(r.l)&&!r.kgMan)r.kg=rowKg(a,r);save();render();toast('Sesión marcada como '+ROLE_N[role]+' con la pauta del bloque')}
+function exOptions(sel){const grp=(t,f)=>`<optgroup label="${t}">${EX.filter(f).map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(exName(e.id,A()))}</option>`).join('')}</optgroup>`;
+ const a=A();const act=a?LA(a):LK;const selL=EXMAP[sel]?.l;
+ return ALL_L.filter(l=>act.includes(l)||l===selL).map(l=>grp(LIFTS[l],e=>e.l===l&&e.t!=='acc')).join('')+grp('Accesorios',e=>e.t==='acc')}
+function rPlan(a){
+ const gen=a.bloques.filter(b=>b.plan);
+ if(!gen.length)return `<div class="empty">Aún no hay planes generados.<br><br><button class="btn p" onclick="go('bloque')">Configurar bloques</button> ${a.bloques.length?'<button class="btn" onclick="genAll()">Generar todos</button>':''}</div>`;
+ let b=a.bloques.find(x=>x.id===a.selB&&x.plan)||gen[0];a.selB=b.id;const bi=a.bloques.indexOf(b);const B=BLOCKS[b.tipo];
+ const W=b.plan.weeks;let wi=clamp(a.planW||0,0,W.length-1);const wk=W[wi];
+ const chips=a.bloques.map((x,i)=>`<button class="${x.id===b.id?'on':''}" ${x.plan?`onclick="selBlock('${x.id}')"`:'disabled style="opacity:.35"'} style="${x.id===b.id?'':'border-left:4px solid '+BLOCKS[x.tipo].c}">${i+1}. ${BLOCKS[x.tipo].n.split(' / ')[0]}</button>`).join('');
+ const wtabs=W.map((w,i)=>`<button class="${i===wi?'on':''} ${w.del?'dl':''}" onclick="setPlanW(${i})">${w.comp?'Semana competición':'Semana '+(i+1)}${w.del?' · Descarga':''}</button>`).join('');
+ const days=wk.days.map((d,di)=>{const date=dayDate(a,bi,wi,di);return `<div class="day"><div class="day-h"><h4>${esc(d.nombre)} <span class="muted small" style="text-transform:none;font-family:Inter">· ${fmtD(date)}</span></h4><input style="flex:1;min-width:200px" placeholder="Notas del día..." value="${esc(d.nota)}" onchange="setDayNote('${b.id}',${wi},${di},this.value)"></div>
+  <div class="day-b tbl-wrap">${d.rows.length?`<table><tr><th></th><th>Ejercicio</th><th>Series</th><th>Reps</th><th>RPE</th><th>%</th><th>Kg</th><th style="border-left:2px solid var(--y)">Kg real</th><th>Reps</th><th>RPE</th><th>e1RM</th><th class="noprint"></th></tr>
+  ${d.rows.map(r=>{const isL=ALL_L.includes(r.l);const p=rowPct(r);const e=isL?e1L(a,r.l,r.real.kg,r.real.reps,r.real.rpe):null;const f=EXMAP[r.ex]?.f??1;
+   return `<tr><td><select class="role ${r.rol}" style="border:none;cursor:pointer;padding:3px 4px" title="Tipo de trabajo en esta sesión" onchange="setRole('${r.id}',this.value)">${roleOpts(r.rol)}</select>${r.lbl?`<div class="small muted" style="margin-top:2px">${esc(r.lbl)}</div>`:''}</td>
+   <td><select style="max-width:300px" onchange="updRow('${r.id}','ex',this.value)">${exOptions(r.ex)}</select></td>
+   <td><input class="n" value="${r.sets??''}" onchange="updRow('${r.id}','sets',this.value)"></td>
+   <td><input class="n" value="${esc(r.reps??'')}" onchange="updRow('${r.id}','reps',this.value)"></td>
+   <td><input class="n" value="${r.rpe??''}" placeholder="–" onchange="updRow('${r.id}','rpe',this.value)"></td>
+   <td>${isL?`<input class="n" id="pct_${r.id}" value="${p!=null?fx(p*100,1):''}" onchange="updRow('${r.id}','pct',this.value)">`:'<span class="muted small">RIR '+(r.rpe!=null?Math.max(0,10-r.rpe):'–')+'</span>'}</td>
+   <td>${isL?`<input class="n2" id="kg_${r.id}" value="${r.kg??''}" style="font-weight:700;color:var(--y)" onchange="updRow('${r.id}','kg',this.value)">`:''}</td>
+   <td style="border-left:2px solid var(--y)"><input class="n2" value="${esc(r.real.kg)}" onchange="updRow('${r.id}','real.kg',this.value)"></td>
+   <td><input class="n" value="${esc(r.real.reps)}" onchange="updRow('${r.id}','real.reps',this.value)"></td>
+   <td><input class="n" value="${esc(r.real.rpe)}" onchange="updRow('${r.id}','real.rpe',this.value)"></td>
+   <td id="e1_${r.id}" style="min-width:70px">${e?`<b>${fx(e,1)}</b>${f!==1?`<div class="small muted">≈${fx(e/f,0)} comp</div>`:''}${devTag(r)}`:''}</td>
+   <td class="noprint" style="white-space:nowrap"><button class="btn s" onclick="moveRow('${r.id}',-1)">↑</button><button class="btn s" onclick="moveRow('${r.id}',1)">↓</button><button class="btn s d" onclick="delRow('${r.id}')">✕</button></td></tr>`}).join('')}</table>`:'<div class="muted small" style="padding:8px">Sin ejercicios.</div>'}
+  <button class="btn s noprint" style="margin-top:6px" onclick="addRow('${b.id}',${wi},${di})">+ Ejercicio</button></div></div>`}).join('');
+ const tw=wk.comp?BLOCKS.tap:BLOCKS[wk.tipo];
+ return `
+ <div class="wk-tabs noprint" style="margin-bottom:10px">${chips}</div>
+ <div class="card" style="border-left:6px solid ${B.c}"><div class="row between"><div><h2>${esc(a.nombre)} · ${B.n}</h2><div class="small muted">${fmtDL(addDays(blockStart(a,bi),wi*7))} · Generado ${fmtD(b.plan.gen)} · RM: SQ ${a.rm.sq} · BP ${a.rm.bp} · DL ${a.rm.dl} kg</div></div>
+ <div class="row noprint"><button class="btn" onclick="recalcAll(A());save();render();toast('Cargas recalculadas con los RM actuales')">↻ Recalcular cargas</button><button class="btn" onclick="window.print()">🖨 Imprimir semana</button></div></div>
+ <div class="wk-tabs noprint" style="margin-top:12px">${wtabs}</div>
+ <div class="note" style="margin-top:12px"><b>${wk.del?'Semana de descarga':wk.comp?'Semana de competición':tw.n}</b> — ${wk.del?BLOCKS.des.obj:tw.obj}</div></div>
+ ${days}
+ <p class="small muted">Carga = RM × % (tabla RPE según reps y RPE pautados) × factor de la variante, redondeada a 2,5 kg. Los back-offs van a % fijo del top set. Si el top set sale a otro RPE, ajusta los back-offs ese día. Edita cualquier campo: el kg manual queda fijado.</p>`}
+
+// ---------- PROGRESO ----------
+function addLog(){const g=id=>document.getElementById(id).value;const a=A();const x={fecha:g('lgF')||todayISO(),l:g('lgL'),kg:num(g('lgK')),reps:num(g('lgR')),rpe:num(g('lgE'))};if(!x.kg||!x.reps)return toast('Indica kg y reps');a.logs.push(x);save();render();toast('Registro añadido')}
+function delLog(i){const a=A();a.logs.splice(i,1);save();render()}
+function setRMfrom(l,v){const a=A();a.rm[l]=r25(v);recalcAll(a);save();render();toast(LIFTS[l]+': RM actualizado a '+a.rm[l]+' kg y cargas recalculadas')}
+function chart(a,l,logs){const pts=logs.filter(x=>x.l===l);const Wd=640,H=200,P={l:42,r:12,t:12,b:26};
+ if(!pts.length)return `<div class="empty" style="padding:24px">Sin registros de ${LIFTS[l]}</div>`;
+ const xs=pts.map(p=>parseD(p.fecha).getTime());let x0=Math.min(...xs),x1=Math.max(...xs);if(x1===x0){x0-=864e5*7;x1+=864e5*7}
+ const ys=pts.map(p=>p.e1).concat([a.rm[l]||0]);let y0=Math.min(...ys)*0.95,y1=Math.max(...ys)*1.03;
+ const X=t=>P.l+(t-x0)/(x1-x0)*(Wd-P.l-P.r),Y=v=>H-P.b-(v-y0)/(y1-y0)*(H-P.t-P.b);
+ const ticks=[0,.25,.5,.75,1].map(k=>y0+(y1-y0)*k);
+ const path=pts.map((p,i)=>(i?'L':'M')+X(parseD(p.fecha).getTime()).toFixed(1)+' '+Y(p.e1).toFixed(1)).join(' ');
+ return `<svg viewBox="0 0 ${Wd} ${H}" style="width:100%;height:auto">
+  ${ticks.map(t=>`<line x1="${P.l}" x2="${Wd-P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="#262626"/><text x="${P.l-6}" y="${Y(t)+4}" fill="#8a8a8a" font-size="10" text-anchor="end">${Math.round(t)}</text>`).join('')}
+  ${a.rm[l]?`<line x1="${P.l}" x2="${Wd-P.r}" y1="${Y(a.rm[l])}" y2="${Y(a.rm[l])}" stroke="#a3a3a3" stroke-dasharray="5 4"/><text x="${Wd-P.r}" y="${Y(a.rm[l])-4}" fill="#a3a3a3" font-size="10" text-anchor="end">RM ${a.rm[l]}</text>`:''}
+  <path d="${path}" fill="none" stroke="#FFD60A" stroke-width="2.5"/>
+  ${pts.map(p=>`<circle cx="${X(parseD(p.fecha).getTime())}" cy="${Y(p.e1)}" r="4.5" fill="${p.src==='manual'?'#0a0a0a':'#FFD60A'}" stroke="#FFD60A" stroke-width="2"><title>${fmtD(p.fecha)} · ${p.kg}×${p.reps} @${p.rpe??'-'} → e1RM ${fx(p.e1,1)}</title></circle>`).join('')}
+  <text x="${P.l}" y="${H-6}" fill="#8a8a8a" font-size="10">${fmtD(isoD(new Date(x0)))}</text><text x="${Wd-P.r}" y="${H-6}" fill="#8a8a8a" font-size="10" text-anchor="end">${fmtD(isoD(new Date(x1)))}</text>
+ </svg>`}
+function rProgreso(a){const logs=planLogs(a);
+ const card=l=>{const ls=logs.filter(x=>x.l===l);const last3=ls.slice(-3);const avg=last3.length?last3.reduce((s,x)=>s+x.e1,0)/last3.length:null;const best=ls.length?Math.max(...ls.slice(-6).map(x=>x.e1)):null;
+  const ratio=avg&&a.rm[l]?avg/a.rm[l]:null;const dv=last3.filter(x=>x.tRPE!=null&&x.rpe!=null).map(x=>x.rpe-x.tRPE);const dAvg=dv.length?dv.reduce((s,x)=>s+x,0)/dv.length:null;
+  let msg='',cls='';
+  if(ratio==null)msg='Registra kg, reps y RPE reales en el plan (o aquí abajo) para ver la tendencia.';
+  else if(ratio>=1.03){msg=`Rinde por encima del RM (media e1RM ${fx(avg,1)} kg, +${fx((ratio-1)*100,1)}%). Sube el RM para que las cargas sigan siendo efectivas.`;cls='g'}
+  else if(ratio<=.95){msg=`Por debajo del RM (${fx((ratio-1)*100,1)}%). Posible fatiga acumulada: revisa sueño/estrés/dieta, baja cargas 3-5% o adelanta la descarga.`;cls='r'}
+  else msg=`En línea con lo previsto (${ratio>=1?'+':''}${fx((ratio-1)*100,1)}% vs RM).`;
+  if(dAvg!=null&&dAvg>=1)msg+=` Las series salen <b>+${fx(dAvg,1)} RPE</b> por encima de lo pautado: mantener o bajar carga la próxima semana.`;
+  if(dAvg!=null&&dAvg<=-1)msg+=` Las series salen <b>${fx(dAvg,1)} RPE</b> por debajo: subir 2,5-5% la próxima semana.`;
+  return `<div class="card"><div class="row between"><h3>${LIFTS[l]}</h3><div class="row"><span class="chip">RM ${a.rm[l]} kg</span>${best?`<span class="chip y">Mejor e1RM reciente ${fx(best,1)}</span><button class="btn s" onclick="setRMfrom('${l}',${best})">Usar como RM</button>`:''}</div></div>
+   ${chart(a,l,logs)}<div class="note ${cls}">${msg}</div></div>`};
+ return `<h2 style="margin-bottom:12px">Progreso · ${esc(a.nombre)}</h2>
+ <div class="grid g3">${LA(a).map(card).join('')}</div>
+ <div class="grid g2">
+ <div class="card"><h3>Registro manual</h3><p class="small muted">Para tests, top sets fuera del plan o RM previos. e1RM con la tabla RPE.</p>
+  <div class="grid g4" style="margin-top:8px"><label class="f">Fecha<input type="date" id="lgF" value="${todayISO()}"></label><label class="f">Levantamiento<select id="lgL">${LA(a).map(l=>`<option value="${l}">${LIFTS[l]}</option>`).join('')}</select></label><label class="f">Kg<input id="lgK" type="number" step="2.5"></label><label class="f">Reps<input id="lgR" type="number"></label><label class="f">RPE<input id="lgE" type="number" step="0.5" placeholder="10"></label></div>
+  <button class="btn p" style="margin-top:10px" onclick="addLog()">Añadir</button></div>
+ <div class="card"><h3>Calculadora rápida e1RM</h3><div class="grid g4" style="margin-top:8px"><label class="f">Kg<input id="cK" type="number" oninput="calcE1()"></label><label class="f">Reps<input id="cR" type="number" oninput="calcE1()"></label><label class="f">RPE<input id="cE" type="number" step="0.5" oninput="calcE1()"></label><div class="kpi"><div class="lbl">e1RM</div><div class="val" id="cOut" style="color:var(--y)">–</div></div></div></div>
+ </div>
+ <div class="card"><h3>Historial</h3><div class="tbl-wrap"><table><tr><th>Fecha</th><th>Lev.</th><th>Kg</th><th>Reps</th><th>RPE</th><th>RPE pautado</th><th>e1RM</th><th>Origen</th><th></th></tr>
+ ${logs.slice().reverse().map(x=>`<tr><td>${fmtD(x.fecha)}</td><td>${LIFTS[x.l]}</td><td>${x.kg}</td><td>${x.reps}</td><td>${x.rpe??'–'}</td><td class="muted">${x.tRPE??'–'}</td><td><b>${fx(x.e1,1)}</b></td><td class="small muted">${x.src==='plan'?esc(x.lbl):'Manual'}</td><td>${x.src==='manual'?`<button class="btn s d" onclick="delLog(${a.logs.indexOf(a.logs.find(y=>y.fecha===x.fecha&&y.l===x.l&&y.kg===x.kg&&y.reps===x.reps))})">✕</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Sin registros todavía.</td></tr>'}
+ </table></div></div>`}
+function calcE1(){const v=e1rm(document.getElementById('cK').value,document.getElementById('cR').value,document.getElementById('cE').value||10);document.getElementById('cOut').textContent=v?fx(v,1)+' kg':'–'}
+
+// ---------- COMPETICIÓN ----------
+function setProj(l,v){const a=A();a.intentos.proj[l]=num(v);recalcAll(a);save();render()}
+function setStrat(k){const a=A();a.intentos.pcts=STRATS[k].slice();recalcAll(a);save();render()}
+function setPct(i,v){const a=A();a.intentos.pcts[i]=num(v)||a.intentos.pcts[i];recalcAll(a);save();render()}
+function rComp(a){const at=attempts(a);const pc=a.intentos.pcts;const logs=planLogs(a);
+ const tot=i=>LK.reduce((s,l)=>s+at[l][i],0);
+ const best=l=>{const ls=logs.filter(x=>x.l===l).slice(-6);return ls.length?Math.max(...ls.map(x=>x.e1)):null};
+ const warm=l=>{const op=at[l][0];const st=[[20,'8-10'],[.4,'5'],[.55,'3'],[.7,'2'],[.8,'1'],[.88,'1'],[.94,'1 (opcional)']];return st.map(([p,r])=>`<tr><td>${p===20?'Barra':Math.round(p*100)+'%'}</td><td><b>${p===20?20:Math.max(20,r25(op*p))} kg</b></td><td>× ${r}</td></tr>`).join('')};
+ const strat=Object.entries(STRATS).find(([k,v])=>v.join()===pc.join())?.[0];
+ return `<h2 style="margin-bottom:12px">Competición · ${esc(a.compNombre||'—')} ${a.comp?`<span class="chip y" style="font-family:Inter;vertical-align:middle">${fmtDL(a.comp)}</span>`:''}</h2>
+ <div class="grid g2">
+  <div class="card"><h3>1RM proyectado tras el peaking</h3><p class="small muted">Por defecto, el RM actual. Ajusta con el último top single del peaking (mejor e1RM reciente como guía).</p>
+   <div class="grid g3" style="margin-top:8px">${LK.map(l=>{const b=best(l);return `<label class="f">${LIFTS[l]}<input type="number" step="2.5" value="${projRM(a,l)}" onchange="setProj('${l}',this.value)"><span class="small" style="text-transform:none">${b?'e1RM reciente: '+fx(b,1):'RM: '+a.rm[l]}</span></label>`}).join('')}</div>
+   <h4 style="margin-top:14px">Estrategia</h4>
+   <div class="pill-sel" style="margin-top:6px">${Object.keys(STRATS).map(k=>`<button class="${strat===k?'on normal':''}" onclick="setStrat('${k}')">${k[0].toUpperCase()+k.slice(1)} (${STRATS[k].join(' / ')}%)</button>`).join('')}</div>
+   <div class="grid g3" style="margin-top:10px">${[0,1,2].map(i=>`<label class="f">% ${i+1}º intento<input type="number" step="0.5" value="${pc[i]}" onchange="setPct(${i},this.value)"></label>`).join('')}</div>
+  </div>
+  <div class="card y"><h3>Intentos</h3>
+   <table style="margin-top:8px"><tr><th></th><th>1º (opener)</th><th>2º</th><th>3º</th></tr>
+   ${LK.map(l=>`<tr><td><b>${LIFTS[l]}</b></td>${at[l].map((kg,i)=>`<td class="attempt" style="color:${i===0?'var(--text)':'var(--y)'}">${kg}</td>`).join('')}</tr>`).join('')}
+   <tr><td><b>Total</b></td>${[0,1,2].map(i=>`<td class="attempt">${tot(i)}</td>`).join('')}</tr>
+   <tr><td class="muted">DOTS</td>${[0,1,2].map(i=>`<td>${fx(dots(tot(i),a.peso,a.sexo),1)}</td>`).join('')}</tr>
+   <tr><td class="muted">IPF GL</td>${[0,1,2].map(i=>`<td>${fx(glp(tot(i),a.peso,a.sexo),1)}</td>`).join('')}</tr></table>
+   <p class="small muted" style="margin-top:8px">Opener: carga que levantaría el peor día posible (≈RPE 7-8). 2º: confirmar un total sólido. 3º: decidir según el 2º.</p>
+  </div>
+ </div>
+ <div class="card"><h3>Ajuste del 2º y 3º intento</h3>
+  <table style="margin-top:8px"><tr><th>Intento previo salió a…</th><th>Salto recomendado</th></tr>
+   <tr><td>RPE ≤7 (rápido)</td><td>+5-6% (SQ/DL) · +4-5% (BP)</td></tr>
+   <tr><td>RPE 8</td><td>+4% (SQ/DL) · +3% (BP)</td></tr>
+   <tr><td>RPE 9</td><td>+2-2,5% (SQ/DL) · +1,5-2% (BP)</td></tr>
+   <tr><td>RPE 9,5-10</td><td>Repetir o +2,5 kg solo si el total lo pide</td></tr>
+   <tr><td>Nulo técnico (profundidad, pausa, comandos)</td><td>Repetir peso corrigiendo el fallo</td></tr>
+   <tr><td>Fallo por fuerza</td><td>Repetir peso o bajar si el siguiente movimiento lo requiere</td></tr></table>
+ </div>
+ <div class="card"><h3>Calentamiento en competición (desde el opener)</h3><div class="grid g3" style="margin-top:8px">${LK.map(l=>`<div><h4>${LIFTS[l]} · opener ${at[l][0]} kg</h4><table>${warm(l)}</table></div>`).join('')}</div>
+  <p class="small muted" style="margin-top:8px">Último calentamiento ~5-8 intentos antes de su turno (≈4-6 min). Practicar este mismo calentamiento en los openers de la semana de competición.</p></div>
+ <div class="grid g2">
+  <div class="card"><h3>Checklist IPF / AEP (Classic)</h3><ul class="clean small">
+   <li>Pesaje: empieza 2 h antes del inicio de la sesión y dura 1,5 h. Declarar alturas de rack e intentos iniciales.</li>
+   <li>Equipamiento homologado: singlet, camiseta, cinturón, rodilleras de neopreno (sleeves), muñequeras, calcetines largos para peso muerto, zapatillas.</li>
+   <li>Sentadilla: comandos "Squat" y "Rack". Profundidad: pliegue de la cadera por debajo de la parte superior de la rodilla.</li>
+   <li>Banca: comandos "Start", "Press" y "Rack". Pausa visible en el pecho. Glúteos en el banco y pies en el suelo.</li>
+   <li>Peso muerto: comando "Down". Bloqueo completo de rodillas y hombros atrás. Sin rampa (hitching).</li>
+   <li>2º y 3º intento: comunicarlos en el minuto siguiente al intento anterior. Incrementos mínimos de 2,5 kg (salvo récords).</li>
+   <li>Revisar el reglamento vigente de la federación antes de cada competición.</li>
+  </ul></div>
+  <div class="card"><h3>Día de competición</h3><ul class="clean small">
+   <li>Plan de comida post-pesaje: carbohidratos de fácil digestión, sodio y líquidos. Nada nuevo.</li>
+   <li>Tener a mano: tarjeta de intentos, alturas, magnesio, comida para el día, ropa de recambio.</li>
+   <li>Handler: controla tiempos de calentamiento, comunica intentos y gestiona el plan B.</li>
+   <li>Peso muerto: el 3º intento puede cambiarse dos veces. Ten clara la cifra para ganar/podio/récord.</li>
+  </ul></div>
+ </div>`}
+
+// ---------- GUÍA ----------
+function setGF(k,v){GF[k]=v;render()}
+function rGuia(a){
+ const lib=EX.filter(e=>(GF.lift==='all'||(GF.lift==='acc'?e.t==='acc':e.l===GF.lift))&&(GF.wp==='all'||e.wp.includes(GF.wp)));
+ return `<div class="guide">
+ <h2 style="margin-bottom:12px">Guía de programación</h2>
+ <div class="grid g2">
+  <div class="card"><h3>Modelo de periodización</h3>
+   <p>Periodización por bloques (acumulación → transmutación → realización) con autorregulación por RPE. Cada bloque concentra un objetivo y la especificidad sube a medida que se acerca la competición.</p>
+   <ul class="clean small"><li><b>Lejos de competir:</b> volumen alto, variantes menos específicas, hipertrofia y puntos débiles.</li><li><b>Medio plazo:</b> fuerza con top set + back-offs, variantes más cercanas.</li><li><b>Cerca:</b> intensidad alta, volumen bajo, movimientos de competición, singles.</li></ul>
+   <p class="small muted">Carga híbrida: el % se deriva del RPE objetivo con la tabla RPE, y el atleta ajusta en el día si el RPE real no coincide.</p></div>
+  <div class="card"><h3>Peaking y taper</h3><ul class="clean small">
+   <li>Peaking 2-4 semanas: singles a RPE 8 → 9,5, volumen bajando, sin técnica nueva.</li>
+   <li>Último peso muerto pesado: 10-14 días antes. Sentadilla y banca pesadas hasta 7-10 días antes.</li>
+   <li>Taper: reducir volumen 40-60% manteniendo intensidad y frecuencia. 1 semana suele bastar en novatos y ligeros; 2 en avanzados y pesados.</li>
+   <li>Openers ~5 días antes, a RPE ≤8. Últimos 2 días: descanso o activación muy ligera.</li>
+   <li>Sin competición: cerrar el ciclo con intensificación y un día de test (single a RPE 9) en vez de peaking completo.</li></ul></div>
+  <div class="card"><h3>Frecuencia</h3><ul class="clean small">
+   <li>Sentadilla 2-3×/semana · Banca 3-4× · Peso muerto 1-2× (la más fatigante).</li>
+   <li>Levantamiento débil: +1 sesión. Fuerte: mínima frecuencia de mantenimiento.</li>
+   <li>Repartir la misma carga semanal en más sesiones mejora la calidad técnica y la recuperación entre series.</li>
+   <li>Evitar sentadilla pesada y peso muerto pesado el mismo día (el generador lo evita).</li></ul></div>
+  <div class="card"><h3>Descargas y fatiga</h3><ul class="clean small">
+   <li>Descarga cada 4-6 semanas o al final de cada bloque: −40/50% series, RPE ≤6.</li>
+   <li>Señales para adelantarla: e1RM cayendo 2+ semanas, RPE real ≥1 punto por encima del pautado, molestias articulares, sueño y motivación bajos.</li>
+   <li>Si el top set sale a +1 RPE: recortar back-offs ese día. Si sale a −1: subir 2,5-5% la semana siguiente.</li></ul></div>
+ </div>
+ <div class="card"><h3>Tabla RPE (% del 1RM)</h3><div class="tbl-wrap"><table><tr><th>RPE \\ Reps</th>${Array.from({length:10},(_,i)=>`<th>${i+1}</th>`).join('')}</tr>
+  ${[10,9.5,9,8.5,8,7.5,7,6.5,6].map(e=>`<tr><td><b>${String(e).replace('.',',')}</b></td>${Array.from({length:10},(_,i)=>`<td>${fx(pctRPE(i+1,e)*100,1)}</td>`).join('')}</tr>`).join('')}</table></div>
+  <p class="small muted">RPE 10 = máximo · 9 = quedaba 1 rep · 8 = quedaban 2 · 7 = quedaban 3. RIR = 10 − RPE.</p></div>
+ <div class="card"><h3>Tipos de bloque</h3><div class="grid g3" style="margin-top:8px">${BLOCK_ORDER.map(k=>{const B=BLOCKS[k];return `<div class="kpi" style="border-left:5px solid ${B.c}"><h4>${B.n}</h4><p class="small">${B.obj}</p><p class="small muted"><b>Rango:</b> ${B.rng}<br><b>Duración:</b> ${B.dur}<br><b>Cuándo:</b> ${B.cuando}</p></div>`}).join('')}</div></div>
+ <div class="card"><h3>Biblioteca de ejercicios (${lib.length})</h3>
+  <div class="row" style="margin:8px 0"><select onchange="setGF('lift',this.value)"><option value="all">Todos</option>${ALL_L.map(l=>`<option value="${l}" ${GF.lift===l?'selected':''}>${LIFTS[l]}</option>`).join('')}<option value="acc" ${GF.lift==='acc'?'selected':''}>Accesorios</option></select>
+  <select onchange="setGF('wp',this.value)"><option value="all">Cualquier punto débil</option>${WEAK.map(w=>`<option value="${w.id}" ${GF.wp===w.id?'selected':''}>${w.n}</option>`).join('')}</select></div>
+  <div class="tbl-wrap"><table><tr><th>Ejercicio</th><th>Tipo</th><th>Espec.</th><th>Carga vs RM</th><th>Para qué</th><th>Puntos débiles</th></tr>
+  ${lib.map(e=>`<tr><td><b>${esc(exName(e.id,a))}</b></td><td class="small">${e.t==='comp'?'Competición':e.t==='var'?'Variante':'Accesorio'}</td><td>${e.e}/5</td><td class="small">${e.f?Math.round(e.f*100)+'%':'RPE'}</td><td class="small muted">${e.w}</td><td class="small">${e.wp.map(id=>WEAK.find(w=>w.id===id)?.n).join(' · ')}</td></tr>`).join('')}</table></div></div>
+ <div class="card"><h3>Diccionario de puntos débiles</h3><div class="tbl-wrap"><table><tr><th>Punto débil</th><th>Qué hacer</th><th>Ejercicios clave</th></tr>
+  ${WEAK.map(w=>`<tr><td><b>${w.n}</b><div class="small muted">${w.l==='g'?'General':LIFTS[w.l]}</div></td><td class="small">${w.tip}</td><td class="small">${EX.filter(e=>e.wp.includes(w.id)).map(e=>e.n).slice(0,6).join(' · ')}</td></tr>`).join('')}</table></div></div>
+ </div>`}
+
+// ===================== BACKUP =====================
+function exportData(){const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const l=document.createElement('a');l.href=u;l.download='backup-powerlifting-yaronska-'+todayISO()+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Backup exportado')}
+function importData(ev){if(EMBED)return importOne(ev);const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.athletes))throw 0;
+ const merge=S.athletes.length&&confirm('¿Añadir a los atletas existentes? (Cancelar = reemplazar todo)');
+ if(merge){d.athletes.forEach(x=>{if(!S.athletes.some(y=>y.id===x.id))S.athletes.push(x)})}else{S=Object.assign({athletes:[],cur:null,tab:'atleta'},d)}
+ S.cur=S.cur||S.athletes[0]?.id||null;save();render();toast('Backup importado')}catch(e){alert('Archivo no válido')}};rd.readAsText(f);ev.target.value=''}
+
+function importOne(ev){const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);const L=Array.isArray(d.athletes)?d.athletes:(d&&d.bloques?[d]:null);if(!L||!L.length)throw 0;
+ let x=L[0];if(L.length>1){const t=prompt('¿Qué atleta quieres pasar a este cliente? Escribe el número:\n'+L.map((a,i)=>(i+1)+'. '+a.nombre).join('\n'),'1');if(t===null)return;x=L[(parseInt(t)||1)-1];if(!x)throw 0}
+ const cur=A();if(cur&&(cur.bloques||[]).length&&!confirm('Esto sustituye el programa actual de este cliente por el de «'+x.nombre+'». ¿Continuar?'))return;
+ x=JSON.parse(JSON.stringify(x));x.id=cur?cur.id:uid();S.athletes=[x];S.cur=x.id;save();render();toast('Programa de '+x.nombre+' importado')}catch(e){alert('Archivo no válido: usa el backup que exporta el Powerlifting Planner')}};rd.readAsText(f);ev.target.value=''}
+
+// ===================== DEMO =====================
+function demo(){const a=defAthlete();a.nombre='Atleta ejemplo';a.peso=82;a.rm={sq:190,bp:115,dl:235};a.estado={sq:'debil',bp:'normal',dl:'fuerte'};a.debiles=['sq_hoyo','sq_torso','bp_bloqueo','g_tolerancia'];a.fuertes=['f_recupera'];
+ a.comp=addDays(todayISO(),16*7);a.compNombre='Campeonato regional';S.athletes.push(a);S.cur=a.id;save();proposeMacro();genAll();S.tab='macro';save();render()}
+
+if(EMBED){
+ document.querySelectorAll('.ys-only').forEach(b=>b.style.display='');
+ try{S.tab=localStorage.getItem(KEY+'_tab')||'atleta'}catch(e){}
+ document.getElementById('main').innerHTML='<div class="empty">Cargando…</div>';
+ window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||!e.data.ys)return;const m=e.data;
+  if(m.type==='load'){let a=m.data;if(!a||!a.id){a=defAthlete();a.nombre=m.name||a.nombre;if(m.peso)a.peso=m.peso;if(m.sexo)a.sexo=m.sexo;a.id=m.id||a.id}
+   S.athletes=[a];S.cur=a.id;render();parent.postMessage({ys:true,type:'loaded'},location.origin)}});
+ parent.postMessage({ys:true,type:'ready'},location.origin);
+}else{load();if(!S.cur&&S.athletes.length)S.cur=S.athletes[0].id;render();}
+
+</script>
+</body>
+</html>

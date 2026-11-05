@@ -73,6 +73,8 @@ const db = {
     return { client, admin, weights, checkins, daily, logs };
   },
   // ---------- Calculadora de dietas (solo entrenador) ----------
+  async getPL(id) { const r = ok(await sb.from('powerlifting').select('data').eq('client_id', id).maybeSingle()); return r ? r.data : null; },
+  async savePL(id, data) { ok(await sb.from('powerlifting').upsert({ client_id: id, data, updated_at: new Date().toISOString() })); },
   async getDietCalc(id) { const r = ok(await sb.from('diet_calc').select('data').eq('client_id', id).maybeSingle()); return r ? r.data : null; },
   async saveDietCalc(id, data) { ok(await sb.from('diet_calc').upsert({ client_id: id, data, updated_at: new Date().toISOString() })); },
   async getSetting(key) { const r = ok(await sb.from('coach_settings').select('value').eq('key', key).maybeSingle()); return r ? r.value : null; },
@@ -100,7 +102,7 @@ const db = {
     return { ck, wl };
   },
   async exportAll() {
-    const T = ['clients', 'client_admin', 'weights', 'checkins', 'daily_logs', 'workout_logs', 'templates', 'diet_calc', 'coach_settings', 'payments'];
+    const T = ['clients', 'client_admin', 'weights', 'checkins', 'daily_logs', 'workout_logs', 'templates', 'diet_calc', 'powerlifting', 'coach_settings', 'payments'];
     const out = {};
     for (const t of T) {
       const rows = []; let from = 0;

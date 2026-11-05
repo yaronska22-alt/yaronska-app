@@ -30,6 +30,8 @@ window.db={
   async loadClient(id,withAdmin){if(!can(id))deny('load');const c=st.clients.find(c=>c.id===id);const f=(t)=>st[t].filter(x=>x.client_id===id).map(x=>JSON.parse(JSON.stringify(x)));
     if(withAdmin&&!isCoach())deny('admin');
     return {client:JSON.parse(JSON.stringify(c)),admin:withAdmin?(st.client_admin.find(a=>a.client_id===id)||null):null,weights:f('weights').sort((a,b)=>a.fecha.localeCompare(b.fecha)),checkins:f('checkins'),daily:f('daily_logs'),logs:f('workout_logs')}},
+  async getPL(id){if(!isCoach())deny('pl');st.pl=st.pl||{};return st.pl[id]||null},
+  async savePL(id,data){if(!isCoach())deny('pl');st.pl=st.pl||{};st.pl[id]=JSON.parse(JSON.stringify(data));persist()},
   async getDietCalc(id){if(!isCoach())deny('calc');st.calc=st.calc||{};return st.calc[id]||null},
   async saveDietCalc(id,data){if(!isCoach())deny('calc');st.calc=st.calc||{};st.calc[id]=JSON.parse(JSON.stringify(data));persist()},
   async getSetting(k){if(!isCoach())deny('set');return (st.settings||{})[k]||null},
