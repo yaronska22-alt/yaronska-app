@@ -21,6 +21,7 @@ Object.defineProperties(CLIENT,{
   trainDays:{get:()=>(FICHA||FICHA_DEF).dias||[]},
   stepsGoal:{get:()=>{const f=FICHA||FICHA_DEF;return +(isTrainOn(dKey())?f.pasosT:f.pasosR)||0}}});
 // ¿Hoy entrena? Lo que marque el cliente hoy; si no, sus días fijos (en «rotación» no hay días fijos)
+function isWeekend(){return [0,6].includes(new Date().getDay())}
 function isTrainToday(){return isTrainOn(iso(new Date()))}
 function isTrainOn(k){try{const d=S&&S.daily&&S.daily[k];if(d&&d.tipo)return d.tipo==='T';if(d&&d.train===true)return true}catch(e){}const f=FICHA||FICHA_DEF;return f.diasModo!=='libre'&&(f.dias||[]).includes(new Date(k+'T12:00').getDay())}
 // día que el cliente está rellenando en Inicio (hoy o uno anterior)
@@ -117,7 +118,7 @@ function fromDb(d){
 }
 async function loadClient(id){
   const d=await db.loadClient(id,ME.role==='coach');fromDb(d);
-  dayIdx=0;today={};ck={};dayType=isTrainToday()?'T':'R';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
+  dayIdx=0;today={};ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
 }
 
 async function sync(){
@@ -247,7 +248,7 @@ async function boot(){
   if(/type=recovery/.test(location.hash))return;
   try{const s=await db.session();if(s)await enter(s.user);else showAuth('login')}catch(e){showAuth('login')}
 }
-let view='client',tab='home',foodTab='plan',meal='lunch',dayType=CLIENT.trainDays.includes(new Date().getDay())?'T':'R',dayIdx=0,F={p:null,f:null,c:null},
+let view='client',tab='home',foodTab='plan',meal='lunch',dayType=[0,6].includes(new Date().getDay())||!CLIENT.trainDays.includes(new Date().getDay())?'R':'T',dayIdx=0,F={p:null,f:null,c:null},
   ck={},coachSel=0,coachTab='ficha',wFrom='',wTo='',exSel='',exMetric='kg',today={};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nf=(n,d=1)=>Number(n).toFixed(d).replace('.',',');
@@ -422,7 +423,7 @@ function vFood(){
   if(!S.planOn)return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div><div class="empty">Tu plan aparecerá aquí en cuanto Yaron lo prepare.</div>`;
   if(!S.restOn)dayType='T';
   return `<div class="hello"><span class="lbl">Alimentación</span><h1>Tus <em>comidas</em></h1></div>
-  ${S.restOn?`<div class="daytype" role="radiogroup" aria-label="Tipo de día"><button type="button" class="t ${dayType==='T'?'on':''}" onclick="dayType='T';render()" aria-pressed="${dayType==='T'}"><b>🏋️ Día de entreno</b><small>Comes un poco más</small></button><button type="button" class="r ${dayType==='R'?'on':''}" onclick="dayType='R';render()" aria-pressed="${dayType==='R'}"><b>🏠 Día de descanso</b><small>Comes un poco menos</small></button></div>`:''}
+  ${S.restOn?`<div class="daytype" role="radiogroup" aria-label="Tipo de día"><button type="button" class="t ${dayType==='T'?'on':''}" onclick="dayType='T';render()" aria-pressed="${dayType==='T'}"><b>🏋️ Día de entreno</b><small>Comes un poco más</small></button><button type="button" class="r ${dayType==='R'?'on':''}" onclick="dayType='R';render()" aria-pressed="${dayType==='R'}"><b>🏠 Descanso o fin de semana</b><small>Días sin entreno, sábado y domingo</small></button></div>`:''}
   <div class="tabs" role="tablist"><button type="button" class="${foodTab==='plan'?'on':''}" onclick="foodTab='plan';render()">Mi plan</button><button type="button" class="${foodTab==='recetas'?'on':''}" onclick="foodTab='recetas';render()">Recetas</button><button type="button" class="${foodTab==='compra'?'on':''}" onclick="foodTab='compra';render()">Compra</button><button type="button" class="${foodTab==='prep'?'on':''}" onclick="foodTab='prep';render()">Meal prep</button></div>
   ${foodTab==='plan'?vPlan():foodTab==='compra'?vShop():foodTab==='prep'?vPrep():vRecipes()}`;
 }
@@ -455,14 +456,14 @@ function vRecipes(){
     <div><span class="lbl">2 · ¿Y de grasa?</span><div class="chips" style="margin-top:7px">${chips('f','f')}</div></div>
     <div><span class="lbl">3 · ¿Y de hidrato?</span><div class="chips" style="margin-top:7px">${chips('c','c')}</div></div>
   </section>
-  <div class="sec-h"><span class="count">${res.length} receta${res.length===1?'':'s'} · cantidades de <b style="color:${dayType==='R'?'var(--ok)':'var(--y)'}">${dayType==='R'?'día de descanso':'día de entreno'}</b></span>${F.p||F.f||F.c?`<button class="btn ghost sm" type="button" onclick="F={p:null,f:null,c:null};render()">Quitar filtros</button>`:''}</div>
+  <div class="sec-h"><span class="count">${res.length} receta${res.length===1?'':'s'} · cantidades de <b style="color:${dayType==='R'?'var(--ok)':'var(--y)'}">${dayType==='R'?'descanso / fin de semana':'día de entreno'}</b></span>${F.p||F.f||F.c?`<button class="btn ghost sm" type="button" onclick="F={p:null,f:null,c:null};render()">Quitar filtros</button>`:''}</div>
   ${res.length?`<div class="rgrid">${res.map(({r,i})=>`<button class="rcard" type="button" onclick="openRecipe(${i})"><img src="${PHOTO(i)}" alt="${esc(r.t)}" loading="lazy"><div><b>${esc(r.t)}</b><small>⏱ ${esc(r.time)}</small></div></button>`).join('')}</div>`
   :`<div class="empty">No hay recetas con esa combinación exacta. Quita uno de los filtros para ver más.</div>`}`;
 }
 function openRecipe(i){
   const r=DATA.recipes[i];const sh=document.getElementById('sheet');const ing=VAR().ing[i].map(x=>({h:x[0],c:x[1]}));
   sh.innerHTML=`<div class="sheet-in ${dayType==='R'?'restmode':''}" role="dialog" aria-label="${esc(r.t)}"><div class="sheet-img"><img src="${PHOTO(i)}" alt=""><button class="sheet-x" type="button" aria-label="Cerrar" onclick="closeSheet()">×</button></div>
-  <div class="sheet-b"><div class="row"><span class="lbl">⏱ ${esc(r.time)}</span><span class="dtag">${dayType==='R'?'🏠 Día de descanso':'🏋️ Día de entreno'}</span></div><h2>${esc(r.t)}</h2>
+  <div class="sheet-b"><div class="row"><span class="lbl">⏱ ${esc(r.time)}</span><span class="dtag">${dayType==='R'?'🏠 Descanso / finde':'🏋️ Día de entreno'}</span></div><h2>${esc(r.t)}</h2>
   <div class="row">${r.tags.map((t,k)=>`<span class="pill ${['p-prot','p-fat','p-carb'][k]||'p-carb'}">${esc(t)}</span>`).join('')}</div>
   <span class="lbl">Ingredientes · cantidades de tu plan</span><ul class="ilist">${ing.map(x=>`<li class="${x.c}">${x.h}</li>`).join('')}</ul>
   <span class="lbl">Preparación</span><ol class="slist">${r.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
@@ -1103,7 +1104,7 @@ function calcSend(){
   CALC.exportCb=d=>{
     if(!d||d.error){toast(d&&d.error||'No se ha podido exportar el plan');return}
     S.planCalc=d;S.planOn=true;S.restOn=mode==='td'&&!!d.R;save();renderCoach();
-    toast(S.restOn?'Plan enviado: el cliente ve días de entreno y sin entreno':'Plan enviado: el cliente ve el mismo plan todos los días');
+    toast(S.restOn?'Plan enviado: el cliente ve días de entreno y de descanso / fin de semana':'Plan enviado: el cliente ve el mismo plan todos los días');
   };
   calcPost({type:'export',opts:{mode,cfg:FICHA.restCfg||{}}});
 }
@@ -1510,15 +1511,15 @@ const restHasCuts=()=>Object.values(FICHA.restCfg||{}).some(m=>Object.values(m||
 let restPrev=null;
 function restPanel(){
   const td=FICHA.dietMode==='td';const C=FICHA.restCfg||{};const tot=R_MEALS.reduce((s,[m])=>s+R_MAC.reduce((a,[g])=>a+(+((C[m]||{})[g])||0),0),0);
-  return `<div class="panel"><div class="sec-h"><span class="lbl">Cómo come este cliente</span><div class="seg2"><button type="button" class="chip ${!td?'on':''}" onclick="setDietMode('lineal')">🍽️ Igual todos los días</button><button type="button" class="chip ${td?'on':''}" onclick="setDietMode('td')">🏋️ Entreno · 🏠 sin entreno</button></div></div>
-  ${td?`<p class="small muted" style="margin:0">Los días sin entreno solo baja lo que pongas aquí (kcal que quitas). Todo lo demás queda igual que los días de entreno. Ejemplo: en la cena, −100 kcal de hidratos.</p>
+  return `<div class="panel"><div class="sec-h"><span class="lbl">Cómo come este cliente</span><div class="seg2"><button type="button" class="chip ${!td?'on':''}" onclick="setDietMode('lineal')">🍽️ Igual todos los días</button><button type="button" class="chip ${td?'on':''}" onclick="setDietMode('td')">🏋️ Entreno · 🏠 descanso y finde</button></div></div>
+  ${td?`<p class="small muted" style="margin:0">Los días sin entreno <b>y los fines de semana</b> solo baja lo que pongas aquí (kcal que quitas). Todo lo demás queda igual que los días de entreno. Ejemplo: en la cena, −100 kcal de hidratos.</p>
     <div class="tbl-w"><table class="rcfg"><thead><tr><th>Comida</th>${R_MAC.map(([,l])=>`<th>${l} (−kcal)</th>`).join('')}<th>Total</th></tr></thead><tbody>
     ${R_MEALS.map(([m,l])=>{const r=C[m]||{};const t=R_MAC.reduce((a,[g])=>a+(+r[g]||0),0);return `<tr><td>${l}</td>${R_MAC.map(([g])=>`<td><input inputmode="numeric" value="${r[g]?esc(r[g]):''}" placeholder="0" onchange="restSet('${m}','${g}',this.value)" aria-label="${l} ${g}"></td>`).join('')}<td><b>${t?'−'+t:'—'}</b></td></tr>`}).join('')}
     </tbody><tfoot><tr><td colspan="5"><b>Total del día</b></td><td><b class="y">${tot?'−'+tot+' kcal':'—'}</b></td></tr></tfoot></table></div>
     <div class="row"><button class="btn ghost sm" type="button" onclick="restPreview()">👁️ Ver cómo queda</button><span class="small muted">Después pulsa «Enviar plan a la app».</span></div><div id="restPrev">${restPrev||''}</div>`
   :`<p class="small muted" style="margin:0">El cliente verá un solo plan, sin selector de día de entreno o descanso.</p>`}</div>`}
 function setDietMode(m){FICHA.dietMode=m;restPrev=null;if(m==='lineal'&&S.planCalc){S.restOn=false}else if(m==='td'&&S.planCalc&&S.planCalc.R&&S.planCalc.mode==='td'){S.restOn=true}save();renderCoach();
-  if(S.planCalc)toast(m==='lineal'?'El cliente ya ve el mismo plan todos los días':S.restOn?'El cliente ya ve entreno / sin entreno':'Configura las bajadas y pulsa «Enviar plan a la app»')}
+  if(S.planCalc)toast(m==='lineal'?'El cliente ya ve el mismo plan todos los días':S.restOn?'El cliente ya ve entreno / descanso y fin de semana':'Configura las bajadas y pulsa «Enviar plan a la app»')}
 function restSet(m,g,v){const C=FICHA.restCfg=FICHA.restCfg||{};C[m]=C[m]||{};const n=Math.max(0,Math.round(+String(v).replace(',','.')||0));if(n)C[m][g]=n;else delete C[m][g];restPrev=null;save();setTimeout(renderCoach)}
 function restPreview(){if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
   CALC.exportCb=d=>{if(!d||d.error){toast(d&&d.error||'No se ha podido calcular');return}
