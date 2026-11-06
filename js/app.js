@@ -1506,27 +1506,32 @@ function consentToggle(el){if(!el.checked){if(!confirm('Si retiras el consentimi
 
 // ---- Cómo come el cliente: igual todos los días, o entreno / descanso con bajadas a mano
 const R_MEALS=[['breakfast','Desayuno'],['midmorning','Almuerzo'],['lunch','Comida'],['snack','Merienda'],['dinner','Cena']];
-const R_MAC=[['protein','Proteína'],['fat','Grasas'],['carb','Hidratos'],['fruit','Fruta']];
-const restHasCuts=()=>Object.values(FICHA.restCfg||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
+const R_MAC=[['protein','Proteína'],['fat','Grasas'],['carb','Hidratos'],['fruit','Fruta'],['vegs','Verduras']];
+const restHasCuts=()=>Object.values(FICHA.restCfg||{}).some(m=>Object.values(m||{}).some(v=>v===true||+v>0));
 let restPrev=null;
 function restPanel(){
-  const td=FICHA.dietMode==='td';const C=FICHA.restCfg||{};const tot=R_MEALS.reduce((s,[m])=>s+R_MAC.reduce((a,[g])=>a+(+((C[m]||{})[g])||0),0),0);
+  const td=FICHA.dietMode==='td';const C=FICHA.restCfg||{};const tot=R_MEALS.reduce((s,[m])=>s+((C[m]||{}).off?0:R_MAC.reduce((a,[g])=>a+(+((C[m]||{})[g])||0),0)),0);if(td&&restPrev===null&&CALC.ready&&CALC.forId===(CUR&&CUR.id))setTimeout(()=>restPreview(true));
   return `<div class="panel"><div class="sec-h"><span class="lbl">Cómo come este cliente</span><div class="seg2"><button type="button" class="chip ${!td?'on':''}" onclick="setDietMode('lineal')">🍽️ Igual todos los días</button><button type="button" class="chip ${td?'on':''}" onclick="setDietMode('td')">🏋️ Entreno · 🏠 descanso y finde</button></div></div>
   ${td?`<p class="small muted" style="margin:0">Los días sin entreno <b>y los fines de semana</b> solo baja lo que pongas aquí (kcal que quitas). Todo lo demás queda igual que los días de entreno. Ejemplo: en la cena, −100 kcal de hidratos.</p>
     <div class="tbl-w"><table class="rcfg"><thead><tr><th>Comida</th>${R_MAC.map(([,l])=>`<th>${l} (−kcal)</th>`).join('')}<th>Total</th></tr></thead><tbody>
-    ${R_MEALS.map(([m,l])=>{const r=C[m]||{};const t=R_MAC.reduce((a,[g])=>a+(+r[g]||0),0);return `<tr><td>${l}</td>${R_MAC.map(([g])=>`<td><input inputmode="numeric" value="${r[g]?esc(r[g]):''}" placeholder="0" onchange="restSet('${m}','${g}',this.value)" aria-label="${l} ${g}"></td>`).join('')}<td><b>${t?'−'+t:'—'}</b></td></tr>`}).join('')}
-    </tbody><tfoot><tr><td colspan="5"><b>Total del día</b></td><td><b class="y">${tot?'−'+tot+' kcal':'—'}</b></td></tr></tfoot></table></div>
+    ${R_MEALS.map(([m,l])=>{const r=C[m]||{};const t=R_MAC.reduce((a,[g])=>a+(+r[g]||0),0);const canOff=m==='midmorning'||m==='snack';return `<tr class="${r.off?'roff':''}"><td>${l}${canOff?`<label class="rq"><input type="checkbox" ${r.off?'checked':''} onchange="restSet('${m}','off',this.checked)"> Quitar</label>`:''}</td>${r.off?`<td colspan="${R_MAC.length}" class="small muted">No la hace en días de descanso y fin de semana</td><td><b>Quitada</b></td>`:R_MAC.map(([g])=>`<td><input inputmode="numeric" value="${r[g]?esc(r[g]):''}" placeholder="0" onchange="restSet('${m}','${g}',this.value)" aria-label="${l} ${g}"></td>`).join('')+`<td><b>${t?'−'+t:'—'}</b></td>`}</tr>`}).join('')}
+    </tbody><tfoot><tr><td colspan="${R_MAC.length+1}"><b>Bajadas a mano</b> <span class="small muted">(más lo que quites con «Quitar»)</span></td><td><b class="y">${tot?'−'+tot+' kcal':'—'}</b></td></tr></tfoot></table></div>
     <div class="row"><button class="btn ghost sm" type="button" onclick="restPreview()">👁️ Ver cómo queda</button><span class="small muted">Después pulsa «Enviar plan a la app».</span></div><div id="restPrev">${restPrev||''}</div>`
   :`<p class="small muted" style="margin:0">El cliente verá un solo plan, sin selector de día de entreno o descanso.</p>`}</div>`}
 function setDietMode(m){FICHA.dietMode=m;restPrev=null;if(m==='lineal'&&S.planCalc){S.restOn=false}else if(m==='td'&&S.planCalc&&S.planCalc.R&&S.planCalc.mode==='td'){S.restOn=true}save();renderCoach();
   if(S.planCalc)toast(m==='lineal'?'El cliente ya ve el mismo plan todos los días':S.restOn?'El cliente ya ve entreno / descanso y fin de semana':'Configura las bajadas y pulsa «Enviar plan a la app»')}
-function restSet(m,g,v){const C=FICHA.restCfg=FICHA.restCfg||{};C[m]=C[m]||{};const n=Math.max(0,Math.round(+String(v).replace(',','.')||0));if(n)C[m][g]=n;else delete C[m][g];restPrev=null;save();setTimeout(renderCoach)}
-function restPreview(){if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){toast('Espera a que cargue la Calculadora');return}
-  CALC.exportCb=d=>{if(!d||d.error){toast(d&&d.error||'No se ha podido calcular');return}
-    const rows=d.sum.filter(x=>x.T);const TT=rows.reduce((s,x)=>s+x.T,0),RR=rows.reduce((s,x)=>s+(x.R??x.T),0);
-    restPrev=`<div class="tbl-w"><table><thead><tr><th>Comida</th><th>Entreno</th><th>Sin entreno</th><th>Diferencia</th></tr></thead><tbody>${rows.map(x=>{const l=(R_MEALS.find(r=>r[0]===x.m)||['',x.m])[1];const r=x.R??x.T;return `<tr><td>${l}</td><td>${x.T} kcal</td><td>${r} kcal</td><td class="${r<x.T?'good':''}">${r-x.T?(r-x.T)+' kcal':'='}</td></tr>`}).join('')}<tr><td><b>Día</b></td><td><b>${TT} kcal</b></td><td><b>${RR} kcal</b></td><td><b>${RR-TT} kcal</b></td></tr></tbody></table></div><p class="small muted" style="margin:0">Kcal aproximadas de una opción tipo por comida. Solo lo ves tú: el cliente nunca ve calorías.</p>`;
+function restSet(m,g,v){const C=FICHA.restCfg=FICHA.restCfg||{};C[m]=C[m]||{};if(g==='off'){if(v)C[m].off=true;else delete C[m].off}else{const n=Math.max(0,Math.round(+String(v).replace(',','.')||0));if(n)C[m][g]=n;else delete C[m][g]}restPrev=null;save();setTimeout(renderCoach)}
+function restPreview(quiet){if(!CALC.ready||CALC.forId!==(CUR&&CUR.id)){if(!quiet)toast('Espera a que cargue la Calculadora');return}
+  if(restPreview.busy)return;restPreview.busy=true;
+  CALC.exportCb=d=>{restPreview.busy=false;if(!d||d.error){restPrev=`<p class="small muted" style="margin:0">${esc(d&&d.error||'No se ha podido calcular')}</p>`;renderCoach();return}
+    const rows=d.sum.filter(x=>x.T);const Z={kcal:0,p:0,f:0,ch:0};const sm=(a,k)=>a.reduce((s,x)=>{const v=x[k]||x.TM;['kcal','p','f','ch'].forEach(q=>s[q]+=v[q]);return s},Object.assign({},Z));
+    const TT=sm(rows,'TM'),RR=rows.reduce((s,x)=>{const v=x.off?Z:(x.RM||x.TM);['kcal','p','f','ch'].forEach(q=>s[q]+=v[q]);return s},Object.assign({},Z));
+    const mac=v=>`<b>${v.kcal} kcal</b><small>P ${v.p} · G ${v.f} · H ${v.ch} g</small>`;
+    const dif=(a,b)=>{const k=b.kcal-a.kcal;return k?`<span class="good">${k} kcal</span><small>P ${b.p-a.p} · G ${b.f-a.f} · H ${b.ch-a.ch}</small>`:'='};
+    restPrev=`<div class="tbl-w"><table class="rprev"><thead><tr><th>Comida</th><th>🏋️ Entreno</th><th>🏠 Descanso y finde</th><th>Diferencia</th></tr></thead><tbody>${rows.map(x=>{const l=(R_MEALS.find(r=>r[0]===x.m)||['',x.m])[1];const r=x.off?Z:(x.RM||x.TM);return `<tr><td>${l}</td><td>${mac(x.TM)}</td><td>${x.off?'<b>Quitada</b>':mac(r)}</td><td>${dif(x.TM,r)}</td></tr>`}).join('')}
+    <tr class="rtot"><td><b>Total del día</b></td><td>${mac(TT)}</td><td>${mac(RR)}</td><td>${dif(TT,RR)}</td></tr></tbody></table></div><p class="small muted" style="margin:0">Incluye verduras. Kcal y macros aproximados de la primera opción de cada grupo (en desayuno, almuerzo y merienda, la media de sus opciones). Solo lo ves tú: el cliente nunca ve calorías.</p>`;
     renderCoach()};
-  calcPost({type:'export',opts:{mode:'td',cfg:FICHA.restCfg||{},preview:true}})}
+  calcPost({type:'export',opts:{mode:'td',cfg:FICHA.restCfg||{},preview:true}});setTimeout(()=>{restPreview.busy=false},4000)}
 
 // ================= AVISOS (NOTIFICACIONES) =================
 const pushOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;

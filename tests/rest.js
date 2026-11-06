@@ -16,13 +16,13 @@ await p.evaluate(async()=>{const a=await db.createClient('a@t.com',{nombre:'Ana'
 await w(3500);
 await p.click('text=📲 Enviar plan a la app');await w(800);
 console.log('lineal:',await p.evaluate(()=>[S.restOn,!!S.planCalc.R,S.planCalc.mode]));
-await p.click('text=🏋️ Entreno · 🏠 sin entreno');await w(300);
+await p.click('text=🏋️ Entreno · 🏠 descanso y finde');await w(300);
 await p.fill('.rcfg tr:nth-child(5) input >> nth=2','100');await p.dispatchEvent('.rcfg tr:nth-child(5) input >> nth=2','change');await w(300);
 await p.fill('.rcfg tr:nth-child(1) input >> nth=1','40');await p.dispatchEvent('.rcfg tr:nth-child(1) input >> nth=1','change');await w(300);
-await p.click('text=👁️ Ver cómo queda');await w(800);console.log('preview:',(await p.textContent('#restPrev')).replace(/\s+/g,' ').slice(0,300));
+await p.check('.rcfg tr:nth-child(4) input[type=checkbox]');await w(300);await p.fill('.rcfg tr:nth-child(3) input >> nth=4','50');await p.dispatchEvent('.rcfg tr:nth-child(3) input >> nth=4','change');await w(300);await p.click('text=👁️ Ver cómo queda');await w(800);console.log('preview:',(await p.textContent('#restPrev')).replace(/\s+/g,' ').slice(0,900));
 await p.screenshot({path:OUT+'/rest1.png',fullPage:true});
 await p.click('text=📲 Enviar plan a la app');await w(800);
-const r=await p.evaluate(()=>({restOn:S.restOn,mode:S.planCalc.mode,Tl:S.planCalc.T.plan.lunch.carb[1],Rl:S.planCalc.R.plan.lunch.carb[1],Td:S.planCalc.T.plan.dinner.carb[1],Rd:S.planCalc.R.plan.dinner.carb[1],Tp:S.planCalc.T.plan.dinner.protein[1],Rp:S.planCalc.R.plan.dinner.protein[1],Tb:S.planCalc.T.plan.breakfast[0].items.join('|'),Rb:S.planCalc.R.plan.breakfast[0].items.join('|')}));
+const r=await p.evaluate(()=>({restOn:S.restOn,mode:S.planCalc.mode,Tl:S.planCalc.T.plan.lunch.carb[1],Rl:S.planCalc.R.plan.lunch.carb[1],Td:S.planCalc.T.plan.dinner.carb[1],Rd:S.planCalc.R.plan.dinner.carb[1],Tp:S.planCalc.T.plan.dinner.protein[1],Rp:S.planCalc.R.plan.dinner.protein[1],Tb:S.planCalc.T.plan.breakfast[0].items.join('|'),Ts:S.planCalc.T.plan.snack.options.length,Rs:S.planCalc.R.plan.snack.options.length,Tv:S.planCalc.T.plan.lunch.vegs[0],Rv:S.planCalc.R.plan.lunch.vegs[0],Rb:S.planCalc.R.plan.breakfast[0].items.join('|')}));
 console.log(JSON.stringify(r,null,1));
 await p.click('text=🍽️ Igual todos los días');await w(300);console.log('vuelta a lineal restOn:',await p.evaluate(()=>S.restOn));
 console.log('ERR',errs);await b.close()})();

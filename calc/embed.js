@@ -40,27 +40,41 @@
   const MEALS=['breakfast','midmorning','lunch','snack','dinner'];
   const clsOf=a=>{const f=a&&pv2Food(a.food);return f?pv2ClassifyFood(f):''};
   const fct=(k,x)=>k>0?Math.max(0.3,(k-x)/k):1;
+  const GRP=['protein','fat','carb','fruit','vegs'];
+  function scaleOpt(o,f){if(!(f<1))return o;const x=Object.assign({},o);x.alts=(o.alts||[]).map(a=>ysRestAlt(a,f));
+    if(o.type==='eggs'&&o.base)x.base=ysRestAlt(o.base,f);
+    if(o.type==='salad'&&o.parts)x.parts=o.parts.map(a=>ysRestAlt(a,f));return x}
   function cutPlan(p,cfg){
     const q=JSON.parse(JSON.stringify(p));const done={};
     MEALS.forEach(m=>{const c=cfg[m]||{};const meal=q[m];if(!meal)return;
-      Object.entries(c).forEach(([g,x])=>{x=+x||0;if(!(x>0))return;
+      if(c.off&&(m==='midmorning'||m==='snack')){meal.options=[];meal.note='';done[m+'.off']=true;return}
+      if(m==='lunch'||m==='dinner')pv2EnsureVegs(meal);
+      Object.entries(c).forEach(([g,x])=>{if(g==='off')return;x=+x||0;if(!(x>0))return;
         if(m==='lunch'||m==='dinner'){const grp=meal[g];if(!grp||!grp.options)return;
-          grp.options.forEach(o=>{const ka=o.alts&&o.alts[0]?pv2Kcal(o.alts[0]):0;const f=fct(ka,x);o.alts=(o.alts||[]).map(a=>ysRestAlt(a,f))});done[m+'.'+g]=true}
-        else{(meal.options||[]).forEach(o=>{const its=(o.items||[]).filter(it=>!it.locked&&it.alts&&it.alts[0]&&clsOf(it.alts[0])===g);
+          grp.options=grp.options.map(o=>{const ka=pv2OptKcal(o);return scaleOpt(o,fct(ka,x))});done[m+'.'+g]=true}
+        else{const cls=g==='vegs'?'veg':g;(meal.options||[]).forEach(o=>{const its=(o.items||[]).filter(it=>!it.locked&&it.alts&&it.alts[0]&&clsOf(it.alts[0])===cls);
           const K=its.reduce((s,it)=>s+pv2Kcal(it.alts[0]),0);if(!(K>0))return;const f=fct(K,x);its.forEach(it=>{it.alts=it.alts.map(a=>ysRestAlt(a,f))});done[m+'.'+g]=true})}
       })});
     return {q,done};
   }
-  function mealK(p,m){const meal=p[m];if(!meal)return 0;
-    if(m==='lunch'||m==='dinner'){return ['protein','fat','carb','fruit'].reduce((s,g)=>{const o=meal[g]&&meal[g].options&&meal[g].options[0];return s+(o?pv2OptKcal(o):0)},0)}
-    const o=(meal.options||[]);if(!o.length)return 0;return o.reduce((s,x)=>s+(x.items||[]).reduce((a,it)=>a+(it.alts&&it.alts[0]?pv2Kcal(it.alts[0]):0),0),0)/o.length}
+  // kcal y macros de una opción (la primera alternativa manda, como en la Calculadora)
+  const Z=()=>({kcal:0,p:0,f:0,ch:0});
+  const addM=(a,b)=>{a.kcal+=b.kcal||0;a.p+=b.p||0;a.f+=b.f||0;a.ch+=b.ch||0;return a};
+  function optMac(o){const t=Z();if(!o)return t;if(o.type==='salad'){(o.parts||[]).forEach(a=>addM(t,pv2Macros(a)));return t}
+    if(o.type==='eggs'&&o.base)addM(t,pv2Macros(o.base));if(o.alts&&o.alts[0])addM(t,pv2Macros(o.alts[0]));return t}
+  function mealMac(p,m){const meal=p[m];const t=Z();if(!meal)return t;
+    if(m==='lunch'||m==='dinner'){pv2EnsureVegs(meal);GRP.forEach(g=>{const o=meal[g]&&meal[g].options&&meal[g].options[0];if(o)addM(t,optMac(o))});return t}
+    const O=meal.options||[];if(!O.length)return t;O.forEach(x=>(x.items||[]).forEach(it=>{if(it.alts&&it.alts[0])addM(t,pv2Macros(it.alts[0]))}));
+    ['kcal','p','f','ch'].forEach(k=>t[k]/=O.length);return t}
+  const rnd=t=>({kcal:Math.round(t.kcal),p:Math.round(t.p),f:Math.round(t.f),ch:Math.round(t.ch)});
+  function mealK(p,m){return mealMac(p,m).kcal}
   window.ysExportForApp=function(opts){
     opts=opts||{};
     const c=getCurrent();if(!c||!c.protocol||c.protocol.v!==2)return {error:'Este cliente aún no tiene protocolo dietético. Créalo en «Protocolo dietético» (por ejemplo con «Cargar plantilla Yaronska»).'};
     const p=c.protocol;const T=JSON.parse(JSON.stringify(p));let R=null,done={};
     if(opts.mode==='td'&&opts.cfg){const r=cutPlan(p,opts.cfg);done=r.done;if(Object.keys(done).length)R=r.q}
     else if(!opts.mode){const RI=ysRestInfo(p);R=RI.f<1?scaled(p,RI.f):null}
-    const sum=MEALS.map(m=>({m,T:Math.round(mealK(T,m)),R:R?Math.round(mealK(R,m)):null}));
+    const sum=MEALS.map(m=>{const a=rnd(mealMac(T,m)),b=R?rnd(mealMac(R,m)):null;return {m,T:a.kcal,R:b?b.kcal:null,TM:a,RM:b,off:!!done[m+'.off']}});
     if(opts.preview)return {sum,done};
     return {source:'calc',mode:opts.mode||'auto',fecha:new Date().toISOString().slice(0,10),T:{plan:planOf(T),ing:ingOf(T)},R:R?{plan:planOf(R),ing:ingOf(R)}:null,sum};
   };
