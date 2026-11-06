@@ -850,7 +850,7 @@ function cDiario(){
 }
 function cChecks(){
   const cks=S.checkins.slice().reverse();
-  const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Añadir o editar revisiones</span><p class="small muted" style="margin:0">Mete tú el peso, los perímetros y las fotos de cualquier revisión, también la del inicio. Cuentan para sus gráficas, el % graso y la comparativa del físico.</p></div><div class="row"><button class="btn sm" type="button" onclick="openAddPhotos('')">＋ Añadir revisión</button>${bkFS()&&GD.dir?`<button class="btn ghost sm" type="button" onclick="gdImport(CUR.id)" ${GD.busy?'disabled':''}>${GD.busy?'Trayendo…':'⬇️ Traer sus fotos del Drive'}</button>`:''}</div></div>${GD.msg&&GD.busy?`<p class="small" style="margin:0">${esc(GD.msg)}</p>`:''}</div>`;
+  const addBtn=`<div class="panel"><div class="sec-h"><div><span class="lbl">Añadir o editar revisiones</span><p class="small muted" style="margin:0">Mete tú el peso, los perímetros y las fotos de cualquier revisión, también la del inicio. Cuentan para sus gráficas, el % graso y la comparativa del físico.</p></div><div class="row"><button class="btn sm" type="button" onclick="openAddPhotos('')">＋ Añadir revisión</button><button class="btn ghost sm" type="button" onclick="gdPickPhotos()">⬇️ Traer sus fotos del Drive</button></div></div>${GD.msg&&GD.busy?`<p class="small" style="margin:0">${esc(GD.msg)}</p>`:''}</div>`;
   if(!cks.length)return addBtn+'<div class="panel"><p class="small muted" style="margin:0">Todavía no hay check-ins de este cliente.</p></div>';
   return addBtn+`<div class="panel"><span class="lbl">Check-ins recibidos</span><div class="tbl-w"><table class="cktbl"><thead><tr><th class="stk">Fecha</th>${MEAS.map(m=>`<th>${m[1]}</th>`).join('')}${SCALES.map(s=>`<th>${s.t}</th>`).join('')}<th>Orina</th><th>Fotos</th><th>Comentario</th></tr></thead><tbody>
   ${cks.map(k=>`<tr><td class="stk"><div class="ckd"><b>${new Date(k.date+'T12:00').toLocaleDateString('es-ES')}</b><span class="ckacts"><button class="btn sm ${k.rev?'ghost rvdone':''}" type="button" onclick="openRev('${k.date}')">${k.rev?'✅ Revisada':'📝 Revisar'}</button><button class="btn ghost sm" type="button" onclick="openAddPhotos('${k.date}')" aria-label="Editar revisión">✏️ Editar</button><button class="btn ghost sm del" type="button" onclick="askDelCheck('${k.date}')" aria-label="Borrar revisión">🗑</button></span></div></td>${MEAS.map(m=>`<td>${k[m[0]]??'—'}</td>`).join('')}${SCALES.map(s=>`<td>${k.r[s.k]?k.r[s.k]+' / 5':'—'}</td>`).join('')}<td>${k.r.orina||'—'}</td><td style="white-space:nowrap">${k.fotosP&&k.fotosP.length?`<button class="btn ghost sm" type="button" onclick='viewPhotos(${JSON.stringify(k.fotosP)})'>Ver ${k.fotosP.length}</button> `:''}${k.fotosP&&k.fotosP.length?'':'<span class="muted">—</span>'}</td><td class="ckcom">${esc(k.nota||'')}</td></tr>`).join('')}</tbody></table></div></div>`;
@@ -2123,6 +2123,37 @@ function gdParse(name){const m=name.match(/(\d{1,2})[-_.](\d{1,2})[-_.](\d{2,4})
   let [_,d,mo,y]=m;y=y.length===2?'20'+y:y;d=d.padStart(2,'0');mo=mo.padStart(2,'0');if(+mo<1||+mo>12||+d<1||+d>31)return null;
   const N=gdNorm(name);const k=/frontal|frente/.test(N)?'frontal':/perfil|lateral|lado/.test(N)?'lateral':/espalda|posterior|detras/.test(N)?'espalda':null;
   const kg=(name.match(/(\d{2,3}(?:[.,]\d{1,2})?)\s*kg/i)||[])[1];return {date:`${y}-${mo}-${d}`,k,peso:kg?parseFloat(kg.replace(',','.')):null}}
+// ---- elegir a mano qué fotos traer (de su carpeta del Drive o de donde sea)
+let GDSEL=[];
+async function gdClientDir(id){if(!GD.dir)return null;try{if(await GD.dir.queryPermission({mode:'read'})!=='granted')return null;const dirs=await gdSubdirs(GD.dir);const c=CL.find(x=>x.id===id);
+  const folder=GD.map[id]&&dirs.includes(GD.map[id])?GD.map[id]:gdMatch(c?c.name:CLIENT.name,dirs);if(!folder)return null;const cd=await GD.dir.getDirectoryHandle(folder);
+  const pn=gdPhysDir(await gdSubdirs(cd));if(!pn)return cd;let pd=await cd.getDirectoryHandle(pn);const inner=(await gdSubdirs(pd)).find(d=>gdNorm(d)==='fisico');return inner?await pd.getDirectoryHandle(inner):pd}catch(e){return null}}
+async function gdPickPhotos(){if(!CUR)return;
+  const viaInput=()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.multiple=true;i.onchange=()=>{if(i.files.length)gdReview(Array.from(i.files))};i.click()};
+  if(!window.showOpenFilePicker)return viaInput();
+  let start='pictures';const h=await gdClientDir(CUR.id);if(h)start=h;
+  try{const hs=await window.showOpenFilePicker({id:'yaronska-fotos',multiple:true,startIn:start,types:[{description:'Fotos',accept:{'image/*':['.jpg','.jpeg','.png','.webp']}}]});gdReview(await Promise.all(hs.map(x=>x.getFile())))}
+  catch(e){if(e.name!=='AbortError')viaInput()}}
+function gdReview(files){GDSEL.forEach(x=>URL.revokeObjectURL(x.url));
+  GDSEL=files.map(f=>{const p=gdParse(f.name)||{};return {f,url:URL.createObjectURL(f),date:p.date||iso(new Date(f.lastModified||Date.now())),k:p.k||'',peso:p.peso||''}});gdReviewDraw()}
+function gdReviewDraw(){const sh=document.getElementById('sheet');const n=GDSEL.filter(x=>x.k).length;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Fotos del Drive"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>Fotos para ${esc(CLIENT.name)}</h2><button class="btn ghost sm" type="button" onclick="gdReviewClose()">Cerrar</button></div>
+  <p class="small muted" style="margin:0">Revisa la fecha y si es frontal, lateral o espalda (lo saco del nombre del archivo cuando puedo). Las que dejes en «No importar» no se suben. Si esa revisión ya tenía esa foto, se sustituye.</p>
+  <div class="gdsel">${GDSEL.map((x,i)=>`<div class="gdsel-i ${x.k?'':'off'}"><img src="${x.url}" alt=""><small title="${esc(x.f.name)}">${esc(x.f.name)}</small>
+    <select onchange="GDSEL[${i}].k=this.value;gdReviewDraw()"><option value="">No importar</option>${['frontal','lateral','espalda'].map(k=>`<option value="${k}" ${x.k===k?'selected':''}>${k[0].toUpperCase()+k.slice(1)}</option>`).join('')}</select>
+    <input type="date" value="${x.date}" onchange="GDSEL[${i}].date=this.value"><input type="text" inputmode="decimal" placeholder="Peso (opcional)" value="${x.peso||''}" onchange="GDSEL[${i}].peso=parseFloat(this.value.replace(',','.'))||''"></div>`).join('')}</div>
+  <button class="btn" type="button" id="gdGo" onclick="gdDoImport()" ${n?'':'disabled'}>Importar ${n} foto${n===1?'':'s'}</button></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)gdReviewClose()}}
+function gdReviewClose(){GDSEL.forEach(x=>URL.revokeObjectURL(x.url));GDSEL=[];closeSheet()}
+async function gdDoImport(){const id=CUR.id;const L=GDSEL.filter(x=>x.k&&x.date);if(!L.length)return;const B=document.getElementById('gdGo');if(B){B.disabled=true;B.textContent='Subiendo…'}
+  let up=0,nck=0;try{await flushSync();const all=(await db.allCheckins()).filter(c=>c.client_id===id);const G={};L.forEach(x=>(G[x.date]=G[x.date]||[]).push(x));
+    for(const date of Object.keys(G).sort()){const F=G[date];const ck=all.find(x=>x.fecha===date);const data=ck?JSON.parse(JSON.stringify(ck.data||{})):{r:{},fotos:0,fotosP:[],nota:'Fotos importadas del Drive'};data.fotosP=data.fotosP||[];
+      for(const x of F){if(B)B.textContent=`Subiendo ${up+1} de ${L.length}…`;const blob=await shrink(x.f,1600);const path=`${id}/${date}/${x.k}-drive-${Date.now().toString(36)}.jpg`;await db.uploadPhoto(path,blob);
+        data.fotosP=data.fotosP.filter(p=>!new RegExp('/'+x.k+'[-.]').test(p));data.fotosP.push(path);up++}
+      data.fotos=data.fotosP.length;const kg=F.map(x=>x.peso).find(v=>v);if(kg&&data.peso==null)data.peso=kg;
+      if(ck)await db.update('checkins',ck.id,{data});else{await db.insert('checkins',{client_id:id,fecha:date,data});nck++}}
+    gdReviewClose();await loadClient(id);await refreshList();renderCoach();toast(`✅ ${up} foto${up===1?'':'s'} importada${up===1?'':'s'}${nck?` · ${nck} revisión${nck===1?'':'es'} nueva${nck===1?'':'s'}`:''}`)}
+  catch(e){console.error(e);toast('No se han podido subir: '+(e.message||e));if(B){B.disabled=false;B.textContent='Reintentar'}}}
 async function gdImport(onlyId){if(GD.busy||!GD.dir)return;GD.busy=true;GD.msg='Buscando fotos en el Drive…';if(coachSel==='__biz')renderCoach();
   let up=0,nck=0,ncl=0;
   try{await flushSync();if(await GD.dir.queryPermission({mode:'read'})!=='granted'&&await GD.dir.requestPermission({mode:'readwrite'})!=='granted')throw new Error('Sin permiso para la carpeta');

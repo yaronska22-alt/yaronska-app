@@ -750,3 +750,10 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .wkp-s.done{border-color:rgba(124,227,139,.5)}.wkp-s.done>b{color:var(--ok)}
 .wkp-s.bad{border-color:rgba(255,107,107,.6);background:rgba(255,107,107,.06)}.wkp-s.bad>b{color:#ff8a8a}
 .wkp-s.none{color:var(--dim)}
+
+.gdsel{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;max-height:60vh;overflow:auto}
+.gdsel-i{display:flex;flex-direction:column;gap:5px;border:1px solid var(--line-2);border-radius:10px;padding:6px}
+.gdsel-i.off{opacity:.5}
+.gdsel-i img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:6px;background:#111}
+.gdsel-i small{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gdsel-i select,.gdsel-i input{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:5px;color:var(--fg);font-size:12px;width:100%}
