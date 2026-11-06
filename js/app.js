@@ -546,6 +546,8 @@ function wkTrain(){const W=volWeek(0);const R=S.routine;const optN=new Set(R.fil
   const nReq=R.filter(d=>!d.opt).length;const target=Math.max(1,+FICHA.diasSemana||nReq||1);const done=req.length;
   const dayDone=d=>{const x=L.filter(y=>y.day===d.d).sort((a,b)=>b.date.localeCompare(a.date))[0];return x?x.date:null};
   return {done,target,left:Math.max(0,target-done),opt:opt.length,dayDone}}
+// ejercicios de un día ya apuntados en una fecha concreta
+function sesDone(d,date){const out=new Set();Object.entries(S.hist).forEach(([n,a])=>a.forEach(h=>{if(h.date===date&&h.day===d.d&&((h.sets&&h.sets.length)||h.nota))out.add(h.sub||n)}));return out}
 const wdName=dt=>new Date(dt+'T12:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'});
 function wkBar(){const T=wkTrain();if(!S.routine.length||PREV_FROM)return '';
   return `<div class="wkt ${T.left?'':'full'}"><div><span class="lbl">Entrenos de esta semana</span><b>${T.done} de ${T.target}${T.opt?` <small class="muted">+ ${T.opt} opcional</small>`:''}</b></div><div class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</div><small>${T.left?`Te ${T.left===1?'queda':'quedan'} <b>${T.left}</b> entreno${T.left===1?'':'s'}`:'✅ ¡Semana completada!'}</small></div>`}
@@ -563,21 +565,26 @@ function vTrain(){
   <div class="daysel">${R.map((r,i)=>{const dn=!PREV_FROM&&WK.dayDone(r);return `<button type="button" class="chip ${r.opt?'opt':''} ${dn?'done':''} ${i===dayIdx?'on':''}" onclick="dayIdx=${i};render()">${dn?'✓ ':''}${esc(r.d.split('·')[0].trim())}${r.opt?' <small>(opcional)</small>':''}</button>`}).join('')}</div>
   <h2 style="font-size:19px">${esc(d.d)}${d.opt?' <span class="optb">Opcional</span>':''}</h2>
   ${d.opt?`<div class="band optband">${esc(d.optTxt||OPT_TXT)}</div>`:''}
-  ${!PREV_FROM&&WK.dayDone(d)?`<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(WK.dayDone(d)))}. Si lo repites, se guarda como otra sesión.</div>`:''}
+  ${!PREV_FROM&&WK.dayDone(d)?(()=>{const DD=WK.dayDone(d),got=sesDone(d,DD),miss=d.ex.filter(e=>!got.has(e.n)).map(e=>e.n);return `<div class="band donebar">✅ <b>Hecho</b> el ${esc(wdName(DD))}.${miss.length?` Te faltó: <b>${esc(miss.join(', '))}</b>. Rellénalo y pulsa <b>Completar entreno</b>: se añade a ese día y <b>no cuenta como otro entreno</b>.`:' Si quieres añadir o corregir algo, rellénalo y pulsa <b>Completar entreno</b>. Si lo repites otro día, elige ese día abajo.'}</div>`})():''}
   ${warmsOf(d).map((w,wi,a)=>`<article class="warm"><div class="ex-h"><span class="ex-n">🔥</span><div><b>${esc(w.t||('Calentamiento'+(a.length>1?' '+(wi+1):'')))}</b>${w.txt?`<small style="white-space:pre-line">${esc(w.txt)}</small>`:''}</div>${w.url?`<a class="vid" href="${esc(w.url)}" target="_blank" rel="noopener">▶ Vídeo</a>`:''}</div></article>`).join('')}
   ${blocksOf(d.ex).map(b=>b.letter&&b.items.length>1?`<section class="blk"><div class="blk-h"><b>${esc(blkName(b.type))} ${esc(b.letter)}</b><small>Haz ${b.items.map(x=>x.label).join(' + ')} seguidos, sin descanso entre ejercicios. Descansa ${esc(b.items[b.items.length-1].e.rest||'')} al acabar cada ronda.</small></div>${b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')}</section>`:b.items.map(x=>exCard(x.e,x.ei,x.label)).join('')).join('')}
-  <div class="sesdate"><label for="sesD" class="small muted">¿Cuándo lo hiciste?</label><select id="sesD" onchange="SES_D=this.value">${[0,1,2,3,4,5,6].map(i=>{const k=iso(daysAgo(i));return `<option value="${k}" ${(SES_D||iso(new Date()))===k?'selected':''}>${i===0?'Hoy':i===1?'Ayer':esc(daysAgo(i).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'}))}</option>`}).join('')}</select></div>
+  <div class="sesdate"><label for="sesD" class="small muted">¿Cuándo lo hiciste?</label><select id="sesD" onchange="SES_D=this.value;const b=document.getElementById('bSaveSes');if(b)b.textContent=this.value===sesDefD()&&WK_DD()?'Completar entreno':'Guardar entreno'">${[0,1,2,3,4,5,6].map(i=>{const k=iso(daysAgo(i));const DD=!PREV_FROM&&WK.dayDone(d);const lb=i===0?'Hoy':i===1?'Ayer':daysAgo(i).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'});return `<option value="${k}" ${(SES_D||sesDefD())===k?'selected':''}>${esc(DD?(k===DD?'Completar el entreno '+(i===0?'de hoy':i===1?'de ayer':'del '+lb):'Entreno nuevo · '+lb):lb)}</option>`}).join('')}</select></div>
   <p class="drst" id="drSt" aria-live="polite">${drText()}</p>
-  <button class="btn" id="bSaveSes" type="button" onclick="saveSession(this)">Guardar entreno</button>`;
+  <button class="btn" id="bSaveSes" type="button" onclick="saveSession(this)">${(SES_D||sesDefD())===(!PREV_FROM&&WK.dayDone(d))?'Completar entreno':'Guardar entreno'}</button>`;
 }
 let SES_D=null;
+// si el día ya está hecho esta semana, por defecto se completa ESE entreno (no cuenta como otro)
+function WK_DD(){const d=S.routine[dayIdx];return d&&!PREV_FROM?wkTrain().dayDone(d):null}
+function sesDefD(){const DD=WK_DD();return DD&&DD>=iso(daysAgo(6))?DD:iso(new Date())}
 async function saveSession(btn){
   if(PREV_FROM){toast('Estás en la vista previa: aquí no se guarda nada');return}
   if(saveSession.busy)return;
-  const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||iso(new Date());SES_D=null;const PRS=[];
+  const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||sesDefD();SES_D=null;const PRS=[];const wasDone=sesDone(d,date).size>0;
   d.ex.forEach((e0,ei)=>{const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`)),fail=isFail(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
+    const OLD=(S.hist[e.n]||[]).find(h=>h.date===date&&h.day===d.d&&(h.sub||null)===(SB?e0.n:null));
+    if(OLD&&(sets.length||nota)){any=true;if(sets.length)OLD.sets=sets;if(nota)OLD.nota=nota;NEW.push([e.n,OLD]);return}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(SB)o.sub=e0.n;NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from)){const P=S.next[e.n];if(P.fix&&P.sets){e.s=P.sets.length;const base=exSets(Object.assign({},e,{s:P.sets.length}));e.sets=base.map((x,i)=>Object.assign(x,{t:P.sets[i].t||''},P.sets[i].nota!==undefined?{nota:P.sets[i].nota}:{}))}delete S.next[e.n]}}});
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
   rtStop();SAVED_AT=Date.now();
@@ -590,7 +597,7 @@ async function saveSession(btn){
   if(!ok){NEW.forEach(([n,o])=>{if(!o.id){const L=S.hist[n]||[];const i=L.indexOf(o);if(i>=0)L.splice(i,1)}});if(!NEW.some(([n,o])=>o.id)){if(prevDay===undefined)delete S.daily[k];else S.daily[k]=prevDay}
     SES_D=date;render();
     const sh=document.getElementById('sheet');sh.innerHTML=`<div class="sheet-in" role="alertdialog" aria-label="No se ha subido"><div class="sheet-b"><h2>⚠️ No se ha podido subir</h2><p class="small muted" style="margin:0">Parece que no hay conexión ahora mismo. <b style="color:var(--fg)">No se ha borrado nada</b>: todo lo que has apuntado sigue en su sitio.</p><p class="small muted" style="margin:0">Comprueba tu conexión y vuelve a pulsar <b style="color:var(--fg)">Guardar entreno</b>.</p><button class="btn" type="button" onclick="closeSheet()">Entendido</button></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};return}
-  draftClear();save();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
+  draftClear();save();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws&&wasDone){const T=wkTrain();toast(`✅ Añadido al entreno del ${wdName(date)} · llevas ${T.done} de ${T.target} esta semana`)}else if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
 function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
