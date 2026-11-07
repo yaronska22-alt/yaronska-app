@@ -719,19 +719,19 @@ function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));con
   const avg=L=>{const x=L.map(k=>dv(k)&&+dv(k).steps||0).filter(v=>v>0);return x.length?Math.round(x.reduce((a,b)=>a+b,0)/x.length):null};const s7=avg(d7),sp=avg(p7);
   let T=null;try{T=S.routine.length?wkTrain():null}catch(e){}
   const tgt=T?T.target:(+FICHA.diasSemana||0);let s4=0;for(let i=1;i<=4;i++){const w=volWeek(-i);s4+=sesIn(w.a,w.b)}
-  const W=allWeights();const C=[...S.checkins].filter(c=>+c.cintura>0).sort((a,b)=>a.date.localeCompare(b.date));
+  const sf=FICHA.segFrom||'',st=FICHA.segTo||'';const inR=d=>(!sf||d>=sf)&&(!st||d<=st);const W=allWeights().filter(x=>inR(x.date));const C=[...S.checkins].filter(c=>+c.cintura>0&&inR(c.date)).sort((a,b)=>a.date.localeCompare(b.date));
   const nf1=v=>nf(v,1).replace(',0','');const sg=x=>(x>0?'+':'')+nf1(x);
   const dW=W.length>1?W[W.length-1].peso-W[0].peso:null,dC=C.length>1?C[C.length-1].cintura-C[0].cintura:null;
   const pct=(a,b)=>b?Math.round(a/b*100):0;const lvl=p=>p>=80?'good':p>=50?'':'badc';
   const pf=S.planCalc&&S.planCalc.fecha;
   const kpi=(t,v,sub,cls)=>`<div class="kpi"><small>${t}</small><b class="${cls||''}">${v}</b>${sub?`<small class="muted">${sub}</small>`:''}</div>`;
-  return `<div class="panel"><span class="lbl">📊 Seguimiento de ${esc(CLIENT.name.split(' ')[0])}</span><div class="kpis segk">
+  return `<div class="panel"><div class="sec-h"><span class="lbl">📊 Seguimiento de ${esc(CLIENT.name.split(' ')[0])}</span><div class="row segr"><span class="small muted">Peso y cintura</span><label class="small muted">desde <input type="date" value="${sf}" onchange="FICHA.segFrom=this.value;save();renderCoach()"></label><label class="small muted">hasta <input type="date" value="${st}" onchange="FICHA.segTo=this.value;save();renderCoach()"></label>${sf||st?`<button class="btn ghost sm" type="button" onclick="FICHA.segFrom='';FICHA.segTo='';save();renderCoach()">Desde el inicio</button>`:''}</div></div><div class="kpis segk">
     ${kpi('🏋️ Entrenos esta semana',T?`${T.done} de ${T.target}`:'—',tgt?`Últimas 4 semanas: ${s4} de ${tgt*4} (${pct(s4,tgt*4)} %)`:'Sin rutina asignada',T?lvl(pct(s4,tgt*4)):'')}
     ${kpi('📝 Diario rellenado',`${f7} de 7 días`,`Últimos 28 días: ${f28} de 28 (${pct(f28,28)} %)`,lvl(pct(f7,7)))}
     ${kpi('✅ Cumplimiento · últimos 7 días',`🍽️ ${diet7} · 👟 ${step7} · ⭐ ${val7}`,`De 7 días: dieta cumplida · pasos · valoración del día. Entreno marcado: ${tr7}`)}
     ${kpi('👟 Media de pasos (7 días)',s7!=null?s7.toLocaleString('es-ES'):'—',`${CLIENT.stepsGoal?'Objetivo '+CLIENT.stepsGoal.toLocaleString('es-ES')+' · ':''}${sp!=null?'semana anterior '+sp.toLocaleString('es-ES'):'sin datos la semana anterior'}`,s7!=null&&CLIENT.stepsGoal?(s7>=CLIENT.stepsGoal?'good':s7>=CLIENT.stepsGoal*.8?'':'badc'):'')}
-    ${kpi('⚖️ Peso',W.length?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:'—',dW!=null?`${sg(dW)} kg desde el ${fdate(W[0].date)}`:'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
-    ${kpi('📏 Cintura',C.length?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:'—',dC!=null?`${sg(dC)} cm desde el ${fdate(C[0].date)}`:'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
+    ${kpi('⚖️ Peso',W.length>1?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:W.length?nf1(W[0].peso)+' kg':'—',dW!=null?`${sg(dW)} kg · ${fdate(W[0].date)} → ${fdate(W[W.length-1].date)}`:W.length?'Solo un peso en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin pesos en esas fechas':'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
+    ${kpi('📏 Cintura',C.length>1?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:C.length?nf1(C[0].cintura)+' cm':'—',dC!=null?`${sg(dC)} cm · ${fdate(C[0].date)} → ${fdate(C[C.length-1].date)}`:C.length?'Solo una medida en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin cintura en esas fechas':'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
     ${kpi('🍽️ Última dieta enviada',pf?fdate(pf):'—',pf?(daysSince(pf)?'Hace '+daysSince(pf)+' días':'Hoy'):'Aún no le has enviado plan',pf&&daysSince(pf)>=28?'badc':'')}
   </div></div>`}
 function weekPanel(){const w=liveWk(),dl=liveDl();

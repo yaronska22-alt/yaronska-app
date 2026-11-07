@@ -25,4 +25,5 @@ console.log('seg:',(await p.textContent('.kpis.segk')).replace(/\s+/g,' '));
 console.log('lista:',(await p.$$eval('.citem .wkc',a=>a.map(x=>x.textContent))).join(' | '));
 await (await p.$('.panel:has-text("Seguimiento de")')).screenshot({path:OUT+'/seg.png'});
 await p.screenshot({path:OUT+'/seg2.png'});
+await p.fill('.segr input >> nth=0','2026-10-01');await p.dispatchEvent('.segr input >> nth=0','change');await w(300);console.log('rango:',(await p.textContent('.kpis.segk')).replace(/\s+/g,' ').slice(0,520));console.log('persist',await p.evaluate(async()=>{await flushSync();const c=window.__mock.clients[0];return c.ficha.segFrom}));
 console.log('ERR',errs);await b.close()})();

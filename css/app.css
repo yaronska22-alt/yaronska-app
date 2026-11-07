@@ -769,3 +769,6 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .kpis.segk{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 .kpis.segk .kpi small.muted{display:block;margin-top:3px;font-size:11px;line-height:1.35}
 .kpis.segk .kpi b{font-size:20px}
+
+.segr{gap:8px;align-items:center;flex-wrap:wrap}
+.segr input[type=date]{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;color:var(--fg);margin-left:4px}
