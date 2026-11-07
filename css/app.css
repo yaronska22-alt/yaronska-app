@@ -765,3 +765,7 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 
 .mtbl tr.on td{background:rgba(255,214,10,.06)}
 .mtbl .spark{width:110px;height:30px}
+
+.kpis.segk{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.kpis.segk .kpi small.muted{display:block;margin-top:3px;font-size:11px;line-height:1.35}
+.kpis.segk .kpi b{font-size:20px}

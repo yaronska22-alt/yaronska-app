@@ -49,10 +49,11 @@ const db = {
 
   // ---------- entrenador: lista de clientes ----------
   async listClients() {
-    const clients = ok(await sb.from('clients').select('id,email,user_id,ficha,prefs,fase,semana,semanas_fase,last_seen').order('created_at'));
+    const clients = ok(await sb.from('clients').select('id,email,user_id,ficha,prefs,fase,semana,semanas_fase,last_seen,plan_fecha:plan->>fecha').order('created_at'));
     const admin = ok(await sb.from('client_admin').select('*'));
     const cks = ok(await sb.from('checkins').select('client_id,fecha,rev:data->rev').order('fecha', { ascending: false }));
-    return { clients, admin, checkins: cks };
+    let calc = [];try { calc = ok(await sb.from('diet_calc').select('client_id,updated_at')); } catch (e) {}
+    return { clients, admin, checkins: cks, calc };
   },
   async createClient(email, ficha, alta) {
     const c = ok(await sb.from('clients').insert({ email: email.toLowerCase(), ficha }).select('id').single());

@@ -671,12 +671,12 @@ function vRes(){
 // ---- lista de clientes del entrenador (datos reales)
 function statusOf(last){if(!last)return {st:'warn',t:'Sin revisiones'};const d=Math.round((new Date(iso(new Date())+'T12:00')-new Date(last+'T12:00'))/864e5);return d<=8?{st:'ok',t:'Al día'}:d<=15?{st:'warn',t:'Revisión atrasada'}:{st:'bad',t:d+' días sin revisión'}}
 async function refreshList(){
-  const {clients,admin,checkins}=await db.listClients();
+  const {clients,admin,checkins,calc}=await db.listClients();const DC={};(calc||[]).forEach(x=>DC[x.client_id]=x.updated_at);
   const A={};admin.forEach(a=>A[a.client_id]=a);const L={},LC={};checkins.forEach(c=>{if(!L[c.client_id]){L[c.client_id]=c.fecha;LC[c.client_id]={fecha:c.fecha,rev:!!c.rev}}});
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
     return {id:c.id,email:c.email,ficha:f,adm:a,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
       renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',seen:c.last_seen||null,...statusOf(L[c.id]),
-      wk:wkState(LC[c.id]||null,a.pautado_at||null,true)}});
+      wk:wkState(LC[c.id]||null,a.pautado_at||null,true),planF:c.plan_fecha||null,calcAt:DC[c.id]||null}});
 }
 // Semana del cliente: ¿ha mandado revisión en los últimos 7 días? ¿la he revisado? ¿le he pautado el entreno después?
 function wkState(ck,pAt,hasRut){const lim=iso(daysAgo(7));const recent=ck&&ck.fecha>=lim?ck:null;
@@ -691,6 +691,11 @@ function wkChips(w,dl){if(!w)return '';let t;
   else if(w.rev==='done')t=`<i class="wk-d">✅ Corregida y pautada</i>`;
   else t=`<i class="wk-n">⏳ Esperando su revisión</i>`;
   return `<span class="wkc">${t}${dlChip(dl)}</span>`}
+// ---- cuándo le cambié la dieta por última vez (plan enviado a su app)
+const daysSince=d=>Math.round((new Date(iso(new Date())+'T12:00')-new Date(String(d).slice(0,10)+'T12:00'))/864e5);
+function dietChip(pf,calcAt){if(!pf)return `<span class="wkc"><i class="wk-n">🍽️ Sin dieta enviada</i></span>`;const n=daysSince(pf);
+  const pend=calcAt&&calcAt.slice(0,10)>pf?' · cambios sin enviar':'';
+  return `<span class="wkc"><i class="${n>=28?'wk-b':n>=14?'wk-t':'wk-n'}" title="Último plan enviado a su app: ${fdate(pf)}">🍽️ Dieta ${n===0?'cambiada hoy':n===1?'cambiada ayer':'sin cambios hace '+n+' días'}${pend}</i></span>`}
 // ---- semanas sin descarga
 const monOf=d=>{const x=new Date(d.slice(0,10)+'T12:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return iso(x)};
 function dlInfo(desc,alta){const thisMon=monOf(iso(new Date()));
@@ -704,6 +709,31 @@ function dlChip(dl){if(!dl)return '';if(dl.fut)return `<i class="wk-n">🔋 Desc
 function liveDl(){return dlInfo(FICHA.descargaAt||'',FICHA.alta||'')}
 function setDescarga(v){if(v==='this')FICHA.descargaAt=monOf(iso(new Date()));else if(v==='next')FICHA.descargaAt=nextMonday();else FICHA.descargaAt=v||'';
   save();refreshItem();renderCoach();toast(FICHA.descargaAt?'Descarga anotada: semana del '+fmtDM(FICHA.descargaAt):'Descarga borrada')}
+// ---- seguimiento del cliente de un vistazo
+function sesIn(a,b){const k=new Set();Object.values(S.hist).forEach(L=>L.forEach(h=>{if(h.date>=a&&h.date<=b&&h.sets&&h.sets.length)k.add(h.date+'|'+(h.day||''))}));return k.size}
+function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));const d7=D(7),d28=D(28),p7=Array.from({length:7},(_,i)=>iso(daysAgo(i+7)));
+  const dv=k=>S.daily[k];const filled=k=>{const v=dv(k);return !!v&&!!(v.at||v.diet||v.stepsOk||+v.steps>0||v.train||v.estres||v.energia||v.animo)};
+  const cnt=(L,f)=>L.filter(k=>dv(k)&&f(dv(k))).length;
+  const f7=d7.filter(filled).length,f28=d28.filter(filled).length;
+  const diet7=cnt(d7,v=>v.diet===true),step7=cnt(d7,v=>v.stepsOk===true||+v.steps>0),tr7=cnt(d7,v=>v.train===true),val7=cnt(d7,v=>v.estres||v.energia||v.animo);
+  const avg=L=>{const x=L.map(k=>dv(k)&&+dv(k).steps||0).filter(v=>v>0);return x.length?Math.round(x.reduce((a,b)=>a+b,0)/x.length):null};const s7=avg(d7),sp=avg(p7);
+  let T=null;try{T=S.routine.length?wkTrain():null}catch(e){}
+  const tgt=T?T.target:(+FICHA.diasSemana||0);let s4=0;for(let i=1;i<=4;i++){const w=volWeek(-i);s4+=sesIn(w.a,w.b)}
+  const W=allWeights();const C=[...S.checkins].filter(c=>+c.cintura>0).sort((a,b)=>a.date.localeCompare(b.date));
+  const nf1=v=>nf(v,1).replace(',0','');const sg=x=>(x>0?'+':'')+nf1(x);
+  const dW=W.length>1?W[W.length-1].peso-W[0].peso:null,dC=C.length>1?C[C.length-1].cintura-C[0].cintura:null;
+  const pct=(a,b)=>b?Math.round(a/b*100):0;const lvl=p=>p>=80?'good':p>=50?'':'badc';
+  const pf=S.planCalc&&S.planCalc.fecha;
+  const kpi=(t,v,sub,cls)=>`<div class="kpi"><small>${t}</small><b class="${cls||''}">${v}</b>${sub?`<small class="muted">${sub}</small>`:''}</div>`;
+  return `<div class="panel"><span class="lbl">📊 Seguimiento de ${esc(CLIENT.name.split(' ')[0])}</span><div class="kpis segk">
+    ${kpi('🏋️ Entrenos esta semana',T?`${T.done} de ${T.target}`:'—',tgt?`Últimas 4 semanas: ${s4} de ${tgt*4} (${pct(s4,tgt*4)} %)`:'Sin rutina asignada',T?lvl(pct(s4,tgt*4)):'')}
+    ${kpi('📝 Diario rellenado',`${f7} de 7 días`,`Últimos 28 días: ${f28} de 28 (${pct(f28,28)} %)`,lvl(pct(f7,7)))}
+    ${kpi('✅ Cumplimiento · últimos 7 días',`🍽️ ${diet7} · 👟 ${step7} · ⭐ ${val7}`,`De 7 días: dieta cumplida · pasos · valoración del día. Entreno marcado: ${tr7}`)}
+    ${kpi('👟 Media de pasos (7 días)',s7!=null?s7.toLocaleString('es-ES'):'—',`${CLIENT.stepsGoal?'Objetivo '+CLIENT.stepsGoal.toLocaleString('es-ES')+' · ':''}${sp!=null?'semana anterior '+sp.toLocaleString('es-ES'):'sin datos la semana anterior'}`,s7!=null&&CLIENT.stepsGoal?(s7>=CLIENT.stepsGoal?'good':s7>=CLIENT.stepsGoal*.8?'':'badc'):'')}
+    ${kpi('⚖️ Peso',W.length?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:'—',dW!=null?`${sg(dW)} kg desde el ${fdate(W[0].date)}`:'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
+    ${kpi('📏 Cintura',C.length?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:'—',dC!=null?`${sg(dC)} cm desde el ${fdate(C[0].date)}`:'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
+    ${kpi('🍽️ Última dieta enviada',pf?fdate(pf):'—',pf?(daysSince(pf)?'Hace '+daysSince(pf)+' días':'Hoy'):'Aún no le has enviado plan',pf&&daysSince(pf)>=28?'badc':'')}
+  </div></div>`}
 function weekPanel(){const w=liveWk(),dl=liveDl();
   const step=(ok,title,txt,btn)=>`<div class="wkp-s ${ok}"><b>${title}</b><span>${txt}</span>${btn||''}</div>`;
   const go=(t,l)=>`<button class="btn ghost sm" type="button" onclick="coachTab='${t}';renderCoach()">${l}</button>`;
@@ -722,7 +752,7 @@ function weekPanel(){const w=liveWk(),dl=liveDl();
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk,live?liveDl():dlInfo((s.adm||{}).descarga_at||'',(s.adm||{}).alta||''))}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':esc(s.t)}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk,live?liveDl():dlInfo((s.adm||{}).descarga_at||'',(s.adm||{}).alta||''))}${dietChip(live?(S.planCalc&&S.planCalc.fecha)||s.planF:s.planF,s.calcAt)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':esc(s.t)}</span></button>`;
 }
 async function selectClient(id){
   refreshItem();PDRAFT={};
@@ -747,6 +777,7 @@ function _renderCoach(){setTimeout(placeCalc);
   <section class="cmain">
     ${coachSel==='__pend'?cPend():coachSel==='__biz'?cBiz():!c?`<div class="panel"><span class="lbl">Empieza aquí</span><p style="margin:0">Todavía no tienes clientes en la app. Pulsa <b>+ Nuevo cliente</b>, pon su nombre y su email, y envíale el mensaje con el enlace.</p></div>`:`
     <div class="chead"><div><span class="lbl">${esc(PROG().t)} · ${esc(phOf(FICHA,S.phase).n)} · semana ${S.week} de ${S.weeksPhase}</span><h1>${esc(CLIENT.name)}</h1>${c.linked?`<small class="muted">Última vez en la app: ${seenBadge(c.seen)}</small>`:''}${!c.linked?`<small class="muted">Aún no ha creado su cuenta · <button class="linkbtn" type="button" onclick="inviteMsg('${c.id}')">Reenviar invitación</button></small>`:''}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost sm" type="button" onclick="openReport('report')">📄 Informe semanal</button><button class="btn ghost sm" type="button" onclick="openReport('cmp')">📸 Comparativa del físico</button><button class="btn ghost sm" type="button" onclick="openSocial()">📲 Imagen para redes</button><span class="st ${c.st}">${esc(c.t)}</span></div></div>
+    ${segPanel()}
     ${weekPanel()}
     <div class="panel"><span class="lbl">Programa, fase y semana · lo cambias tú cuando quieras</span><div class="range">
       <div class="field" style="flex:2"><label for="prS">Programa</label><select id="prS" onchange="FICHA.programa=this.value;S.phase=0;save();setTimeout(renderCoach)">${Object.entries(PROGS).map(([k,p])=>`<option value="${k}" ${progKey()===k?'selected':''}>${esc(p.t)}</option>`).join('')}</select></div>
