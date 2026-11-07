@@ -815,9 +815,33 @@ function cPeso(){
     ${(()=>{const F=fatSeries().filter(x=>x.date>=from&&x.date<=to);return `${F.length?fatStats(F,'Inicial · '+fdate(F[0].date)):''}${dualChart(R.map(w=>({d:w.date,v:w.peso})),F.map(x=>({d:x.date,v:x.v})),{w:560,h:220,color:ok?'#7CE38B':'#FFD60A'})}${F.length?`<p class="small muted" style="margin:0">% graso estimado con ${esc([...new Set(F.map(x=>BF_M[x.m]))].join(' · '))}.</p>`:`<p class="small muted" style="margin:0">Sin % graso en este rango: se calcula con cuello y cintura (y cadera en mujeres) del check-in, con el sexo, la altura y la edad de su Ficha.</p>`}`})()}`:'<p class="small muted">No hay pesos en ese rango.</p>'}
     <div class="seg2"><span class="small muted">En su gráfica el cliente ve:</span><button type="button" class="chip ${!FICHA.showFat?'on':''}" onclick="FICHA.showFat=false;save();renderCoach()">Solo peso</button><button type="button" class="chip ${FICHA.showFat?'on':''}" onclick="FICHA.showFat=true;save();renderCoach()">Peso y % graso</button></div>
   </div>
+  ${medPanel(from,to)}
   <div class="panel"><span class="lbl">Todos los pesos del rango</span><div class="tbl-w"><table><thead><tr><th>Fecha</th><th>Peso</th><th>Cambio vs anterior</th><th>Cambio acumulado</th></tr></thead><tbody>
   ${R.map((w,i)=>{const d=i?w.peso-R[i-1].peso:0,a=w.peso-R[0].peso;return `<tr><td>${new Date(w.date+'T12:00').toLocaleDateString('es-ES')}</td><td>${nf(w.peso)} kg</td><td class="${i?(goodDir(d)?'good':'badc'):''}">${i?(d>0?'+':'')+nf(d):'—'}</td><td class="${i?(goodDir(a)?'good':'badc'):''}">${i?(a>0?'+':'')+nf(a):'—'}</td></tr>`}).reverse().join('')}</tbody></table></div></div>`;
 }
+// ---- medidas corporales (perímetros de los check-ins) en el mismo rango que el peso
+let mSel='cintura';
+const M_KEYS=MEAS.filter(m=>m[2]==='cm');
+// qué dirección es buena: en pérdida de grasa bajar casi todo; en ganancia subir músculo y bajar cintura/abdomen
+const M_DOWN=['cintura','abdomen','cadera'];const M_UP=['torso','biceps','gluteo','pierna','gemelo'];
+function mGood(k,d){if(!d)return null;if(CLIENT.goal==='perder'){if(k==='biceps')return null;return d<0}return M_DOWN.includes(k)?d<0:M_UP.includes(k)?d>0:null}
+function medPanel(from,to){const C=[...S.checkins].filter(c=>c.date>=from&&c.date<=to).sort((a,b)=>a.date.localeCompare(b.date));
+  const ser=k=>C.filter(c=>+c[k]>0).map(c=>({d:c.date,v:+c[k]}));
+  const rows=M_KEYS.map(([k,l])=>{const v=ser(k);if(!v.length)return null;const f=v[0],z=v[v.length-1];return {k,l,f,z,d:z.v-f.v,v}}).filter(Boolean);
+  if(!rows.length)return `<div class="panel"><span class="lbl">📏 Medidas corporales</span><p class="small muted" style="margin:0">Sin medidas en este rango. Llegan con sus check-ins (cuello, pecho, bíceps, cintura, abdomen, cadera, glúteo, pierna y gemelo).</p></div>`;
+  if(!rows.find(r=>r.k===mSel))mSel=rows[0].k;
+  const lost=rows.filter(r=>r.k!=='cuello'&&r.d<0).reduce((s,r)=>s-r.d,0),won=rows.filter(r=>M_UP.includes(r.k)&&r.d>0).reduce((s,r)=>s+r.d,0);
+  const W=rows.find(r=>r.k==='cintura')||rows.find(r=>r.k==='abdomen');const sel=rows.find(r=>r.k===mSel);
+  const sg=x=>(x>0?'+':'')+nf(x,1).replace(',0','');
+  return `<div class="panel"><span class="lbl">📏 Medidas corporales · ${fdate(from)} → ${fdate(to)}</span>
+    <div class="kpis">${W?`<div class="kpi"><small>${W.l} · ${fdate(W.f.d)} → ${fdate(W.z.d)}</small><b>${nf(W.f.v,1).replace(',0','')} → ${nf(W.z.v,1).replace(',0','')} cm</b></div><div class="kpi"><small>Cambio de ${W.l.toLowerCase()}</small><b class="${mGood(W.k,W.d)===false?'badc':W.d?'good':''}">${sg(W.d)} cm</b></div>`:''}
+      <div class="kpi"><small>Centímetros perdidos (suma)</small><b class="${lost?'good':''}">${lost?'−'+nf(lost,1).replace(',0',''):'0'} cm</b></div>${CLIENT.goal!=='perder'?`<div class="kpi"><small>Centímetros ganados en músculo</small><b class="${won?'good':''}">${won?'+'+nf(won,1).replace(',0',''):'0'} cm</b></div>`:''}</div>
+    <div class="tbl-w"><table class="mtbl"><thead><tr><th>Medida</th><th>Inicial</th><th>Actual</th><th>Cambio</th><th>Evolución</th></tr></thead><tbody>
+    ${rows.map(r=>{const g=mGood(r.k,r.d);return `<tr class="${r.k===mSel?'on':''}" onclick="mSel='${r.k}';renderCoach()" style="cursor:pointer"><td><b>${esc(r.l)}</b><small class="muted" style="display:block">${r.v.length} medicion${r.v.length===1?'':'es'}</small></td><td>${nf(r.f.v,1).replace(',0','')} cm<small class="muted" style="display:block">${fdate(r.f.d)}</small></td><td>${nf(r.z.v,1).replace(',0','')} cm<small class="muted" style="display:block">${fdate(r.z.d)}</small></td><td class="${g===true?'good':g===false?'badc':''}"><b>${r.v.length>1?sg(r.d)+' cm':'—'}</b></td><td>${spark(r.v.map(x=>x.v),g===false?'#FF6B5B':g?'#7CE38B':'#FFD60A')}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <div class="seg2" style="flex-wrap:wrap">${rows.map(r=>`<button type="button" class="chip ${r.k===mSel?'on':''}" onclick="mSel='${r.k}';renderCoach()">${esc(r.l)}</button>`).join('')}</div>
+    ${lineChart(sel.v.map(x=>({d:x.d,v:x.v})),{u:' cm',label:'Medida',color:mGood(sel.k,sel.d)===false?'#FF6B5B':'#FFD60A'})}
+    <p class="small muted" style="margin:0">Pulsa una medida para ver su gráfica. Usa el mismo rango de fechas que el peso (arriba).</p></div>`}
 const e1rm=s=>s.kg*(1+s.reps/30);
 function cEj(){return `<div class="panel"><span class="lbl">📊 Volumen semanal por músculo</span>${vVolume(true)}</div>`+cEj0()+`<div class="panel"><span class="lbl">🏅 Rangos del cliente</span>${vRanks()}</div>`}
 // orden: primero los ejercicios de su rutina actual, luego el resto

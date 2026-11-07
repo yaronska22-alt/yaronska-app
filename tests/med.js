@@ -1,0 +1,22 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:1000}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Víctor',objetivo:'perder',dias:[1,3,5],sexo:'Hombre',altura:178},'2026-09-01');await refreshList();await loadClient(id);coachSel=id;
+  [['2026-09-07',95,102,104,38,40],['2026-09-21',93.5,99,102,38,39.5],['2026-10-05',92,97,101,37.5,39],['2026-10-19',90.8,95,100,37.5,38.5],['2026-11-02',90,94,99,37,38]].forEach(([d,p,c,cad,cu,bi])=>S.checkins.push({date:d,peso:p,cintura:c,cadera:cad,cuello:cu,biceps:bi,r:{},fotos:0,fotosP:[]}));
+  save();await flushSync();coachTab='peso';renderCoach()});
+await w(500);
+const t=await p.$$eval('.panel',a=>a.map(x=>x.textContent).find(x=>x.includes('Medidas corporales'))||'');console.log(t.replace(/\s+/g,' ').slice(0,500));
+await p.click('.mtbl tr:has-text("Cadera")');await w(200);console.log('sel',await p.evaluate(()=>mSel));
+const el=await p.$('.panel:has-text("Medidas corporales")');await el.screenshot({path:OUT+'/med.png'});
+console.log('ERR',errs);await b.close()})();

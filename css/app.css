@@ -762,3 +762,6 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .rcfg tr.roff td{opacity:.75}
 .rprev td small{display:block;font-size:11px;color:var(--dim);white-space:nowrap}
 .rprev tr.rtot td{border-top:2px solid var(--line-2)}
+
+.mtbl tr.on td{background:rgba(255,214,10,.06)}
+.mtbl .spark{width:110px;height:30px}
