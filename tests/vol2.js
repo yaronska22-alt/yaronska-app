@@ -13,7 +13,7 @@ await p.goto('http://app.test/');await w(300);
 await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
 if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
 await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5],diasSemana:3},'2026-10-01');await refreshList();await loadClient(id);coachSel=id;
-  S.routine=clone(TEMPLATES[0].days);const n=S.routine[0].ex[0].n;S.next[n]={sets:[{kg:60},{kg:60},{kg:60},{kg:60},{kg:60}],ts:Date.now()};
+  S.routine=clone(TEMPLATES[0].days);S.routine.push({d:'Día extra · Brazos',opt:true,ex:[{n:'Curl martillo',s:3,reps:'12'}]});const n=S.routine[0].ex[0].n;S.next[n]={sets:[{kg:60},{kg:60},{kg:60},{kg:60},{kg:60}],ts:Date.now()};
   S.hist[n]=[{date:iso(new Date()),day:S.routine[0].d,sets:[{kg:60,reps:8},{kg:60,reps:8}]}];save();await flushSync();coachTab='ejercicios';renderCoach()});
 await w(500);
 console.log((await p.textContent('.panel:has-text("Volumen semanal")')).replace(/\s+/g,' ').slice(0,900));
