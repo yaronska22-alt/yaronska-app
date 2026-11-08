@@ -307,7 +307,10 @@ function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POST
 // ================= VISTA CLIENTE =================
 function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById('app').classList.toggle('vc',v==='client');setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
-function go(t){tab=t;render();window.scrollTo(0,0)}
+// al entrar en Entreno se abre el primer día que aún no ha hecho esta semana
+function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;let T;try{T=wkTrain()}catch(e){return dayIdx}
+  let i=R.findIndex(d=>!d.opt&&!T.dayDone(d));if(i<0)i=R.findIndex(d=>!T.dayDone(d));return i<0?Math.min(dayIdx,R.length-1):i}
+function go(t){if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
 function render(){if(R_BUSY)return void setTimeout(render);R_BUSY=true;try{_render()}finally{R_BUSY=false}}
 function _render(){
@@ -600,7 +603,7 @@ async function saveSession(btn){
   if(!ok){NEW.forEach(([n,o])=>{if(!o.id){const L=S.hist[n]||[];const i=L.indexOf(o);if(i>=0)L.splice(i,1)}});if(!NEW.some(([n,o])=>o.id)){if(prevDay===undefined)delete S.daily[k];else S.daily[k]=prevDay}
     SES_D=date;render();
     const sh=document.getElementById('sheet');sh.innerHTML=`<div class="sheet-in" role="alertdialog" aria-label="No se ha subido"><div class="sheet-b"><h2>⚠️ No se ha podido subir</h2><p class="small muted" style="margin:0">Parece que no hay conexión ahora mismo. <b style="color:var(--fg)">No se ha borrado nada</b>: todo lo que has apuntado sigue en su sitio.</p><p class="small muted" style="margin:0">Comprueba tu conexión y vuelve a pulsar <b style="color:var(--fg)">Guardar entreno</b>.</p><button class="btn" type="button" onclick="closeSheet()">Entendido</button></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};return}
-  draftClear();save();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws&&wasDone){const T=wkTrain();toast(`✅ Añadido al entreno del ${wdName(date)} · llevas ${T.done} de ${T.target} esta semana`)}else if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
+  draftClear();save();if(!wasDone)dayIdx=nextDayIdx();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws&&wasDone){const T=wkTrain();toast(`✅ Añadido al entreno del ${wdName(date)} · llevas ${T.done} de ${T.target} esta semana`)}else if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
 function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
