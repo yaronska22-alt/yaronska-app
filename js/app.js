@@ -1395,11 +1395,17 @@ const musOf=e=>volMuscle(e.n,e.m);
 function musOpts(e){const g=musGuess(e.n);const cur=MUS_NORM[e.m]||e.m||'';const list=cur&&!MUSCLES.includes(cur)?MUSCLES.concat(cur):MUSCLES;
   return `<option value="" ${!cur?'selected':''}>Auto${g?': '+g:''}</option>`+list.map(m=>`<option ${cur===m?'selected':''}>${esc(m)}</option>`).join('')}
 const effSets=e=>exSets(e).filter(x=>x.t!=='aprox').length;
+// series que hará de verdad: si hay pauta serie a serie, las de la pauta
+const realSets=e=>{const nx=S.next[e.n];return nx&&nx.sets&&nx.sets.length?nx.sets.filter(x=>x.t!=='aprox').length:effSets(e)};
 function volPlan(){const per={};let tot=0;const RD=S.routine.filter(d=>!d.opt);const nd=RD.length;
-  RD.forEach(d=>d.ex.forEach(e=>{const k=musOf(e),c=effSets(e);per[k]=(per[k]||0)+c}));
+  RD.forEach(d=>d.ex.forEach(e=>{const k=musOf(e),c=realSets(e);per[k]=(per[k]||0)+c}));
   const f=FICHA||{};const ds=+f.diasSemana||(f.diasModo!=='libre'?(f.dias||[]).length:0)||nd;const fac=nd?ds/nd:1;
   Object.keys(per).forEach(k=>{per[k]=Math.round(per[k]*fac*10)/10;tot+=per[k]});
   return {per,tot:Math.round(tot*10)/10,nd,ds,fac}}
+// series REALES de la rutina (sin escalar), por músculo y con el detalle de cada ejercicio; si tiene pauta serie a serie, cuenta la pauta
+function volReal(){const per={};let tot=0;S.routine.filter(d=>!d.opt).forEach(d=>d.ex.forEach(e=>{const nx=S.next[e.n];
+  const c=realSets(e);if(!c)return;const k=musOf(e);
+  (per[k]=per[k]||{n:0,it:[]}).n+=c;per[k].it.push({d:d.d.split('·')[0].trim(),e:e.n,c,pz:!!(nx&&nx.sets&&nx.sets.length)});tot+=c}));return {per,tot}}
 function volWeek(off){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7)+7*off);const e=new Date(d);e.setDate(e.getDate()+6);return {a:iso(d),b:iso(e),da:d,db:e}}
 function volDone(a,b){const per={};let tot=0,ses=new Set();
   Object.entries(S.hist).forEach(([n,H])=>{const re=routineEx(n);const m=volMuscle(n,re&&re.m);
@@ -1407,10 +1413,10 @@ function volDone(a,b){const per={};let tot=0,ses=new Set();
   return {per,tot,ses:ses.size}}
 const vnum=x=>nf(x,1).replace(',0','');
 let volWk=0,volMus='';
-function volPlanChips(){const P=volPlan();const ks=Object.keys(P.per).sort((a,b)=>P.per[b]-P.per[a]);
+function volPlanChips(){const P=volPlan();const RL=volReal();const ks=Object.keys(RL.per).sort((a,b)=>RL.per[b].n-RL.per[a].n);
   if(!ks.length)return '<p class="small muted" style="margin:0">Añade ejercicios para ver el volumen.</p>';
-  return `<div class="vchips">${ks.map(k=>`<span class="vchip"><b>${vnum(P.per[k])}</b> ${esc(k)}</span>`).join('')}</div>
-  <p class="small muted" style="margin:0">Series efectivas por semana (sin contar las de aproximación) · total <b style="color:var(--fg)">${vnum(P.tot)}</b>.${P.fac!==1?` La rutina tiene ${P.nd} días y entrena ${P.ds} por semana, así que se escala ×${vnum(P.fac)}.`:''} ${S.routine.some(d=>d.opt)?' Las sesiones opcionales no cuentan en lo pautado (si las hace, sí suman en lo hecho).':''} El músculo de cada ejercicio lo eliges en «Músculo»; en «Auto» se deduce del nombre.</p>`}
+  return `<div class="vchips">${ks.map(k=>`<span class="vchip" title="${esc(RL.per[k].it.map(x=>x.d+' '+x.e+' ×'+x.c).join(' · '))}"><b>${RL.per[k].n}</b> ${esc(k)}${P.fac!==1?` <small class="muted">≈${vnum(P.per[k]||0)}/sem</small>`:''}</span>`).join('')}</div>
+  <p class="small muted" style="margin:0">Series reales que tiene en la rutina (sin contar las de aproximación) · total <b style="color:var(--fg)">${RL.tot}</b>.${P.fac!==1?` La rutina tiene ${P.nd} días pero entrena ${P.ds} por semana: a la semana hará ≈ <b style="color:var(--fg)">${vnum(P.tot)}</b>.`:''} ${S.routine.some(d=>d.opt)?' Las sesiones opcionales no cuentan en lo pautado (si las hace, sí suman en lo hecho).':''} El músculo de cada ejercicio lo eliges en «Músculo»; en «Auto» se deduce del nombre.</p>`}
 function vVolume(coach){
   const rr=coach?'renderCoach()':'render()';const P=volPlan();const W=volWeek(volWk);const D=volDone(W.a,W.b);
   if(!S.routine.length&&!Object.keys(S.hist).length)return `<div class="empty">${coach?'Cuando tenga rutina y registre entrenos, aquí verás sus series por músculo.':'Cuando tengas rutina y registres entrenos, aquí verás tus series por músculo.'}</div>`;
@@ -1418,7 +1424,7 @@ function vVolume(coach){
   const mx=Math.max(1,...ks.map(k=>Math.max(P.per[k]||0,D.per[k]||0)));
   const fd=d=>d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
   const pct=P.tot?Math.round(D.tot/P.tot*100):null;
-  const bars=ks.map(k=>{const p=P.per[k]||0,d=D.per[k]||0;const st=p?(d>=p?'ok':''):'';return `<div class="vrow"><b>${esc(k)}</b><div class="vtrack"><span class="vfill ${st}" style="width:${(d/mx*100).toFixed(1)}%"></span>${p?`<i class="vplan" style="left:${(p/mx*100).toFixed(1)}%" title="Pautadas: ${vnum(p)}"></i>`:''}</div><span class="vnum">${vnum(d)}${p?`<small> / ${vnum(p)}</small>`:''}</span></div>`}).join('');
+  const RL=volReal();const bars=ks.map(k=>{const p=P.per[k]||0,d=D.per[k]||0;const st=p?(d>=p?'ok':''):'';return `<div class="vrow"><b>${esc(k)}</b><div class="vtrack"><span class="vfill ${st}" style="width:${(d/mx*100).toFixed(1)}%"></span>${p?`<i class="vplan" style="left:${(p/mx*100).toFixed(1)}%" title="Pautadas: ${vnum(p)}"></i>`:''}</div><span class="vnum">${vnum(d)}${p?`<small> / ${vnum(p)}</small>`:''}</span></div>${RL.per[k]?`<small class="vreal">${RL.per[k].n} series en la rutina: ${RL.per[k].it.map(x=>`${esc(x.d)} ${esc(x.e)} ×${x.c}${x.pz?' (pauta)':''}`).join(' · ')}</small>`:''}`}).join('');
   // tendencia: últimas 8 semanas
   if(volMus&&!ks.includes(volMus))volMus='';
   const N=8,wk=[];for(let i=N-1;i>=0;i--){const w=volWeek(volWk-i);const dd=volDone(w.a,w.b);wk.push({w,v:volMus?(dd.per[volMus]||0):dd.tot})}
@@ -1429,9 +1435,9 @@ function vVolume(coach){
     ${wk.map((x,i)=>{const cx=L+i*bw+bw*.18,w=bw*.64;const cur=i===N-1;return `<rect x="${cx.toFixed(1)}" y="${y(x.v).toFixed(1)}" width="${w.toFixed(1)}" height="${(CH-B-y(x.v)).toFixed(1)}" rx="3" fill="#FFD60A" opacity="${cur?1:.55}"><title>Semana del ${fd(x.w.da)}: ${vnum(x.v)} series</title></rect>${x.v?`<text x="${(cx+w/2).toFixed(1)}" y="${(y(x.v)-4).toFixed(1)}" text-anchor="middle" fill="#E8E5DF">${vnum(x.v)}</text>`:''}<text x="${(cx+w/2).toFixed(1)}" y="${CH-8}" text-anchor="middle">${x.w.da.getDate()}/${x.w.da.getMonth()+1}</text>`}).join('')}
     ${pl?`<line x1="${L}" x2="${CW-R}" y1="${y(pl)}" y2="${y(pl)}" stroke="#7CE38B" stroke-width="1.5" stroke-dasharray="5 4"/>`:''}</svg>`;
   return `<div class="volnav"><button type="button" class="mini" onclick="volWk--;${rr}" aria-label="Semana anterior">‹</button><div><b>${volWk===0?'Esta semana':volWk===-1?'Semana pasada':'Semana del '+fd(W.da)}</b><small class="muted">${fd(W.da)} – ${fd(W.db)}</small></div><button type="button" class="mini" onclick="volWk=Math.min(0,volWk+1);${rr}" aria-label="Semana siguiente" ${volWk>=0?'disabled':''}>›</button></div>
-  <div class="kpis"><div class="kpi"><small>Series hechas</small><b>${vnum(D.tot)}</b></div><div class="kpi"><small>Series pautadas / semana</small><b>${P.tot?vnum(P.tot):'—'}</b></div><div class="kpi"><small>Cumplimiento</small><b class="${pct===null?'':pct>=90?'good':pct>=60||volWk===0?'':'badc'}">${pct===null?'—':pct+' %'}</b></div><div class="kpi"><small>Días entrenados</small><b>${D.ses}</b></div></div>
+  <div class="kpis"><div class="kpi"><small>Series hechas</small><b>${vnum(D.tot)}</b></div><div class="kpi"><small>Series pautadas en su rutina</small><b>${RL.tot||'—'}</b>${P.fac!==1&&RL.tot?`<small class="muted" style="display:block;font-size:11px">Rutina de ${P.nd} días y entrena ${P.ds}/semana → objetivo ≈ ${vnum(P.tot)} por semana</small>`:''}</div><div class="kpi"><small>Cumplimiento</small><b class="${pct===null?'':pct>=90?'good':pct>=60||volWk===0?'':'badc'}">${pct===null?'—':pct+' %'}</b></div><div class="kpi"><small>Días entrenados</small><b>${D.ses}</b></div></div>
   <div class="vbars">${bars||'<p class="small muted" style="margin:0">Sin datos esta semana.</p>'}</div>
-  <div class="vleg small muted"><span><i class="lg f"></i>Series hechas</span><span><i class="lg p"></i>Pautadas por semana</span></div>
+  <div class="vleg small muted"><span><i class="lg f"></i>Series hechas</span><span><i class="lg p"></i>Objetivo de la semana${P.fac!==1?' (ajustado a los días que entrena)':''}</span><span>Debajo de cada músculo: las series que tiene en la rutina, ejercicio a ejercicio</span></div>
   <section class="sec-h" style="margin-top:6px"><h2 style="font-size:16px">Evolución · últimas ${N} semanas</h2></section>
   <div class="mtabs">${['',...ks].map(k=>`<button type="button" class="chip ${volMus===k?'on':''}" onclick="volMus='${k}';${rr}">${k?esc(k):'Todos'}</button>`).join('')}</div>
   ${svg}
