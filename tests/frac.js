@@ -21,5 +21,5 @@ await p.click('.frac button:text-is("Registrar pago") >> nth=0');await w(200);aw
 console.log('tras pago 1:',(await p.textContent('.frac')).replace(/\s+/g,' ').slice(0,520));
 await (await p.$('.frac')).screenshot({path:OUT+'/frac.png'});
 console.log('admin fracc',await p.evaluate(async()=>{await flushSync();return JSON.stringify(__mock.client_admin[0].fracc)}),'plazo',await p.evaluate(()=>__mock.payments[0].plazo));
-await p.evaluate(()=>openBiz());await w(800);console.log('biz:',(await p.textContent('.cmain .panel')).replace(/\s+/g,' ').slice(0,250));
+await p.evaluate(()=>openBiz());await w(800);console.log('biz:',(await p.textContent('.cmain .panel')).replace(/\s+/g,' ').slice(0,250));console.log('mes:',(await p.textContent('.panel:has-text("Cobros de")')).replace(/\s+/g,' ').slice(0,300));await p.click('text=‹ Anterior');await w(300);await p.click('text=‹ Anterior');await w(300);console.log('mes ant:',(await p.textContent('.panel:has-text("Cobros de")')).replace(/\s+/g,' ').slice(0,300));await (await p.$('.panel:has-text("Cobros de")')).screenshot({path:OUT+'/mes.png'});
 console.log('ERR',errs);await b.close()})();

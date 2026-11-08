@@ -1555,9 +1555,18 @@ function bizClients(){const today=iso(new Date());
     // Cobros registrados + estimación de los periodos anteriores al primer cobro registrado
     const firstReal=real.length?real[0].fecha:'9999';pays=[];
     if(alta&&pago>0){let d=alta,i=0;while(d<=end&&d<=today&&d<firstReal&&i<120){pays.push({fecha:d,importe:pago,concepto:i?'renovacion':'alta'});est=true;d=mAdd(d,m);i++}}
-    real.forEach(p=>pays.push({fecha:p.fecha,importe:p.importe,concepto:p.concepto==='alta'&&pays.length?'renovacion':p.concepto}));
+    real.forEach(p=>pays.push({fecha:p.fecha,importe:p.importe,concepto:p.concepto==='alta'&&pays.length?'renovacion':p.concepto,plazo:!!p.plazo,nota:p.nota||'',cid:c.id}));
     const months=alta?Math.max(0,mDiff(alta,end>today?today:end)):null;
     return {c,a,m,pago,alta,end,pays,est,months,renewals:pays.filter(p=>p.concepto==='renovacion').length,firstDue:alta?mAdd(alta,m):null}})}
+// ---- cobros de un mes concreto: quién y qué
+let BIZM='';
+function bizMonth(P,ym){const m=BIZM||ym;const L=P.filter(p=>p.fecha.slice(0,7)===m).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const tot=L.reduce((s,p)=>s+p.importe,0),re=L.filter(p=>!p.est).reduce((s,p)=>s+p.importe,0);
+  const lab=new Date(m+'-15T12:00').toLocaleDateString('es-ES',{month:'long',year:'numeric'});const sh=k=>{const d=new Date(m+'-15T12:00');d.setMonth(d.getMonth()+k);return iso(d).slice(0,7)};
+  const cn=p=>p.plazo?'💳 Plazo fraccionado':p.concepto==='alta'?'🆕 Alta':p.concepto==='renovacion'?'🔁 Renovación':'Otro';
+  return `<div class="panel"><div class="sec-h"><span class="lbl">💶 Cobros de ${esc(lab)} · ${nf(tot,0)} € · ${L.length} cobro${L.length===1?'':'s'}</span><div class="row"><button class="btn ghost sm" type="button" onclick="BIZM='${sh(-1)}';renderCoach()">‹ Anterior</button>${m<ym?`<button class="btn ghost sm" type="button" onclick="BIZM='${sh(1)}';renderCoach()">Siguiente ›</button>`:''}${BIZM&&BIZM!==ym?`<button class="btn ghost sm" type="button" onclick="BIZM='';renderCoach()">Este mes</button>`:''}</div></div>
+  ${L.length?`<div class="tbl-w"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Importe</th><th>Nota</th></tr></thead><tbody>${L.map(p=>`<tr><td>${new Date(p.fecha+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</td><td>${p.cid?`<button class="linkbtn" type="button" onclick='goCl(${esc(JSON.stringify(p.cid))},"ficha")'>${esc(p.n)}</button>`:esc(p.n)}</td><td>${cn(p)}${p.est?' <span class="stag">estimado</span>':''}</td><td><b>${nf(p.importe,p.importe%1?2:0)} €</b></td><td class="wrap small muted">${esc(p.nota||'')}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3"><b>Total</b>${re!==tot?` <span class="small muted">(registrados ${nf(re,0)} € · estimados ${nf(tot-re,0)} €)</span>`:''}</td><td><b class="y">${nf(tot,0)} €</b></td><td></td></tr></tfoot></table></div>`:'<p class="small muted" style="margin:0">Ningún cobro en este mes.</p>'}
+  ${L.some(p=>p.est)?'<p class="small muted" style="margin:0">«Estimado»: cobro calculado con su fecha de alta, tipo de suscripción y pago, porque no lo tienes registrado. Regístralo en su ficha para que quede exacto.</p>':''}</div>`}
 function cBiz(){
   const B=bizClients();const today=iso(new Date());const ym=today.slice(0,7);
   const act=B.filter(x=>x.a.estado==='active'||x.a.estado==='trial'),pau=B.filter(x=>x.a.estado==='paused'),end=B.filter(x=>x.a.estado==='ended');
@@ -1572,7 +1581,7 @@ function cBiz(){
   const ltv=dur.length?B.reduce((s,x)=>s+x.pays.reduce((a,p)=>a+p.importe,0),0)/B.length:0;
   const months=Array.from({length:12},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-11+i);const k=iso(d).slice(0,7);return {k,v:P.filter(p=>p.fecha.slice(0,7)===k).reduce((s,p)=>s+p.importe,0)}});
   const mx=Math.max(1,...months.map(x=>x.v));const MN=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const bars=`<svg class="chart" viewBox="0 0 720 220" role="img" aria-label="Facturación por mes">${months.map((x,i)=>{const h=Math.round(x.v/mx*160);const X=20+i*58;return `<rect x="${X}" y="${180-h}" width="40" height="${h}" rx="3" fill="${x.k===ym?'#FFD60A':'#6b5d10'}"><title>${x.k}: ${nf(x.v,0)} €</title></rect>${x.v?`<text x="${X+20}" y="${174-h}" text-anchor="middle" style="fill:#ddd">${nf(x.v,0)}</text>`:''}<text x="${X+20}" y="198" text-anchor="middle">${MN[+x.k.slice(5)-1]}</text>`}).join('')}</svg>`;
+  const bars=`<svg class="chart" viewBox="0 0 720 220" role="img" aria-label="Facturación por mes">${months.map((x,i)=>{const h=Math.round(x.v/mx*160);const X=20+i*58;return `<rect x="${X}" y="${180-h}" width="40" height="${Math.max(h,2)}" rx="3" style="cursor:pointer" onclick="BIZM='${x.k}';renderCoach()" fill="${x.k===(BIZM||ym)?'#FFD60A':'#6b5d10'}"><title>${x.k}: ${nf(x.v,0)} €</title></rect>${x.v?`<text x="${X+20}" y="${174-h}" text-anchor="middle" style="fill:#ddd">${nf(x.v,0)}</text>`:''}<text x="${X+20}" y="198" text-anchor="middle">${MN[+x.k.slice(5)-1]}</text>`}).join('')}</svg>`;
   const lim=mAdd(today,1);const up=act.map(x=>({x,d:nextRenewal({renov:x.a.renovacion||'',tipo:x.a.tipo||'',alta:x.alta})})).filter(o=>o.d&&o.d<=lim).sort((a,b)=>a.d.localeCompare(b.d));
   const upSum=up.reduce((s,o)=>s+o.x.pago,0);const late=up.filter(o=>o.d<today);
   const byType=SUBT.map(([k,l])=>({l,n:act.filter(x=>x.a.tipo===k).length})).filter(o=>o.n);
@@ -1584,7 +1593,8 @@ function cBiz(){
   ${gdPanel()}
   <div class="kpis">${k('Facturado este mes',nf(month,0)+' €',new Date().toLocaleDateString('es-ES',{month:'long',year:'numeric'}))}${k('Ingreso recurrente mensual',nf(mrr,0)+' €/mes','Lo que generan tus activos al mes')}${k('Ticket medio',nf(tickA,0)+' €',`por cobro (${nf(tick,0)} € de media histórica)`)}${k('Valor medio por cliente',nf(ltv,0)+' €','Total cobrado ÷ clientes')}</div>
   <div class="kpis">${k('Clientes activos',act.length,`${pau.length} pausados · ${end.length} bajas · ${B.length} en total`)}${k('Duración media',nf(avgDur,1)+' meses','Desde el alta hasta hoy o hasta la baja')}${k('Renovaciones',totalRen,'Cobros de renovación en total')}${k('% de renovación',rate==null?'—':nf(rate,0)+' %',`${renewed.length} de ${elig.length} clientes renovaron al menos una vez`,rate==null?'':rate>=60?'good':rate>=40?'':'badc')}</div>
-  <div class="panel"><span class="lbl">Facturación de los últimos 12 meses</span>${bars}</div>
+  <div class="panel"><span class="lbl">Facturación de los últimos 12 meses · pulsa un mes para ver sus cobros</span>${bars}</div>
+  ${bizMonth(P,ym)}
   <div class="panel"><div class="sec-h"><span class="lbl">Renovaciones de los próximos 30 días</span><b>${nf(upSum,0)} € previstos</b></div>
     ${up.length?`<div class="tbl-w"><table><thead><tr><th>Cliente</th><th>Fecha</th><th>Importe</th><th>Tipo</th></tr></thead><tbody>${up.map(o=>`<tr><td><button class="linkbtn" type="button" onclick="coachTab='ficha';selectClient('${o.x.c.id}')">${esc(o.x.c.name)}</button></td><td class="${o.d<today?'badc':''}">${new Date(o.d+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}${o.d<today?' · vencida':''}</td><td>${o.x.pago?nf(o.x.pago,0)+' €':'—'}</td><td>${esc((SUBT.find(t=>t[0]===o.x.a.tipo)||['','—'])[1])}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted" style="margin:0">Ninguna en los próximos 30 días.</p>'}
     ${late.length?`<p class="small badc" style="margin:0">${late.length} renovación${late.length>1?'es':''} vencida${late.length>1?'s':''}: registra el cobro en su Ficha o cambia su estado.</p>`:''}</div>
