@@ -780,3 +780,5 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .cnote select{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;color:var(--fg);max-width:100%}
 
 .vreal{display:block;font-size:11px;color:var(--dim);margin:-2px 0 8px;line-height:1.4}
+
+.frac{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line-2);border-radius:10px;padding:12px;margin-bottom:10px}

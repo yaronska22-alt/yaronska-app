@@ -1,0 +1,25 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:1000}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Manuel',objetivo:'perder',dias:[1,3,5]},'2026-09-01');await refreshList();await loadClient(id);coachSel=id;coachTab='ficha';fichaTab='subs';renderCoach()});
+await w(600);
+await p.click('text=+ Configurar pago fraccionado');await w(200);
+await p.fill('#frX','Programa 6 meses');await p.fill('#frT','600');await p.fill('#frN','3');await p.fill('#frI','2026-09-01');await p.click('#sheet button:text-is("Guardar")');await w(400);
+console.log('tras config:',(await p.textContent('.frac')).replace(/\s+/g,' ').slice(0,420));
+await p.click('.frac button:text-is("Registrar pago") >> nth=0');await w(200);await p.fill('#pyD','2026-09-01');await p.click('#sheet button:text-is("Guardar cobro")');await w(500);
+console.log('tras pago 1:',(await p.textContent('.frac')).replace(/\s+/g,' ').slice(0,520));
+await (await p.$('.frac')).screenshot({path:OUT+'/frac.png'});
+console.log('admin fracc',await p.evaluate(async()=>{await flushSync();return JSON.stringify(__mock.client_admin[0].fracc)}),'plazo',await p.evaluate(()=>__mock.payments[0].plazo));
+await p.evaluate(()=>openBiz());await w(800);console.log('biz:',(await p.textContent('.cmain .panel')).replace(/\s+/g,' ').slice(0,250));
+console.log('ERR',errs);await b.close()})();
