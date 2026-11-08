@@ -772,3 +772,9 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 
 .segr{gap:8px;align-items:center;flex-wrap:wrap}
 .segr input[type=date]{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;color:var(--fg);margin-left:4px}
+
+.clsort{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:6px 8px;color:var(--fg);font-size:12px;width:100%}
+.clsep{margin-top:6px}
+
+.cnote.warn{border-color:#FF6B5B;background:rgba(255,107,91,.08)}
+.cnote select{background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;color:var(--fg);max-width:100%}

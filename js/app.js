@@ -111,6 +111,8 @@ function fromDb(d){
   d.logs.forEach(l=>{(S.hist[l.ejercicio]=S.hist[l.ejercicio]||[]).push({id:l.id,date:l.fecha,day:l.dia||'',sets:l.sets||[],nota:l.nota||'',sub:l.sustituye||'',ts:Date.parse(l.created_at)})});
   // Una pauta deja de mostrarse cuando el cliente ya ha entrenado ese ejercicio después de pautarla
   Object.entries(c.pautas||{}).forEach(([n,p])=>{const h=S.hist[n]||[];if(!p.ts||!h.some(x=>x.ts>p.ts&&(!p.from||x.date>=p.from)))S.next[n]=p});
+  // pautas guardadas con un nombre que ya no está en la rutina: se enganchan al ejercicio de la rutina que corresponde
+  Object.keys(S.next).forEach(n=>{if(routineEx(n))return;const t=pFuzzy(n);if(t&&!S.next[t])S.next[t]=S.next[n]});
   FICHA=S.ficha;CUR={id:c.id,email:c.email};
   SNAP={client:J(clientRow()),admin:d.admin?J(adminRow()):null,profile:J({n:FICHA.nombre,t:FICHA.tel,p:S.profile}),w:{},c:{},d:{},h:{}};
   S.weights.forEach(w=>SNAP.w[w.id]=J(wBody(w)));S.checkins.forEach(x=>SNAP.c[x.id]=J(cBody(x)));
@@ -770,7 +772,7 @@ function _renderCoach(){setTimeout(placeCalc);
   const c=String(coachSel).startsWith('__')?null:CL.find(x=>CUR&&x.id===CUR.id);
   el.innerHTML=`<div class="coach">
   <aside class="clist" aria-label="Clientes"><button type="button" class="citem biz pendbtn ${coachSel==='__pend'?'on':''}" onclick="openPend()"><span class="av">📋</span><div><b>Pendientes de hoy</b><small>Revisiones, notas, inactivos y renovaciones</small></div>${PEND_N?`<span class="pendn">${PEND_N}</span>`:''}</button><button type="button" class="citem biz ${coachSel==='__biz'?'on':''}" onclick="openBiz()"><span class="av">📊</span><div><b>Mi negocio</b><small>Facturación, renovaciones y clientes</small></div></button><span class="lbl">Tus clientes · ${CL.length}${(()=>{const A=activeCL().map(c=>c.id===(CUR&&CUR.id)?liveWk():c.wk).filter(Boolean);const r=A.filter(w=>w.rev==='todo').length,pa=A.filter(w=>w.pau==='todo').length;return r||pa?` <span class="wksum">· ${r?r+' por corregir':''}${r&&pa?' · ':''}${pa?pa+' por pautar':''}</span>`:''})()}</span>
-    ${CL.map(coachItem).join('')}
+    ${clListHTML()}
     <button class="btn ghost sm" type="button" onclick="openInvite()">+ Nuevo cliente</button>
     <button class="btn ghost sm" type="button" onclick="openImport()">⇪ Importar de la Calculadora</button>
   </aside>
@@ -1026,13 +1028,13 @@ function cSes(){
   return `${NT.length?`<div class="panel"><span class="lbl">💬 Notas del cliente · últimos 30 días</span><div class="ntlist">${NT.map(x=>`<button type="button" class="ntrow ${x.date+'|'+(x.day||'')===sesSel?'on':''}" onclick="sesSel=${esc(JSON.stringify(x.date+'|'+(x.day||'')))};renderCoach()"><small class="muted">${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.n)}</small><span>${esc(x.nota)}</span></button>`).join('')}</div></div>`:''}<div class="panel"><div class="range"><div class="field"><label for="sesS">Sesión</label><select id="sesS" onchange="sesSel=this.value;renderCoach()">${L.map(x=>`<option value="${esc(x.date+'|'+x.day)}" ${x.date+'|'+x.day===sesSel?'selected':''}>${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.day||'Entreno')} · ${x.items.length} ejercicios</option>`).join('')}</select></div></div>
     <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p>
     <div class="pmode"><button class="btn ghost sm" type="button" onclick="previewNext()">👁️ Ver su próxima semana como el cliente</button><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
-  ${se.items.map(({n,hi,h},k)=>{const nx=S.next[n]||{};const re=routineEx(n,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
+  ${se.items.map(({n,hi,h},k)=>{const T=pKey(n,h);const nx=S.next[T]||{};const re=routineEx(T,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
     const blk=re&&re.blk?`<span class="stag" style="background:var(--surface-2);color:var(--y)">${esc(blkName(re.blkT))} ${esc(re.blk)}</span>`:'';
     const tOf=(st,si)=>st.t!==undefined?st.t:(plan[st.i??si]||{}).t||'';
     return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="small muted">${h.sets.length?h.sets.length+' series':'Sin series · solo nota'}</span></div>${h.sub?`<div class="cnote">🔄 <b>Cambio:</b> hizo este ejercicio en lugar de <b>${esc(h.sub)}</b> (máquina ocupada u otro motivo)</div>`:''}${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
     <div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=plan[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${f==='rir'&&st.fail?'Fallo':String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>
     <span class="lbl" style="margin-top:4px">Pautar próximo entreno${nx.ts?` <span class="pfrom">✓ pautado${nx.from?' · lo ve desde el '+new Date(nx.from+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):' · ya visible'}</span>`:''}</span>
-    ${pautaHTML(n,k,nm,plan,h,nx,re,inS)}</div>`}).join('')}`;
+    ${pTargetHTML(n,h,T)}${pautaHTML(n,k,nm,plan,h,nx,re,inS)}</div>`}).join('')}`;
 }
 function editSet(n,hi,si,f,v){const x=parseFloat(String(v).replace(',','.'));const st=S.hist[n][hi].sets[si];if(f==='rir'){if(isFail(v)){st.rir=0;st.fail=true}else{delete st.fail;st.rir=isNaN(x)?null:x}}else st[f]=isNaN(x)?null:x;save();toast('Corregido')}
 // ---- pauta por series: siempre serie a serie, con tipo de serie (normal, top set, back-off…) y nº de series editable
@@ -1064,10 +1066,20 @@ function previewExit(){PREV_FROM=null;setView('coach');coachTab='sesiones';rende
 const nextMonday=()=>{const d=new Date();d.setHours(12);d.setDate(d.getDate()+((8-d.getDay())%7||7));return iso(d)};
 let PAUTA_MODE=(()=>{try{return localStorage.getItem('pautaMode')||'lunes'}catch(e){return 'lunes'}})();
 function setPautaMode(m){PAUTA_MODE=m;try{localStorage.setItem('pautaMode',m)}catch(e){}renderCoach()}
+// ---- a qué ejercicio de su rutina va la pauta: si lo hizo con otro nombre (cambio de máquina o lo renombraste), se busca el de la rutina
+let PKEY={},PSET={};
+function pFuzzy(n,day){const N=gdNorm(n).split(' ').filter(w=>w.length>1);if(!N.length)return null;let best=null,bs=0;
+  S.routine.forEach(d=>d.ex.forEach(e=>{const E=gdNorm(e.n).split(' ').filter(w=>w.length>1);const inter=N.filter(w=>E.includes(w)).length;let sc=inter/Math.max(N.length,E.length);
+    if(N.every(w=>E.includes(w))||E.every(w=>N.includes(w)))sc+=.5;if(day&&d.d===day)sc+=.2;if(sc>bs){bs=sc;best=e.n}}));return bs>=.6?best:null}
+function pKey(n,h){let t;if(PSET[n]!==undefined)t=PSET[n]||n;else if(routineEx(n))t=n;else if(h&&h.sub&&routineEx(h.sub))t=h.sub;else t=pFuzzy(n,h&&h.day)||n;PKEY[n]=t;return t}
+function pTargetHTML(n,h,T){if(routineEx(n)&&T===n)return '';const nm=esc(n).replace(/'/g,"\\'");const opts=[];S.routine.forEach(d=>d.ex.forEach(e=>{if(!opts.includes(e.n))opts.push(e.n)}));
+  const ok=!!routineEx(T);return `<div class="cnote ${ok?'':'warn'}">${ok?`🎯 Este ejercicio en su rutina se llama <b>${esc(T)}</b>: la pauta se le pondrá ahí.`:'⚠️ <b>Este ejercicio no está en su rutina</b> con este nombre: si no eliges a cuál va, <b>no verá la pauta</b>.'}
+    <label class="small" style="display:flex;gap:6px;align-items:center;margin-top:6px">Pautar en: <select onchange="PSET['${nm}']=this.value;renderCoach()"><option value="">— ${esc(n)} (no está en la rutina)</option>${opts.map(o=>`<option ${o===T&&ok?'selected':''}>${esc(o)}</option>`).join('')}</select></label></div>`}
 function setNext(n,k){const g=id=>{const el=document.getElementById(id);return el?el.value.trim():''};const nota=g('nn-'+k);const sets=pGrab(n,k);const fx=document.getElementById('nfx-'+k);
   delete PDRAFT[n];
-  if(!nota&&!sets.some(x=>x.kg||x.reps||x.int||x.nota)&&!sets.some(x=>x.t)){delete S.next[n]}
-  else S.next[n]=Object.assign({sets,nota,ts:Date.now(),fix:fx?fx.checked:true},PAUTA_MODE==='lunes'?{from:nextMonday()}:{});
+  const K=PKEY[n]||n;if(K!==n&&S.next[n])delete S.next[n];
+  if(!nota&&!sets.some(x=>x.kg||x.reps||x.int||x.nota)&&!sets.some(x=>x.t)){delete S.next[K]}
+  else S.next[K]=Object.assign({sets,nota,ts:Date.now(),fix:fx?fx.checked:true},PAUTA_MODE==='lunes'?{from:nextMonday()}:{});
   FICHA.pautadoAt=new Date().toISOString();save();toast(PAUTA_MODE==='lunes'?'Pautado: lo verá desde el lunes '+new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'Pautado para su próximo entreno');refreshItem();renderCoach()}
 // Plan automático según kcal (tu forma de trabajar: plantilla Yaronska escalada)
 let planPrev=null;
@@ -1681,6 +1693,11 @@ function libList(){const res=libRes();const el=document.getElementById('libGrid'
 function libUse(){const e=RX(libTo[0],libTo[1]);e.vid=libPick;save();closeSheet();renderCoach();toast('Vídeo asignado')}
 function libClear(){const e=RX(libTo[0],libTo[1]);delete e.vid;libPick=null;save();closeSheet();renderCoach();toast('Vídeo quitado')}
 
+// ---- el cliente vuelve a la app: recoge lo último que le haya pautado/cambiado Yaron
+(()=>{let hid=0;document.addEventListener('visibilitychange',async()=>{if(document.hidden){hid=Date.now();return}
+  if(!hid||Date.now()-hid<60000||!ME||ME.role!=='client'||!CUR||PENDING||saveSession.busy)return;hid=0;
+  const typing=[...document.querySelectorAll('[id^="rp-"],[id^="kg-"],[id^="ri-"]')].some(e=>e.value&&e.id.startsWith('rp-'));if(typing&&tab==='train')return;
+  try{await flushSync();await loadClient(CUR.id);render()}catch(e){}})})();
 // ---- aviso de versión nueva: si se ha publicado una actualización, ofrece recargar
 (()=>{let base=null;const sig=async()=>{try{const rs=await Promise.all(['js/app.js','css/app.css'].map(u=>fetch(u,{method:'HEAD',cache:'no-store'})));return rs.map(r=>r.headers.get('etag')||r.headers.get('last-modified')||'').join('|')}catch(e){return null}};
   const show=()=>{if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.className='updbar';d.innerHTML='<span>Hay una versión nueva de la app</span><button class="btn sm" type="button">Actualizar</button>';d.querySelector('button').onclick=async()=>{try{await flushSync()}catch(e){}location.reload()};document.body.appendChild(d)};
@@ -1726,6 +1743,16 @@ function revHistory(){const L=S.checkins.filter(x=>x.rev&&(x.rev.txt||x.rev.url)
 // ================= PENDIENTES DE HOY =================
 let PEND=null,PEND_N=0,PSKIP={};
 async function loadPend(){try{const [P,K]=await Promise.all([db.pending(iso(daysAgo(21))),db.getSetting('pendSkip').catch(()=>null)]);PEND=P;PSKIP=K&&typeof K==='object'?K:{};await loadForms();pendCount()}catch(e){console.error(e)}}
+// ---- orden de la lista de clientes (se recuerda en este dispositivo)
+let CL_SORT=(()=>{try{return localStorage.getItem('clSort')||'act'}catch(e){return 'act'}})();
+function setClSort(v){CL_SORT=v;try{localStorage.setItem('clSort',v)}catch(e){}renderCoach()}
+const isInact=c=>['paused','ended'].includes(c.estado);
+function clListHTML(){const nm=c=>(CUR&&c.id===CUR.id?CLIENT.name:c.name)||'';const wk=c=>CUR&&c.id===CUR.id?liveWk():c.wk;
+  const pri=c=>{const w=wk(c)||{};return w.rev==='todo'?0:w.pau==='todo'?1:2};
+  const by={act:(a,b)=>0,pend:(a,b)=>pri(a)-pri(b),az:(a,b)=>nm(a).localeCompare(nm(b),'es'),alta:(a,b)=>String((b.adm||{}).alta||'').localeCompare(String((a.adm||{}).alta||'')),renov:(a,b)=>String(a.renov||'9999').localeCompare(String(b.renov||'9999'))}[CL_SORT]||((a,b)=>0);
+  const A=CL.filter(c=>!isInact(c)).sort(by),I=CL.filter(isInact).sort(by);
+  const sel=`<select class="clsort" aria-label="Ordenar clientes" onchange="setClSort(this.value)">${[['act','Activos primero'],['pend','Pendientes primero'],['az','Por nombre (A-Z)'],['renov','Próxima renovación'],['alta','Más recientes']].map(([k,l])=>`<option value="${k}" ${CL_SORT===k?'selected':''}>${l}</option>`).join('')}</select>`;
+  return sel+A.map(coachItem).join('')+(I.length?`<span class="lbl clsep">Pausados y de baja · ${I.length}</span>`+I.map(coachItem).join(''):'')}
 const activeCL=()=>CL.filter(c=>!['paused','ended'].includes(c.estado));
 function pendData(){const P=PEND||{ck:[],wl:[]};const A=new Set(activeCL().map(c=>c.id));const nm=id=>(CL.find(c=>c.id===id)||{}).name||'—';const lim7=iso(daysAgo(7));
   const rev=P.ck.filter(x=>!x.rev&&A.has(x.client_id)&&!PSKIP['r|'+x.client_id+'|'+x.fecha]).map(x=>({id:x.client_id,n:nm(x.client_id),date:x.fecha}));
