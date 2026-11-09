@@ -120,7 +120,7 @@ function fromDb(d){
 }
 async function loadClient(id){
   const d=await db.loadClient(id,ME.role==='coach');fromDb(d);
-  dayIdx=0;today={};ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
+  dayIdx=0;DRAFT=null;DRAFT_FOR=null;today={};ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
 }
 
 async function sync(){
@@ -232,6 +232,7 @@ async function enter(user){
       if(!ME.clientId)return showAuth('nolink');
       await loadClient(ME.clientId);
       if(!S.profile.consent){document.getElementById('auth').hidden=false;return showConsent()}
+      try{draftFinalize()}catch(e){console.warn(e)}
     }
   }catch(err){console.error(err);return showAuth('error','No se han podido cargar tus datos: '+authMsg(err))}
   if(RECOVERY)return showAuth('newpass','Escribe tu contraseña nueva.');
@@ -308,7 +309,7 @@ function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POST
 function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById('app').classList.toggle('vc',v==='client');setTimeout(()=>{if(typeof placeCalc==='function')placeCalc()});document.getElementById('vClient').classList.toggle('on',v==='client');document.getElementById('vCoach').classList.toggle('on',v==='coach');
   document.getElementById('clientView').hidden=v!=='client';document.getElementById('coachView').hidden=v!=='coach';if(v==='coach')renderCoach();else render();window.scrollTo(0,0)}
 // al entrar en Entreno se abre el primer día que aún no ha hecho esta semana
-function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;let T;try{T=wkTrain()}catch(e){return dayIdx}
+function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;const dd=drDays().filter(i=>i<R.length);if(dd.length)return dd.includes(dayIdx)?dayIdx:dd[0];let T;try{T=wkTrain()}catch(e){return dayIdx}
   let i=R.findIndex(d=>!d.opt&&!T.dayDone(d));if(i<0)i=R.findIndex(d=>!T.dayDone(d));return i<0?Math.min(dayIdx,R.length-1):i}
 function go(t){if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
@@ -582,16 +583,19 @@ let SES_D=null;
 // si el día ya está hecho esta semana, por defecto se completa ESE entreno (no cuenta como otro)
 function WK_DD(){const d=S.routine[dayIdx];return d&&!PREV_FROM?wkTrain().dayDone(d):null}
 function sesDefD(){const DD=WK_DD();return DD&&DD>=iso(daysAgo(6))?DD:iso(new Date())}
-async function saveSession(btn){
-  if(PREV_FROM){toast('Estás en la vista previa: aquí no se guarda nada');return}
-  if(saveSession.busy)return;
-  const d=S.routine[dayIdx];let any=false;const NEW=[];const date=SES_D||sesDefD();SES_D=null;const PRS=[];const wasDone=sesDone(d,date).size>0;
-  d.ex.forEach((e0,ei)=>{const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>document.getElementById(id).value.replace(',','.');let kg=parseFloat(g(`kg-${dayIdx}-${ei}-${si}`));const reps=parseInt(g(`rp-${dayIdx}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${dayIdx}-${ei}-${si}`)),fail=isFail(g(`ri-${dayIdx}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
-    const ntEl=document.getElementById(`nt-${dayIdx}-${ei}`);const nota=ntEl?ntEl.value.trim():'';
+function collectDay(di,date,gv){const d=S.routine[di];let any=false;const NEW=[],PRS=[];
+  d.ex.forEach((e0,ei)=>{const SB=subOf(di,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>String(gv(id)||'').replace(',','.');let kg=parseFloat(g(`kg-${di}-${ei}-${si}`));const reps=parseInt(g(`rp-${di}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${di}-${ei}-${si}`)),fail=isFail(g(`ri-${di}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
+    const nota=String(gv(`nt-${di}-${ei}`)||'').trim();
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     const OLD=(S.hist[e.n]||[]).find(h=>h.date===date&&h.day===d.d&&(h.sub||null)===(SB?e0.n:null));
     if(OLD&&(sets.length||nota)){any=true;if(sets.length)OLD.sets=sets;if(nota)OLD.nota=nota;NEW.push([e.n,OLD]);return}
     if(sets.length||nota){any=true;const o={date,day:d.d,sets,ts:Date.now()};if(SB)o.sub=e0.n;NEW.push([e.n,o]);if(nota)o.nota=nota;(S.hist[e.n]=S.hist[e.n]||[]).push(o);if(date<iso(new Date()))S.hist[e.n].sort((x,y)=>x.date.localeCompare(y.date)||(x.ts||0)-(y.ts||0));if(sets.length&&S.next[e.n]&&(!S.next[e.n].from||date>=S.next[e.n].from)){const P=S.next[e.n];if(P.fix&&P.sets){e.s=P.sets.length;const base=exSets(Object.assign({},e,{s:P.sets.length}));e.sets=base.map((x,i)=>Object.assign(x,{t:P.sets[i].t||''},P.sets[i].nota!==undefined?{nota:P.sets[i].nota}:{}))}delete S.next[e.n]}}});
+  return {any,NEW,PRS}}
+async function saveSession(btn){
+  if(PREV_FROM){toast('Estás en la vista previa: aquí no se guarda nada');return}
+  if(saveSession.busy)return;
+  const date=SES_D||sesDefD();SES_D=null;const d=S.routine[dayIdx];const wasDone=sesDone(d,date).size>0;
+  const R=collectDay(dayIdx,date,id=>{const el=document.getElementById(id);return el?el.value:''});const {any,NEW,PRS}=R;
   if(!any){toast('Apunta las repeticiones de al menos una serie (o deja una nota)');return}
   rtStop();SAVED_AT=Date.now();
   const k=date;const prevDay=S.daily[k]?clone(S.daily[k]):undefined;S.daily[k]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[k]||{},{train:true,tipo:'T'});
@@ -603,7 +607,7 @@ async function saveSession(btn){
   if(!ok){NEW.forEach(([n,o])=>{if(!o.id){const L=S.hist[n]||[];const i=L.indexOf(o);if(i>=0)L.splice(i,1)}});if(!NEW.some(([n,o])=>o.id)){if(prevDay===undefined)delete S.daily[k];else S.daily[k]=prevDay}
     SES_D=date;render();
     const sh=document.getElementById('sheet');sh.innerHTML=`<div class="sheet-in" role="alertdialog" aria-label="No se ha subido"><div class="sheet-b"><h2>⚠️ No se ha podido subir</h2><p class="small muted" style="margin:0">Parece que no hay conexión ahora mismo. <b style="color:var(--fg)">No se ha borrado nada</b>: todo lo que has apuntado sigue en su sitio.</p><p class="small muted" style="margin:0">Comprueba tu conexión y vuelve a pulsar <b style="color:var(--fg)">Guardar entreno</b>.</p><button class="btn" type="button" onclick="closeSheet()">Entendido</button></div></div>`;sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};return}
-  draftClear();save();if(!wasDone)dayIdx=nextDayIdx();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws&&wasDone){const T=wkTrain();toast(`✅ Añadido al entreno del ${wdName(date)} · llevas ${T.done} de ${T.target} esta semana`)}else if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
+  draftClearDay(dayIdx);save();if(!wasDone)dayIdx=nextDayIdx();render();const ws=NEW.some(([n,o])=>o.sets&&o.sets.length);if(ws&&wasDone){const T=wkTrain();toast(`✅ Añadido al entreno del ${wdName(date)} · llevas ${T.done} de ${T.target} esta semana`)}else if(ws)doneSheet(d,PRS);else toast('Nota enviada a Yaron');
 }
 // ---- récords personales: se comparan con todas las sesiones anteriores de ese ejercicio
 function prCheck(n,sets){const H=(S.hist[n]||[]).filter(h=>h.sets&&h.sets.length);if(!H.length)return null;
@@ -1023,12 +1027,16 @@ function sessions(){const m={};Object.entries(S.hist).forEach(([n,arr])=>arr.for
 function routineEx(n,day){let f=null;S.routine.forEach(d=>d.ex.forEach(e=>{if(e.n===n&&(!f||d.d===day))f=e}));return f}
 const setTag=t=>t?`<em class="stag t-${t}">${esc((SET_T.find(x=>x[0]===t)||['',t])[1])}</em>`:'';
 function exNotes(days){const lim=iso(daysAgo(days));const out=[];Object.entries(S.hist).forEach(([n,a])=>a.forEach(h=>{if(h.nota&&h.date>=lim)out.push({n,date:h.date,day:h.day,nota:h.nota})}));return out.sort((a,b)=>b.date.localeCompare(a.date))}
+// aviso al entrenador: el cliente tiene series apuntadas sin pulsar «Guardar entreno»
+function draftNote(){const dr=S.profile&&S.profile.draft;if(!dr||!dr.v)return '';const ks=Object.keys(dr.v).filter(k=>/^rp-/.test(k));if(!ks.length)return '';
+  const days=[...new Set(ks.map(k=>+k.split('-')[1]))].map(i=>S.routine[i]?S.routine[i].d.split('·')[0].trim():'').filter(Boolean);
+  return `<div class="panel" style="border-color:var(--y)"><span class="lbl">📝 Entreno apuntado sin guardar</span><p class="small" style="margin:0">Tiene ${ks.length} serie${ks.length===1?'':'s'} apuntada${ks.length===1?'':'s'} (${esc(days.join(', '))}) desde el ${fdate(dr.k)} sin pulsar «Guardar entreno». Están a salvo: si no lo guarda, la app lo guarda sola al día siguiente.</p></div>`}
 function cSes(){
-  const L=sessions();if(!L.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no hay sesiones guardadas.</p></div>';
+  const L=sessions();if(!L.length)return draftNote()+'<div class="panel"><p class="small muted" style="margin:0">Aún no hay sesiones guardadas.</p></div>';
   if(!sesSel||!L.find(x=>x.date+'|'+x.day===sesSel))sesSel=L[0].date+'|'+L[0].day;const se=L.find(x=>x.date+'|'+x.day===sesSel);
   const inS='style="width:72px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px;text-align:center"';
   const NT=exNotes(30);
-  return `${NT.length?`<div class="panel"><span class="lbl">💬 Notas del cliente · últimos 30 días</span><div class="ntlist">${NT.map(x=>`<button type="button" class="ntrow ${x.date+'|'+(x.day||'')===sesSel?'on':''}" onclick="sesSel=${esc(JSON.stringify(x.date+'|'+(x.day||'')))};renderCoach()"><small class="muted">${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.n)}</small><span>${esc(x.nota)}</span></button>`).join('')}</div></div>`:''}<div class="panel"><div class="range"><div class="field"><label for="sesS">Sesión</label><select id="sesS" onchange="sesSel=this.value;renderCoach()">${L.map(x=>`<option value="${esc(x.date+'|'+x.day)}" ${x.date+'|'+x.day===sesSel?'selected':''}>${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.day||'Entreno')} · ${x.items.length} ejercicios</option>`).join('')}</select></div></div>
+  return draftNote()+`${NT.length?`<div class="panel"><span class="lbl">💬 Notas del cliente · últimos 30 días</span><div class="ntlist">${NT.map(x=>`<button type="button" class="ntrow ${x.date+'|'+(x.day||'')===sesSel?'on':''}" onclick="sesSel=${esc(JSON.stringify(x.date+'|'+(x.day||'')))};renderCoach()"><small class="muted">${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.n)}</small><span>${esc(x.nota)}</span></button>`).join('')}</div></div>`:''}<div class="panel"><div class="range"><div class="field"><label for="sesS">Sesión</label><select id="sesS" onchange="sesSel=this.value;renderCoach()">${L.map(x=>`<option value="${esc(x.date+'|'+x.day)}" ${x.date+'|'+x.day===sesSel?'selected':''}>${new Date(x.date+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})} · ${esc(x.day||'Entreno')} · ${x.items.length} ejercicios</option>`).join('')}</select></div></div>
     <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p>
     <div class="pmode"><button class="btn ghost sm" type="button" onclick="previewNext()">👁️ Ver su próxima semana como el cliente</button><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
   ${se.items.map(({n,hi,h},k)=>{const T=pKey(n,h);const nx=S.next[T]||{};const re=routineEx(T,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
@@ -1748,8 +1756,8 @@ function libClear(){const e=RX(libTo[0],libTo[1]);delete e.vid;libPick=null;save
 // ---- el cliente vuelve a la app: recoge lo último que le haya pautado/cambiado Yaron
 (()=>{let hid=0;document.addEventListener('visibilitychange',async()=>{if(document.hidden){hid=Date.now();return}
   if(!hid||Date.now()-hid<60000||!ME||ME.role!=='client'||!CUR||PENDING||saveSession.busy)return;hid=0;
-  const typing=[...document.querySelectorAll('[id^="rp-"],[id^="kg-"],[id^="ri-"]')].some(e=>e.value&&e.id.startsWith('rp-'));if(typing&&tab==='train')return;
-  try{await flushSync();await loadClient(CUR.id);render()}catch(e){}})})();
+  const keep={dayIdx,trainTab,foodTab,dayType};
+  try{await flushSync();await loadClient(CUR.id);dayIdx=Math.min(keep.dayIdx,Math.max(0,S.routine.length-1));trainTab=keep.trainTab;foodTab=keep.foodTab;dayType=keep.dayType;draftFinalize();render()}catch(e){}})})();
 // ---- aviso de versión nueva: si se ha publicado una actualización, ofrece recargar
 (()=>{let base=null;const sig=async()=>{try{const rs=await Promise.all(['js/app.js','css/app.css'].map(u=>fetch(u,{method:'HEAD',cache:'no-store'})));return rs.map(r=>r.headers.get('etag')||r.headers.get('last-modified')||'').join('|')}catch(e){return null}};
   const show=()=>{if(document.getElementById('updBar'))return;const d=document.createElement('div');d.id='updBar';d.className='updbar';d.innerHTML='<span>Hay una versión nueva de la app</span><button class="btn sm" type="button">Actualizar</button>';d.querySelector('button').onclick=async()=>{try{await flushSync()}catch(e){}location.reload()};document.body.appendChild(d)};
@@ -2015,20 +2023,41 @@ function formNewClient(id){const f=FORMS.find(x=>x.id===id);if(!f)return;openInv
 
 // ---- borrador del entreno: lo que el cliente va apuntando se conserva aunque cambie de día, de pestaña o cierre la app sin guardar
 const DRAFT_RX=/^(kg|rp|ri)-\d+-\d+-\d+$|^nt-\d+-\d+$/;
-const draftKey=()=>CUR?`ys-draft-${CUR.id}-${iso(new Date())}`:null;
-let DRAFT=null,draftT=0;
-function draftGet(){if(DRAFT)return DRAFT;try{DRAFT=JSON.parse(localStorage.getItem(draftKey())||'{}')}catch(e){DRAFT={}}
-  const sv=S&&S.profile&&S.profile.draft;if(sv&&sv.k===iso(new Date())&&sv.v&&Object.keys(sv.v).length>Object.keys(DRAFT).length)DRAFT=Object.assign({},sv.v,DRAFT);return DRAFT}
+// Borrador del entreno: UNO por cliente (no por fecha), con la fecha en la que empezó a apuntar (_d).
+// Se guarda en el móvil al momento y en la base de datos cada pocos segundos. Solo se borra la parte del día que se guarda.
+const draftKey=()=>CUR?`ys-draft-${CUR.id}`:null;
+let DRAFT=null,draftT=0,DRAFT_FOR=null;
+const drKeys=D=>Object.keys(D||{}).filter(k=>k!=='_d');
+function draftGet(){if(DRAFT&&DRAFT_FOR===(CUR&&CUR.id))return DRAFT;DRAFT_FOR=CUR&&CUR.id;
+  try{DRAFT=JSON.parse(localStorage.getItem(draftKey())||'{}')||{}}catch(e){DRAFT={}}
+  // borradores antiguos (guardados por fecha)
+  try{const old=localStorage.getItem(`ys-draft-${CUR.id}-${iso(new Date())}`);if(old&&!drKeys(DRAFT).length){DRAFT=Object.assign(JSON.parse(old)||{},{_d:iso(new Date())})}}catch(e){}
+  const sv=S&&S.profile&&S.profile.draft;if(sv&&sv.v&&drKeys(sv.v).length&&(!drKeys(DRAFT).length||(sv.k===DRAFT._d&&drKeys(sv.v).length>drKeys(DRAFT).length)))DRAFT=Object.assign({},sv.v,DRAFT,{_d:DRAFT._d||sv.k});
+  return DRAFT}
+function draftStore(){const D=draftGet();clearTimeout(draftT);draftT=setTimeout(()=>{try{if(drKeys(D).length)localStorage.setItem(draftKey(),JSON.stringify(D));else localStorage.removeItem(draftKey())}catch(e){}},300);draftCloud()}
 // ---- el borrador se sube a la nube solo (cada pocos segundos mientras apunta) para no perder nada aunque se cierre la app o cambie de móvil
 let drCloudT=0,DR_AT=0;
-function draftCloud(){clearTimeout(drCloudT);drCloudT=setTimeout(()=>{if(!CUR||!S||!S.profile)return;const D=draftGet();S.profile.draft=Object.keys(D).length?{k:iso(new Date()),v:Object.assign({},D),at:new Date().toISOString()}:undefined;if(!S.profile.draft)delete S.profile.draft;DR_AT=Date.now();save()},1500);drStatus('typing')}
-function drText(st){const D=DRAFT||{};if(!Object.keys(D).length&&!st)return 'Lo que apuntas se guarda solo mientras entrenas. Al acabar, pulsa «Guardar entreno».';
+function draftCloud(){clearTimeout(drCloudT);drCloudT=setTimeout(()=>{if(!CUR||!S||!S.profile)return;const D=draftGet();S.profile.draft=drKeys(D).length?{k:D._d||iso(new Date()),v:Object.assign({},D),at:new Date().toISOString()}:undefined;if(!S.profile.draft)delete S.profile.draft;DR_AT=Date.now();save()},1500);drStatus('typing')}
+function drText(st){const D=DRAFT||{};if(!drKeys(D).length&&!st)return 'Lo que apuntas se guarda solo mientras entrenas. Al acabar, pulsa «Guardar entreno».';
   if(st==='typing'||PENDING)return '☁️ Guardando lo que apuntas…';if(SYNC_ERR)return '📱 Sin conexión: lo tienes guardado en el móvil y se subirá solo.';
-  return '✅ Todo lo que has apuntado está guardado. Al acabar, pulsa «Guardar entreno».'}
+  return '✅ Todo lo que has apuntado está guardado, aunque cambies de día o cierres la app. Al acabar, pulsa «Guardar entreno».'}
 function drStatus(st){const el=document.getElementById('drSt');if(el)el.textContent=drText(st);el&&el.classList.toggle('err',!!SYNC_ERR)}
-document.addEventListener('input',e=>{const t=e.target;if(t.classList&&t.classList.contains('kgpre'))t.classList.remove('kgpre');if(!t.id||!DRAFT_RX.test(t.id)||!CUR)return;const D=draftGet();if(t.value.trim())D[t.id]=t.value;else delete D[t.id];clearTimeout(draftT);draftT=setTimeout(()=>{try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}},400);draftCloud()});
-function draftApply(){const D=draftGet();Object.entries(D).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&v!=null){el.value=v;el.classList.remove('kgpre')}})}
-function draftClear(){const k=draftKey();DRAFT={};clearTimeout(drCloudT);try{localStorage.removeItem(k)}catch(e){}if(S&&S.profile&&S.profile.draft)delete S.profile.draft}
+document.addEventListener('input',e=>{const t=e.target;if(t.classList&&t.classList.contains('kgpre'))t.classList.remove('kgpre');if(!t.id||!DRAFT_RX.test(t.id)||!CUR)return;const D=draftGet();
+  if(t.value.trim()){D[t.id]=t.value;if(!D._d)D._d=iso(new Date())}else delete D[t.id];
+  // al apuntar repeticiones, guarda también los kilos que ya venían puestos
+  if(t.id.startsWith('rp-')){const kid='kg'+t.id.slice(2);const k=document.getElementById(kid);if(k&&k.value.trim()&&!D[kid])D[kid]=k.value}
+  draftStore()});
+function draftApply(){const D=draftGet();Object.entries(D).forEach(([id,v])=>{if(id==='_d')return;const el=document.getElementById(id);if(el&&v!=null){el.value=v;el.classList.remove('kgpre')}})}
+function draftClear(){DRAFT={};DRAFT_FOR=CUR&&CUR.id;clearTimeout(drCloudT);try{localStorage.removeItem(draftKey())}catch(e){}if(S&&S.profile&&S.profile.draft)delete S.profile.draft}
+// borra SOLO lo apuntado en un día (lo de los demás días se queda)
+function draftClearDay(di){const D=draftGet();const re=new RegExp(`^(kg|rp|ri|nt|sub)-${di}-`);Object.keys(D).forEach(k=>{if(re.test(k))delete D[k]});
+  if(!drKeys(D).length){draftClear();return}D._d=iso(new Date());try{localStorage.setItem(draftKey(),JSON.stringify(D))}catch(e){}if(S&&S.profile)S.profile.draft={k:D._d,v:Object.assign({},D),at:new Date().toISOString()}}
+const drDays=()=>{const D=draftGet();return [...new Set(drKeys(D).filter(k=>/^(rp|nt)-/.test(k)).map(k=>+k.split('-')[1]))]};
+// si se quedó un entreno apuntado de otro día sin pulsar «Guardar», se guarda solo con su fecha
+function draftFinalize(){if(!ME||ME.role!=='client'||!CUR||!S||!S.routine||!S.routine.length)return;const D=draftGet();if(!D._d||D._d>=iso(new Date()))return;
+  const date=D._d;let n=0;drDays().forEach(di=>{if(!S.routine[di])return;const r=collectDay(di,date,id=>D[id]||'');if(r.any)n++});
+  if(n)S.daily[date]=Object.assign({steps:0,diet:false,stepsOk:false,estres:0,energia:0,animo:0},S.daily[date]||{},{train:true,tipo:'T'});
+  draftClear();if(n){save();toast(`💾 Hemos guardado el entreno que dejaste apuntado el ${wdName(date)} sin pulsar «Guardar»`)}}
 
 // ================= VALORACIÓN DE LA FICHA =================
 // Cada bloque empieza en 100 y resta por cada alerta (roja −25, naranja −10, «a tener en cuenta» −4). Los puntos fuertes no suman: se muestran para equilibrar la lectura.

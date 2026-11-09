@@ -25,6 +25,6 @@ console.log('tras reintento hist:',await p.evaluate(()=>Object.values(S.hist).fl
 await p.click('#bSaveSes');await w(1500);
 console.log('ok sheet:',(await p.textContent('#sheet')).replace(/\s+/g,' ').slice(0,60),'| db logs',await p.evaluate(()=>window.__mock.workout_logs.length),'draft nube',await p.evaluate(()=>!!(window.__mock.clients[0].prefs||{}).draft));
 // recarga con borrador en la nube y local borrado
-await p.click('text=Genial');await p.fill('#rp-0-1-0','9');await w(2600);await p.evaluate(()=>{localStorage.removeItem(draftKey());DRAFT=null;go('home');go('train')});await w(500);
+await p.click('text=Genial');await p.evaluate(()=>{dayIdx=0;render()});await w(200);await p.fill('#rp-0-1-0','9');await w(2600);await p.evaluate(()=>{localStorage.removeItem(draftKey());DRAFT=null;go('home');go('train')});await w(500);
 console.log('tras recarga sin local:',await p.inputValue('#rp-0-1-0').catch(e=>'ERR '+e.message));
 console.log('ERR',errs);await b.close()})();
