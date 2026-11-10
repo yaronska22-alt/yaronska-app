@@ -48,7 +48,7 @@ const PROG=f=>PROGS[progKey(f)];
 const PH=()=>PROG().ph;
 const phOf=(f,i)=>{const P=PROG(f).ph;return P[Math.min(Math.max(0,i||0),P.length-1)]};
 const RESOURCES=[
-  {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan',u:'https://drive.google.com/file/d/13-43KrZG8mGIQNXs5WoVIqhy_aCev0g0/view',k:'PDF'},
+  {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan (y casi 1.000 más en Comidas › Recetas)',u:'https://drive.google.com/file/d/13-43KrZG8mGIQNXs5WoVIqhy_aCev0g0/view',k:'PDF'},
   {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',u:'https://drive.google.com/file/d/1Y9CGkn-OOomIIntNeOplIA3wenQGfiab/view',k:'PDF'},
   {t:'Guía para comer fuera',d:'Restaurantes sin romper el plan',u:'https://drive.google.com/file/d/1MXfIbHVysfkzJxs7SZblMfunqmpVv3ax/view',k:'PDF'},
   {t:'Guía de vacaciones',d:'Hotel y buffet sin agobios',u:'https://drive.google.com/file/d/1Ht_HyG8K86WqTBgYlXjionl9iWespQfG/view',k:'PDF'},
@@ -298,9 +298,9 @@ const goodDir=d=>CLIENT.goal==='perder'?d<0:d>0;
 
 // ---- buscador de recetas
 const SRC={
-  p:[['pollo','Pollo / pavo',/POLLO|PAVO/],['ternera','Ternera',/TERNERA/],['blanco','Pescado blanco',/PESCADO BLANCO|BACALAO|MERLUZA/],['azul','Salmón / pescado azul',/SALM|AZUL|CABALLA|SARDINA/],['atun','Atún',/AT[UÚ]N/],['huevo','Huevos / claras',/HUEVO|CLARAS/],['cerdo','Cerdo',/CERDO/],['embutido','Jamón / lomo',/JAM[OÓ]N|LOMO EMBUCHADO/]],
+  p:[['pollo','Pollo / pavo',/POLLO|PAVO/],['ternera','Ternera',/TERNERA/],['blanco','Pescado blanco',/PESCADO BLANCO|BACALAO|MERLUZA/],['azul','Salmón / pescado azul',/SALM|AZUL|CABALLA|SARDINA/],['atun','Atún',/AT[UÚ]N/],['huevo','Huevos / claras',/HUEVO|CLARAS/],['cerdo','Cerdo',/CERDO/],['embutido','Jamón / lomo',/JAM[OÓ]N|LOMO EMBUCHADO/],['marisco','Marisco',/MARISCO/],['vegetal','Tofu / legumbres',/TOFU|LEGUMBRE/]],
   f:[['aceite','AOVE',/ACEITE/],['aguacate','Aguacate',/AGUACATE/],['queso','Queso',/QUESO/],['fsecos','Frutos secos',/FRUTOS SECOS/],['aceitunas','Aceitunas',/ACEITUNAS/]],
-  c:[['arroz','Arroz',/ARROZ/],['pasta','Pasta',/PASTA/],['patata','Patata / boniato',/PATATA|BONIATO/],['legumbre','Legumbres',/LEGUMBRE/],['pan','Pan',/\bPAN\b/],['tortilla','Tortillas',/TORTILLA/]]
+  c:[['arroz','Arroz',/ARROZ/],['pasta','Pasta',/PASTA/],['patata','Patata / boniato',/PATATA|BONIATO/],['legumbre','Legumbres',/LEGUMBRE/],['pan','Pan',/\bPAN\b/],['tortilla','Tortillas',/TORTILLA/],['avena','Avena',/AVENA/],['cereal','Quinoa / cuscús',/QUINOA|CEREALES/]]
 };
 function recipeHas(r,g,key){const def=SRC[g].find(x=>x[0]===key);const tag=(r.tags[g==='p'?0:g==='f'?1:2]||'').toUpperCase();return def[2].test(tag)}
 function filtered(){return DATA.recipes.map((r,i)=>({r,i})).filter(({r})=>!/POSTRE/i.test(r.tags.join(' '))&&['p','f','c'].every(g=>!F[g]||recipeHas(r,g,F[g])))}
@@ -454,17 +454,55 @@ function vPlan(){
     return `<div class="band"><b style="color:var(--ok)">Añade siempre verdura</b>${esc(V.length?V.join(' · '):m.veg||'Verdura al gusto')}</div>${SAL.length?`<div class="macro"><div class="macro-h"><span class="pill p-veg">🥗 O una ensalada</span></div><div class="opts">${SAL.map(t=>{const i=t.indexOf(':');return `<div><b>${esc(t.slice(0,i))}</b><br><small class="muted">${esc(t.slice(i+1).trim())}</small></div>`}).join('')}</div></div>`:''}`})()}
   ${m.fruit&&m.fruit.length?`<div class="band fruit"><b class="y">Postre · fruta a elegir</b>${esc(m.fruit.join(' · '))}</div>`:''}`;
 }
+// ---- Recetario: 49 recetas Yaronska + recetario ampliado (data/recetas.json) con cantidades según su plan
+let RCAT='yf',RQ='',RMAX=40,R_ERR=false;
+function rTargets(){const rest=dayType==='R'&&S.restOn;const pc=S.planCalc;
+  if(pc&&pc.sum)return YSR.targets({sum:pc.sum,rest});return YSR.targets({kcal:rest?kR():kT()})}
+function rLoad(){if(window.YSR&&!YSR.data&&!R_ERR)YSR.load('').then(()=>{if(tab==='food'&&foodTab==='recetas')render()}).catch(()=>{R_ERR=true;if(tab==='food'&&foodTab==='recetas')render()})}
+function rSearch(v){RQ=v;RMAX=40;clearTimeout(rSearch.t);rSearch.t=setTimeout(()=>{const el=document.getElementById('rRes');if(el)el.innerHTML=rResults();else render()},180)}
+function rCat(c){RCAT=c;RMAX=40;F={p:null,f:null,c:null};render()}
+const MEAL_CATS=[1,2,3,4,5,6];
+function rResults(){
+  const D=window.YSR&&YSR.data;
+  const qn=YSR?YSR.norm(RQ):'';
+  const yf=(RCAT==='yf'||RCAT==='all')?filtered().filter(({r})=>!qn||qn.split(/\s+/).every(w=>YSR.norm(r.t+' '+r.tags.join(' ')).includes(w))):[];
+  const nw=D&&RCAT!=='yf'?YSR.search(D,{cat:RCAT==='all'?'all':RCAT,q:RQ,fn:r=>['p','f','c'].every(g=>!F[g]||recipeHas(r,g,F[g]))}):[];
+  const total=yf.length+nw.length;
+  const lbl=`${total} receta${total===1?'':'s'} · cantidades de <b style="color:${dayType==='R'?'var(--ok)':'var(--y)'}">${dayType==='R'?'descanso / fin de semana':'día de entreno'}</b>`;
+  const cardY=({r,i})=>`<button class="rcard" type="button" onclick="openRecipe(${i})"><img src="${PHOTO(i)}" alt="${esc(r.t)}" loading="lazy"><div><b>${esc(r.t)}</b><small>⏱ ${esc(r.time)}</small></div></button>`;
+  const cardN=r=>`<button class="rcard" type="button" onclick="openRecipe2(${r.i})">${r.img?`<img src="${YSR.photo(r)}" alt="${esc(r.t)}" loading="lazy">`:`<span class="rph" aria-hidden="true">${YSR.icon(r)}</span>`}<div><b>${esc(r.t)}</b><small>⏱ ${r.min?r.min+' min · ':''}${esc(r.dif||'')}${RCAT==='all'?' · '+esc(r.cat):''}</small></div></button>`;
+  const shown=nw.slice(0,RMAX);
+  return `<div class="sec-h"><span class="count">${lbl}</span>${F.p||F.f||F.c||RQ?`<button class="btn ghost sm" type="button" onclick="F={p:null,f:null,c:null};RQ='';render()">Quitar filtros</button>`:''}</div>
+  ${total?`<div class="rgrid">${yf.map(cardY).join('')}${shown.map(cardN).join('')}</div>${nw.length>RMAX?`<button class="btn ghost" type="button" style="width:100%;margin-top:10px" onclick="RMAX+=60;document.getElementById('rRes').innerHTML=rResults()">Ver más (${nw.length-RMAX} más)</button>`:''}`
+  :(RCAT!=='yf'&&!D?`<div class="empty">${R_ERR?'No se ha podido cargar el recetario. Revisa tu conexión y vuelve a entrar.':'Cargando recetas…'}</div>`:`<div class="empty">No hay recetas con esa combinación. Quita algún filtro o prueba otra palabra.</div>`)}`;
+}
 function vRecipes(){
-  const res=filtered();
+  rLoad();const D=window.YSR&&YSR.data;
+  const cnt=c=>D?D.r.filter(r=>r.c===c).length:'';
+  const cats=[['yf','⭐ Yaronska',DATA.recipes.filter(r=>!/POSTRE/i.test(r.tags.join(' '))).length],['all','Todas',D?D.r.length+DATA.recipes.length:'']].concat((D?D.cats:[]).map((n,i)=>[i,(YSR.icon({c:i}))+' '+n,cnt(i)]));
+  const showFinder=RCAT==='yf'||RCAT==='all'||MEAL_CATS.includes(RCAT);
   const chips=(g,cls)=>SRC[g].map(([k,l])=>`<button type="button" class="chip ${cls} ${F[g]===k?'on':''}" onclick="F.${g}=F.${g}==='${k}'?null:'${k}';render()">${esc(l)}</button>`).join('');
-  return `<section class="finder" aria-label="Buscador de recetas">
+  return `<div class="rcats" role="tablist" aria-label="Categorías de recetas">${cats.map(([k,l,n])=>`<button type="button" class="chip ${String(RCAT)===String(k)?'on':''}" onclick='rCat(${JSON.stringify(k)})'>${esc(l)}${n!==''?` <small>${n}</small>`:''}</button>`).join('')}</div>
+  <input class="rsearch" type="search" placeholder="🔍 Busca: pollo, avena, tortitas, salmón…" value="${esc(RQ)}" oninput="rSearch(this.value)" aria-label="Buscar recetas">
+  ${showFinder?`<details class="finder" ${F.p||F.f||F.c?'open':''}><summary class="lbl">Filtrar por proteína, grasa e hidrato</summary>
     <div><span class="lbl">1 · ¿Qué proteína te apetece?</span><div class="chips" style="margin-top:7px">${chips('p','')}</div></div>
     <div><span class="lbl">2 · ¿Y de grasa?</span><div class="chips" style="margin-top:7px">${chips('f','f')}</div></div>
     <div><span class="lbl">3 · ¿Y de hidrato?</span><div class="chips" style="margin-top:7px">${chips('c','c')}</div></div>
-  </section>
-  <div class="sec-h"><span class="count">${res.length} receta${res.length===1?'':'s'} · cantidades de <b style="color:${dayType==='R'?'var(--ok)':'var(--y)'}">${dayType==='R'?'descanso / fin de semana':'día de entreno'}</b></span>${F.p||F.f||F.c?`<button class="btn ghost sm" type="button" onclick="F={p:null,f:null,c:null};render()">Quitar filtros</button>`:''}</div>
-  ${res.length?`<div class="rgrid">${res.map(({r,i})=>`<button class="rcard" type="button" onclick="openRecipe(${i})"><img src="${PHOTO(i)}" alt="${esc(r.t)}" loading="lazy"><div><b>${esc(r.t)}</b><small>⏱ ${esc(r.time)}</small></div></button>`).join('')}</div>`
-  :`<div class="empty">No hay recetas con esa combinación exacta. Quita uno de los filtros para ver más.</div>`}`;
+  </details>`:''}
+  <div id="rRes">${rResults()}</div>`;
+}
+function openRecipe2(i){
+  const r=YSR.data.r[i];const sh=document.getElementById('sheet');const T=rTargets();const P=YSR.portion(r,T);
+  const L=YSR.lines(r,P);const tg=r.tags.filter(Boolean);
+  sh.innerHTML=`<div class="sheet-in ${dayType==='R'?'restmode':''}" role="dialog" aria-label="${esc(r.t)}"><div class="sheet-img">${r.img?`<img src="${YSR.photo(r)}" alt="">`:`<span class="rph big" aria-hidden="true">${YSR.icon(r)}</span>`}<button class="sheet-x" type="button" aria-label="Cerrar" onclick="closeSheet()">×</button></div>
+  <div class="sheet-b"><div class="row"><span class="lbl">⏱ ${r.min?r.min+' min · ':''}${esc(r.dif||'')} · ${esc(r.cat)}</span><span class="dtag">${dayType==='R'?'🏠 Descanso / finde':'🏋️ Día de entreno'}</span></div><h2>${esc(r.t)}</h2>
+  ${tg.length?`<div class="row">${r.tags.map((t,k)=>t?`<span class="pill ${['p-prot','p-fat','p-carb'][k]}">${esc(t)}</span>`:'').join('')}</div>`:''}
+  <div class="band" style="margin:0">${P.txt}</div>
+  <span class="lbl">Ingredientes</span><ul class="ilist">${L.map(x=>`<li class="${x.c}">${x.h}</li>`).join('')}</ul>
+  <span class="lbl">Preparación</span><ol class="slist">${r.st.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+  ${P.mode==='scaled'&&r.serv>1?`<p class="small muted" style="margin:0">Los pasos son de la receta original (${r.serv} raciones): si nombran una cantidad, guíate por tu lista de ingredientes.</p>`:''}
+  ${r.nt?`<div class="note"><b class="y">Consejo · </b>${esc(r.nt)}</div>`:''}</div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()};
 }
 function openRecipe(i){
   const r=DATA.recipes[i];const sh=document.getElementById('sheet');const ing=VAR().ing[i].map(x=>({h:x[0],c:x[1]}));

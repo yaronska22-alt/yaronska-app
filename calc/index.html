@@ -791,7 +791,7 @@
         <div class="proto-actions">
           <button class="btn btn-purple" onclick="loadYaronskaTemplate()">⚡ Cargar plantilla Yaronska</button>
           <button class="btn btn-secondary" onclick="printProtocol()">🖨️ Imprimir protocolo</button>
-          <button class="btn" style="background:#FFD60A;color:#000;font-weight:700;" onclick="printRecipeBook()">📖 Libro de recetas (PDF)</button>
+          <button class="btn" style="background:#FFD60A;color:#000;font-weight:700;" onclick="ysPrintRecipeBookMenu()">📖 Libros de recetas (PDF)</button>
           <button class="btn" style="background:#FFD60A;color:#000;" onclick="openShoppingList('protocol')">🛒 Lista de la compra (todas las opciones)</button>
           <button class="btn" style="background:#FFD60A;color:#000;" onclick="openMealPrepModal()">🍱 Meal prep</button>
           <button class="btn btn-danger" onclick="resetProtocol()">↺ Vaciar protocolo</button>
@@ -9106,6 +9106,8 @@ function slpRenderPanel(){
 // =================== FIN LISTA COMPRA PREFERENCIAS ===================
 
 </script>
+<script src="../js/recetas-lib.js"></script>
+<script src="libros.js"></script>
 <script src="embed.js"></script>
 </body>
 </html>

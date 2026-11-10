@@ -782,3 +782,16 @@ button,a,input,select,textarea,label{touch-action:manipulation}
 .vreal{display:block;font-size:11px;color:var(--dim);margin:-2px 0 8px;line-height:1.4}
 
 .frac{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line-2);border-radius:10px;padding:12px;margin-bottom:10px}
+/* recetario ampliado */
+.rcats{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.rcats::-webkit-scrollbar{display:none}
+.rcats .chip{white-space:nowrap;flex:none}
+.rcats .chip small{opacity:.65;font-weight:500;margin-left:2px}
+.rsearch{width:100%}
+details.finder summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.finder summary::after{content:'▾';color:var(--muted)}
+details.finder[open] summary::after{content:'▴'}
+details.finder summary::-webkit-details-marker{display:none}
+.rph{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1.55;font-size:44px;background:radial-gradient(circle at 30% 20%,#2a2410,#0f0e0b 70%);border-bottom:3px solid var(--y)}
+.rph.big{font-size:72px}
+.ilist small{color:var(--muted);font-size:.86em}
