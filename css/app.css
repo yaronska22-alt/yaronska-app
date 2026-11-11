@@ -811,3 +811,4 @@ details.finder summary::-webkit-details-marker{display:none}
 .cookbtn span{color:var(--muted);font-weight:500;font-size:12px}
 .ckres{background:var(--surface);border:1px solid var(--y);border-radius:10px;padding:14px;text-align:center;font-size:16px}.ckres b{color:var(--y);font-size:22px}
 .ckres.muted{border-color:var(--line);color:var(--muted);font-size:14px}
+.vfr.vert{aspect-ratio:9/16;max-width:260px;width:100%;margin:0 auto}

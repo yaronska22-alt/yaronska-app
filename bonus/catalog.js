@@ -4,7 +4,7 @@
 window.BONUS=[
   {id:'kit',t:'Kit de Arranque',s:'Tus primeros 14 días',ic:'🚀',main:1,doc:1,
     d:'Qué va a pasar las dos primeras semanas, cómo pesar (también lo ya cocinado) y las dudas que tiene todo el mundo al empezar.',
-    videos:[{t:'Lo que va a pasar tus primeras 2 semanas',yt:''},{t:'Crudo o cocinado: cómo pesar sin volverte loco',yt:''},{t:'Me he saltado el plan: ¿y ahora qué?',yt:''}]},
+    videos:[{t:'Lo que va a pasar tus primeras 2 semanas',yt:'https://youtu.be/3ya87N-8hSo'},{t:'Crudo o cocinado: cómo pesar sin volverte loco',yt:'https://youtube.com/shorts/E83Bxf_YwuA'},{t:'Me he saltado el plan: ¿y ahora qué?',yt:'https://youtube.com/shorts/ZKs48e5i1Fo'}]},
   {id:'finde',t:'Fin de Semana Sin Culpa',s:'Sal, cena y disfruta sin romper la semana',ic:'🍻',main:1,doc:0,d:'Cómo salir, cenar fuera y tomarte algo sin tirar la semana, y qué hacer el lunes.',videos:[]},
   {id:'libertad',t:'Libertad de por Vida',s:'Mantener sin plan y sin rebote',ic:'🗝️',main:1,doc:0,d:'Cómo pasar del plan a comer a ojo, mantener tu peso y qué hacer si sube.',videos:[]},
   {id:'casa',t:'Protocolo Fuerte en Casa',s:'Entrena en casa con lo que tengas',ic:'🏠',doc:0,d:'Rutinas con tu cuerpo, gomas o mancuernas, más snacks de movimiento.',videos:[]},
