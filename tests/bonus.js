@@ -31,5 +31,7 @@ await p.click('text=Calculadora crudo');await w(200);await p.selectOption('#ckF'
 console.log('cocinado:',await p.textContent('#ckR'));await p.screenshot({path:OUT+'/bo4.png'});await p.evaluate(()=>closeSheet());
 await p.evaluate(()=>{S.planOn=true;foodTab='plan';go('food')});await w(300);console.log('boton plan:',await p.isVisible('.cookbtn'));
 await p.evaluate(()=>go('res'));await p.click('.bitem >> text=Recetario');await w(500);console.log('recetario abre:',await p.evaluate(()=>tab+'/'+foodTab));
+await p.evaluate(()=>go('res'));await w(200);await p.click('.bitem >> text=Fin de Semana');await w(800);console.log('finde:',(await p.textContent('#screen')).replace(/\s+/g,' ').slice(0,500));await p.click('text=Guía de Eventos Sociales >> xpath=../.. >> text=Leer');await w(800);console.log('eventos:',(await p.textContent('#bread')).replace(/\s+/g,' ').slice(0,120));await p.screenshot({path:OUT+'/bo5.png',fullPage:true});await p.click('text=Chuleta del finde');await w(200);console.log('chuleta:',(await p.textContent('.fcard')).slice(0,80));await p.evaluate(()=>closeSheet());
+await p.evaluate(()=>go('perfil'));await w(200);console.log('perfil finde:',await p.isVisible('text=Chuleta del finde'));
 console.log('pdf',await p.evaluate(()=>fetch('bonus/pdf/kit.pdf').then(r=>r.status+' '+r.headers.get('content-type'))));
 console.log('ERR',errs);await b.close()})();

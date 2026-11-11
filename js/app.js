@@ -80,7 +80,7 @@ const MEAS=[['peso','Peso','kg'],['hs','Horas de sueño','h'],['cuello','Cuello'
 const pad2=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return d};
-const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nTrain:true,hora:'21:30',unid:'kg',consent:false};
+const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nFinde:true,nTrain:true,hora:'21:30',unid:'kg',consent:false};
 const emptyS=()=>({weights:[],checkins:[],hist:{},daily:{},routine:[],kcal:1800,restOn:true,planOn:false,next:{},phase:0,week:1,weeksPhase:4,ficha:clone(FICHA_DEF),profile:clone(PROFILE_DEF)});
 let S=emptyS();FICHA=S.ficha;
 let ME=null;        // {id,email,role,clientId}
@@ -239,7 +239,7 @@ async function enter(user){
   document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
   document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
-  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:'home';if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
+  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:go0==='finde'?'res':'home';if(go0==='finde')setTimeout(openFindeCard,400);if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
   if(ME.role==='client'){pushSilent();seenStart()}
   if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
@@ -371,7 +371,7 @@ function vPerfil(){
   <section class="pcard"><span class="lbl">Face ID / huella</span><div id="pkBox"><p class="small muted" style="margin:0">Cargando…</p></div></section>
   <section class="pcard"><span class="lbl">Recordatorios</span>
     <div id="pushBox">${pushStatusHTML()}</div>
-    ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}
+    ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}${myBonus().some(x=>x.id==='finde')?sw('nFinde','Chuleta del finde','Los viernes por la tarde, tus reglas para el fin de semana'):''}
     <div class="field"><label for="ph">Hora del recordatorio diario</label><input id="ph" type="time" value="${esc(p.hora||'21:30')}" onchange="pSet('hora',this.value)"></div></section>
   <section class="pcard"><span class="lbl">Preferencias</span>
     <div class="field"><label for="pu">Unidades de peso</label><select id="pu" onchange="pSet('unid',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="kg" ${p.unid==='kg'?'selected':''}>Kilos (kg)</option><option value="lb" ${p.unid==='lb'?'selected':''}>Libras (lb)</option></select></div></section>
@@ -723,25 +723,39 @@ function vRes(){
 // ================= BONUS =================
 // El entrenador elige en la Ficha qué bonus tiene cada cliente (FICHA.bonus). El cliente los lee en Recursos.
 let BSEL=null;const BDOC={};
-const bonusReady=b=>b&&(b.doc||b.link||b.app);
+const bonusReady=b=>b&&((b.docs&&b.docs.length)||b.link||b.app);
 function myBonus(){const ids=(FICHA&&FICHA.bonus)||[];return (window.BONUS||[]).filter(b=>ids.includes(b.id)&&bonusReady(b))}
+let BDSEL={};
+function loadDoc(id){if(BDOC[id])return;BDOC[id]='<p class="small muted">Cargando…</p>';
+  fetch('bonus/'+id+'.html?v='+(window.BONUS_V||3)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL)render()})}
 function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)return;
   if(b.app==='recetas'){tab='food';foodTab='recetas';RCAT='all';render();window.scrollTo(0,0);return}
-  if(b.link&&!b.doc){window.open(b.link,'_blank','noopener');return}
-  BSEL=id;tab='res';render();window.scrollTo(0,0);
-  if(b.doc&&!BDOC[id])fetch('bonus/'+id+'.html?v='+(window.BONUS_V||1)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL===id)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL===id)render()})}
+  if(b.link&&!b.docs){window.open(b.link,'_blank','noopener');return}
+  BSEL=id;tab='res';render();window.scrollTo(0,0)}
+function bonusDoc(b,d){BDSEL[b]=d;render();const el=document.getElementById('bread');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:''};
 function vBonus(){const b=(window.BONUS||[]).find(x=>x.id===BSEL);if(!b){BSEL=null;return vRes()}
-  const V=(b.videos||[]).filter(v=>ytId(v.yt));
+  const V=(b.videos||[]).filter(v=>ytId(v.yt));const D=b.docs||[];const cur=D.find(d=>d.id===BDSEL[b.id])||D[0];if(cur)loadDoc(cur.id);
+  const rel=(b.rel||[]).map(id=>myBonus().find(x=>x.id===id)).filter(Boolean);
   return `<button class="btn ghost sm" type="button" onclick="BSEL=null;render()">‹ Volver a Recursos</button>
   <div class="hello"><span class="lbl">${b.ic} Bonus</span><h1>${esc(b.t)}</h1><p class="small muted" style="margin:0">${esc(b.s)}</p></div>
   ${b.app==='sos'?`<div class="panel"><p style="margin:0 0 10px">${esc(b.d)}</p><button class="btn" type="button" onclick="window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola Yaron, quiero pedir mi videollamada de emergencia.'),'_blank')">Pedir mi videollamada</button></div>`:''}
-  ${b.doc?`<div class="row" style="gap:8px"><a class="btn" href="bonus/pdf/${b.id}.pdf" download="${esc(b.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ Descargar PDF</a>${b.id==='kit'?`<button class="btn ghost" type="button" onclick="openCooked()">🔥 Calculadora crudo → cocinado</button>`:''}</div>`:''}
+  ${b.id==='kit'?`<button class="cookbtn" type="button" onclick="openCooked()">🔥 Calculadora crudo → cocinado <span>Cuánto pesar si ya está hecho</span></button>`:''}
+  ${b.id==='finde'?`<button class="cookbtn" type="button" onclick="openFindeCard()">🍻 Chuleta del finde <span>Tus reglas en 1 pantalla</span></button>`:''}
   ${V.length?`<section class="sec-h"><h2>🎬 Vídeos</h2></section><div class="vlist">${V.map(v=>`<div class="vbox"><b>${esc(v.t)}</b><div class="vfr${/\/shorts\//.test(v.yt)?' vert':''}"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(v.yt)}?rel=0" title="${esc(v.t)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div></div>`).join('')}</div>`:''}
-  ${b.doc?`<div class="bread">${BDOC[b.id]||'<p class="small muted">Cargando…</p>'}</div>`:''}`}
+  ${D.length?`<section class="sec-h"><h2>📄 Documento${D.length>1?'s':''}</h2></section>
+  <div class="blist">${D.map(d=>`<div class="bitem doc ${cur&&d.id===cur.id?'main':''}"><span class="ic">📄</span><div><b>${esc(d.t)}</b>${d.s?`<small>${esc(d.s)}</small>`:''}</div><span class="row" style="gap:6px;flex:none">${D.length>1?`<button class="btn ghost sm" type="button" onclick="bonusDoc('${b.id}','${d.id}')">${cur&&d.id===cur.id?'Leyendo':'Leer'}</button>`:''}<a class="btn sm" href="bonus/pdf/${d.id}.pdf" download="${esc(d.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ PDF</a></span></div>`).join('')}</div>
+  <div class="bread" id="bread">${BDOC[cur.id]||''}</div>`:''}
+  ${rel.length?`<section class="sec-h"><h2>También te sirve</h2></section><div class="blist">${rel.map(x=>`<button type="button" class="bitem" onclick="openBonus('${x.id}')"><span class="ic">${x.ic}</span><div><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}`}
+// chuleta del finde (se abre desde el bonus y desde el aviso de los viernes)
+function openFindeCard(){const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Chuleta del finde"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>🍻 Tu finde, sin culpa</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+  <ol class="fcard"><li><b>No llegues con hambre.</b> Haz tus comidas normales hoy.</li><li><b>Proteína + verdura + un solo hidrato.</b> Salsas aparte.</li><li><b>Un agua entre copas</b> y tu límite decidido antes de salir.</li><li><b>Nada de compensar.</b> Ni ayuno, ni cardio de castigo.</li><li><b>El lunes, plan normal</b> desde el desayuno. Si la báscula sube 1-2 kg, es agua.</li></ol>
+  ${myBonus().some(x=>x.id==='finde')?`<button class="btn ghost" type="button" onclick="closeSheet();openBonus('finde')">Ver el bonus completo</button>`:''}</div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 function bonusPanel(){const L=window.BONUS||[];const on=FICHA.bonus||[];
   const row=b=>{const ok=bonusReady(b);const nv=(b.videos||[]).length,ny=(b.videos||[]).filter(v=>ytId(v.yt)).length;
-    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.doc?'✅ Documento listo':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
+    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
   return `<div class="panel"><div class="sec-h"><span class="lbl">🎁 Bonus de ${esc(FICHA.nombre||'este cliente')}</span><span class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="bonusAll('main')">Solo principales</button><button class="btn ghost sm" type="button" onclick="bonusAll('all')">Todos</button><button class="btn ghost sm" type="button" onclick="bonusAll('none')">Ninguno</button></span></div>
   <p class="small muted" style="margin:0">Marca los que le das. Los verá en su app, en Recursos › 🎁 Tus bonus, y podrá leerlos dentro de la app o descargarlos en PDF.</p>
   <div class="blist2">${L.map(row).join('')}</div></div>`}

@@ -812,3 +812,4 @@ details.finder summary::-webkit-details-marker{display:none}
 .ckres{background:var(--surface);border:1px solid var(--y);border-radius:10px;padding:14px;text-align:center;font-size:16px}.ckres b{color:var(--y);font-size:22px}
 .ckres.muted{border-color:var(--line);color:var(--muted);font-size:14px}
 .vfr.vert{aspect-ratio:9/16;max-width:260px;width:100%;margin:0 auto}
+.fcard{display:flex;flex-direction:column;gap:10px;padding-left:22px;margin:0}.fcard li{font-size:15px;line-height:1.45}.bitem.doc{cursor:default}

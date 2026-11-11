@@ -1,5 +1,5 @@
 // Avisos push de Yaronska App.
-// - Lo llama pg_cron cada 15 min (cabecera x-cron-secret): víspera de la revisión, mañana de la revisión y registro diario.
+// - Lo llama pg_cron cada 15 min (cabecera x-cron-secret): víspera de la revisión, mañana de la revisión, chuleta del finde (viernes 18:00) y registro diario.
 // - Lo llama el entrenador desde el panel (con su sesión) para enviar un aviso de prueba, de revisión revisada o de logro a un cliente.
 import { createClient } from "npm:@supabase/supabase-js@2.117.0";
 import webpush from "npm:web-push@3.6.7";
@@ -85,6 +85,10 @@ Deno.serve(async (req) => {
       if (now.wd === revDay && !ckToday.has(c.id) && inWin(now.min, toMin(f.avisoD, "06:00")) && await once(c.id, "dia", now.date)) {
         await sendTo(c.id, { title: "📏 Hoy toca tu revisión", body: "Peso en ayunas tras ir al baño, medidas con la cinta y fotos con la misma luz. Envíala desde la app 💪", url: "/?go=check", tag: "revision" }); sent = true; out.push(c.id + ":dia");
       }
+    }
+    // viernes por la tarde: chuleta del finde (clientes con el bonus Fin de Semana Sin Culpa)
+    if (!sent && now.wd === 5 && p.nFinde !== false && Array.isArray(f.bonus) && f.bonus.includes("finde") && inWin(now.min, toMin(p.horaFinde, "18:00")) && await once(c.id, "finde", now.date)) {
+      await sendTo(c.id, { title: "🍻 Llega el finde", body: `${first ? first + ", r" : "R"}ecuerda tus reglas: no llegues con hambre, proteína + verdura + un hidrato, agua entre copas y el lunes, plan normal.`, url: "/?go=finde", tag: "finde" }); sent = true; out.push(c.id + ":finde");
     }
     if (!sent && p.nDaily !== false && !dlToday.has(c.id) && inWin(now.min, toMin(p.hora, "21:30")) && await once(c.id, "diario", now.date)) {
       await sendTo(c.id, { title: "✅ ¿Cómo ha ido hoy?", body: `${first ? first + ", r" : "R"}ellena tu seguimiento de hoy: entreno, comidas, pasos y cómo te has sentido. Te lleva 20 segundos.`, url: "/?go=home", tag: "diario" }); out.push(c.id + ":diario");
