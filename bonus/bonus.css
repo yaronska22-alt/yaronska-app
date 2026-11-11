@@ -29,3 +29,23 @@
 .bd-foot{text-align:center;font-family:Jost,Arial,sans-serif;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--by);border-top:1px solid var(--blin);padding-top:14px}
 @media (max-width:520px){.bdoc{font-size:14.5px}.bdoc h1{font-size:28px}.bd-table{font-size:12.5px}.bd-table td:nth-child(3){display:none}.bd-table th:nth-child(3){display:none}}
 .bd-table.bd-tl td:first-child{white-space:nowrap;font-weight:700;color:var(--by)}.bd-table.bd-tl td:nth-child(2){color:inherit;white-space:normal;background:none;font-weight:400}
+/* guía de cadenas */
+.cad-idx{display:flex;flex-wrap:wrap;gap:6px}
+.cad-chip{border:1px solid var(--blin);border-radius:16px;padding:5px 10px;font-size:12.5px;color:var(--bfg);text-decoration:none;font-weight:600}
+.cad-chip.g{border-style:dashed}
+.cad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.cad{background:var(--bsur);border:1px solid var(--blin);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;scroll-margin-top:90px}
+.cad-img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;border-bottom:3px solid var(--by)}
+.cad-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 14px 0}
+.cad-h h3{font-size:18px;text-transform:uppercase;margin:0}
+.cad-t{font-size:11px;color:var(--bmut);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.cad-best{margin:10px 14px 0;background:rgba(255,214,10,.1);border-left:4px solid var(--by);border-radius:0 10px 10px 0;padding:10px 12px}
+.cad-best span{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--by)}
+.cad-best b{display:block;font-size:16px;margin:3px 0 4px}
+.cad-best p{margin:0;font-size:13.5px}
+.cad-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 14px 4px}
+.cad-cols ul{padding-left:16px;margin:4px 0 0;font-size:13px}.cad-cols li{margin-bottom:4px}
+.cad-l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.cad-l.ok{color:#7CE38B}.cad-l.no{color:#FF6B5B}
+.cad-link{margin:6px 14px 12px;font-size:12.5px;color:var(--by);font-weight:700;text-decoration:none}
+@media (max-width:520px){.cad-cols{grid-template-columns:1fr}}

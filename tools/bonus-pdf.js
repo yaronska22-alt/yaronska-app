@@ -6,7 +6,7 @@ const css=fs.readFileSync(R+'/bonus/bonus.css','utf8');
 const ids=process.argv.slice(2).length?process.argv.slice(2):fs.readdirSync(R+'/bonus').filter(f=>/\.html$/.test(f)).map(f=>f.replace('.html',''));
 (async()=>{const b=await chromium.launch();const p=await b.newPage();
   for(const id of ids){const body=fs.readFileSync(R+'/bonus/'+id+'.html','utf8');
-    const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><style>${css}
+    const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><base href="file://${R}/"><style>${css}
       @page{size:A4;margin:16mm 14mm 16mm 16mm}
       html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0}
       .bdoc{--bfg:#111;--bmut:#5F5A52;--bsur:#F7F5EF;--blin:#E3DFD4;color:#111}
@@ -20,6 +20,8 @@ const ids=process.argv.slice(2).length?process.argv.slice(2):fs.readdirSync(R+'/
       section,.bd-card,.bd-box,.bd-table tr,.bd-faq dt,.bd-faq dd{break-inside:avoid}
       .bdoc h2{break-after:avoid}
       .bd-grid{grid-template-columns:1fr 1fr}
+      .cad-grid{grid-template-columns:1fr 1fr}.cad{break-inside:avoid}.cad-l.ok{color:#1B8A3A}.cad-l.no{color:#C9302C}.cad-best span{color:#8A6D00}.cad-link{color:#8A6D00}.cad-chip{color:#111}
+      .cad-h h3{font-size:14pt}.cad-best b{font-size:12pt}.cad-best p,.cad-cols ul{font-size:9.5pt}
     </style></head><body>${body}</body></html>`;
     await p.setContent(html,{waitUntil:'load'});
     await p.pdf({path:R+'/bonus/pdf/'+id+'.pdf',format:'A4',printBackground:true,margin:{top:'16mm',bottom:'16mm',left:'16mm',right:'14mm'},
