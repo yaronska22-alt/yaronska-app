@@ -3,7 +3,9 @@
 const {chromium}=require('playwright');const fs=require('fs');const path=require('path');
 const R=path.resolve(__dirname,'..');
 const css=fs.readFileSync(R+'/bonus/bonus.css','utf8');
-const ids=process.argv.slice(2).length?process.argv.slice(2):fs.readdirSync(R+'/bonus').filter(f=>/\.html$/.test(f)).map(f=>f.replace('.html',''));
+// PDF originales de Yaron (no se regeneran): la página de la app sí sale de bonus/<id>.html
+const KEEP=['eventos'];
+const ids=process.argv.slice(2).length?process.argv.slice(2):fs.readdirSync(R+'/bonus').filter(f=>/\.html$/.test(f)).map(f=>f.replace('.html','')).filter(id=>!KEEP.includes(id));
 (async()=>{const b=await chromium.launch();const p=await b.newPage();
   for(const id of ids){const body=fs.readFileSync(R+'/bonus/'+id+'.html','utf8');
     const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><base href="file://${R}/"><style>${css}
