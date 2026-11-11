@@ -795,3 +795,19 @@ details.finder summary::-webkit-details-marker{display:none}
 .rph{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1.55;font-size:44px;background:radial-gradient(circle at 30% 20%,#2a2410,#0f0e0b 70%);border-bottom:3px solid var(--y)}
 .rph.big{font-size:72px}
 .ilist small{color:var(--muted);font-size:.86em}
+/* bonus */
+.blist,.blist2{display:flex;flex-direction:column;gap:8px}
+.bitem{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--fg);width:100%}
+.bitem.main{border-color:var(--y);box-shadow:inset 4px 0 0 var(--y)}
+.bitem .ic{font-size:24px;flex:none}.bitem div{flex:1;display:flex;flex-direction:column;gap:2px}.bitem b{font-size:14.5px}.bitem small{color:var(--muted);font-size:12px}
+.bitem .go{color:var(--y);font-size:22px;font-weight:700}
+.brow{display:flex;align-items:flex-start;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.brow.on{border-color:var(--y)}.brow input{margin-top:4px;accent-color:var(--y);width:18px;height:18px;flex:none}.brow .ic{font-size:20px;flex:none}
+.brow div{display:flex;flex-direction:column;gap:2px}.brow small{color:var(--muted);font-size:12px}.brow small.good{color:var(--ok)}
+.vlist{display:flex;flex-direction:column;gap:12px}.vbox{display:flex;flex-direction:column;gap:6px}
+.vfr{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}.vfr iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.bread{background:#0B0A08;border:1px solid var(--line);border-radius:14px;padding:18px 16px}
+.cookbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:transparent;border:1px dashed var(--y);border-radius:10px;padding:10px 12px;color:var(--y);font-weight:700;font-size:13.5px;text-align:left}
+.cookbtn span{color:var(--muted);font-weight:500;font-size:12px}
+.ckres{background:var(--surface);border:1px solid var(--y);border-radius:10px;padding:14px;text-align:center;font-size:16px}.ckres b{color:var(--y);font-size:22px}
+.ckres.muted{border-color:var(--line);color:var(--muted);font-size:14px}

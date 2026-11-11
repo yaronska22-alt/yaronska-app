@@ -5,7 +5,7 @@ const CLIENT={};
 // Ficha del cliente (mismos campos que la Calculadora). Valores vacíos para clientes nuevos.
 const FICHA_DEF={nombre:'',email:'',tel:'',sexo:'',nac:'',altura:'',objetivo:'perder',
   estado:'active',alta:'',tipo:'',renov:'',pago:'',cheat:'',pausa:'',baja:'',notasCom:'',
-  tipoEntreno:'',diasSemana:'',dias:[],pasosT:'',pasosR:'',revFis:'Domingo',lastFis:'',revEnt:'',lastEnt:'',
+  tipoEntreno:'',diasSemana:'',dias:[],bonus:[],pasosT:'',pasosR:'',revFis:'Domingo',lastFis:'',revEnt:'',lastEnt:'',
   objLargo:'',patologias:'',alergias:'',intol:'',lesiones:'',medicacion:'',suplem:'',ciclo:'',histDietas:'',prefs:'',evitar:'',sueno:'',estres:'',motiv:'',
   omega3:'',vitD:'',b12:'',magnesio:'',vitC:'',hierro:'',calcio:'',zinc:'',folato:'',potasio:'',creatina:'',colageno:'',cafeina:'',multi:'no',supOtros:'',
   sal:'',sol:'',agua:'',cafe:'',alcohol:'',tabaco:'',aire:'',pantallas:'',lifeNotas:'',alDejar:'',alimActual:'',analiticas:'',antojos:'',apoyo:'',atracones:'',ciudad:'',cocina:'',comidasDia:'',compensa:'',compromiso:'',cuentaKcal:'',cuerpo:'',culpa:'',deportePasado:'',dietaActual:'',disfruta:'',donde:'',energia:'',entPrevio:'',entender:'',espejo:'',espejoRel:'',espera:'',evitaAct:'',franja:'',frustra:'',fuera:'',gimnasio:'',haceEj:'',hijos:'',horarios:'',horasTrabajo:'',material:'',musculos:'',noParar:'',objPrincipal:'',obstaculos:'',pesaje:'',pesoMax:'',pesoMin:'',pesoObj:'',plazo:'',porque:'',preguntas:'',prenda:'',primero:'',prohibidos:'',resultadoPrevio:'',sabeCocinar:'',talla:'',tiempoCocina:'',tiempoSesion:'',trabajo:'',trabajoTipo:'',turnos:'',yoyo:''};
@@ -311,7 +311,7 @@ function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById
 // al entrar en Entreno se abre el primer día que aún no ha hecho esta semana
 function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;const dd=drDays().filter(i=>i<R.length);if(dd.length)return dd.includes(dayIdx)?dayIdx:dd[0];let T;try{T=wkTrain()}catch(e){return dayIdx}
   let i=R.findIndex(d=>!d.opt&&!T.dayDone(d));if(i<0)i=R.findIndex(d=>!T.dayDone(d));return i<0?Math.min(dayIdx,R.length-1):i}
-function go(t){if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
+function go(t){if(t==='res')BSEL=null;if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
 function render(){if(R_BUSY)return void setTimeout(render);R_BUSY=true;try{_render()}finally{R_BUSY=false}}
 function _render(){
@@ -446,7 +446,8 @@ function vPlan(){
   ${P.bfNote?`<p class="small muted" style="margin:0">${esc(P.bfNote)}</p>`:''}
   ${optMeal(P.midmorning,'Almuerzo / post entreno')}${optMeal(P.snack,'Merienda')}
   <div class="tabs"><button type="button" class="${meal==='lunch'?'on':''}" onclick="meal='lunch';render()">Comida</button><button type="button" class="${meal==='dinner'?'on':''}" onclick="meal='dinner';render()">Cena</button></div>
-  <p class="small muted" style="margin:0">Elige <b style="color:var(--fg)">una opción de cada</b>: proteína + grasa + hidrato. Todas valen lo mismo.</p>
+  <p class="small muted" style="margin:0">Elige <b style="color:var(--fg)">una opción de cada</b>: proteína + grasa + hidrato. Todas valen lo mismo. Las cantidades son <b style="color:var(--fg)">en crudo</b>.</p>
+  <button type="button" class="cookbtn" onclick="openCooked()">🔥 ¿Ya lo tienes cocinado? <span>Mira cuánto pesar</span></button>
   <div class="macro"><div class="macro-h"><span class="pill p-prot">Proteína</span></div>${list(m.protein)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-fat">Grasa</span></div>${list(m.fat)}</div>
   <div class="macro"><div class="macro-h"><span class="pill p-carb">Hidratos</span></div>${list(m.carb)}</div>
@@ -708,11 +709,58 @@ function seenTxt(ts){if(!ts)return {t:'Nunca ha entrado',c:'never'};const m=(Dat
 const seenBadge=ts=>{const x=seenTxt(ts);return `<span class="seen ${x.c}" title="${ts?new Date(ts).toLocaleString('es-ES'):''}">${x.c==='now'?'🟢 ':''}${esc(x.t)}</span>`};
 function shrink(file,max){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('foto')),'image/jpeg',.85);URL.revokeObjectURL(im.src)};im.onerror=rej;im.src=URL.createObjectURL(file)})}
 function vRes(){
+  if(BSEL)return vBonus();
+  const MB=myBonus();
   return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>guías</em></h1></div>
+  ${MB.length?`<section class="sec-h"><h2>🎁 Tus bonus</h2></section><div class="blist">${MB.map(b=>`<button type="button" class="bitem ${b.main?'main':''}" onclick="openBonus('${b.id}')"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}</b><small>${esc(b.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}
+  <section class="sec-h"><h2>Guías</h2></section>
   <div class="rlist">${RESOURCES.map(r=>`<a class="ritem" href="${r.u}" target="_blank" rel="noopener"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div></a>`).join('')}</div>
   <section class="sec-h"><h2>Tu programa</h2><span class="small muted">${esc(PROG().t)}</span></section>
   <div class="rlist">${PH().map((p,i)=>`<div class="ritem ${i===S.phase?'now':''}"><span class="ic o">0${i+1}</span><div><b>${esc(p.n)}${i===S.phase?' <span class="dtag">Ahora</span>':''}</b><small>${esc(p.d)}</small></div></div>`).join('')}</div>`;
 }
+
+
+// ================= BONUS =================
+// El entrenador elige en la Ficha qué bonus tiene cada cliente (FICHA.bonus). El cliente los lee en Recursos.
+let BSEL=null;const BDOC={};
+const bonusReady=b=>b&&(b.doc||b.link||b.app);
+function myBonus(){const ids=(FICHA&&FICHA.bonus)||[];return (window.BONUS||[]).filter(b=>ids.includes(b.id)&&bonusReady(b))}
+function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)return;
+  if(b.app==='recetas'){tab='food';foodTab='recetas';RCAT='all';render();window.scrollTo(0,0);return}
+  if(b.link&&!b.doc){window.open(b.link,'_blank','noopener');return}
+  BSEL=id;tab='res';render();window.scrollTo(0,0);
+  if(b.doc&&!BDOC[id])fetch('bonus/'+id+'.html?v='+(window.BONUS_V||1)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL===id)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL===id)render()})}
+const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:''};
+function vBonus(){const b=(window.BONUS||[]).find(x=>x.id===BSEL);if(!b){BSEL=null;return vRes()}
+  const V=(b.videos||[]).filter(v=>ytId(v.yt));
+  return `<button class="btn ghost sm" type="button" onclick="BSEL=null;render()">‹ Volver a Recursos</button>
+  <div class="hello"><span class="lbl">${b.ic} Bonus</span><h1>${esc(b.t)}</h1><p class="small muted" style="margin:0">${esc(b.s)}</p></div>
+  ${b.app==='sos'?`<div class="panel"><p style="margin:0 0 10px">${esc(b.d)}</p><button class="btn" type="button" onclick="window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola Yaron, quiero pedir mi videollamada de emergencia.'),'_blank')">Pedir mi videollamada</button></div>`:''}
+  ${b.doc?`<div class="row" style="gap:8px"><a class="btn" href="bonus/pdf/${b.id}.pdf" download="${esc(b.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ Descargar PDF</a>${b.id==='kit'?`<button class="btn ghost" type="button" onclick="openCooked()">🔥 Calculadora crudo → cocinado</button>`:''}</div>`:''}
+  ${V.length?`<section class="sec-h"><h2>🎬 Vídeos</h2></section><div class="vlist">${V.map(v=>`<div class="vbox"><b>${esc(v.t)}</b><div class="vfr"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(v.yt)}?rel=0" title="${esc(v.t)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div></div>`).join('')}</div>`:''}
+  ${b.doc?`<div class="bread">${BDOC[b.id]||'<p class="small muted">Cargando…</p>'}</div>`:''}`}
+function bonusPanel(){const L=window.BONUS||[];const on=FICHA.bonus||[];
+  const row=b=>{const ok=bonusReady(b);const nv=(b.videos||[]).length,ny=(b.videos||[]).filter(v=>ytId(v.yt)).length;
+    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.doc?'✅ Documento listo':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
+  return `<div class="panel"><div class="sec-h"><span class="lbl">🎁 Bonus de ${esc(FICHA.nombre||'este cliente')}</span><span class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="bonusAll('main')">Solo principales</button><button class="btn ghost sm" type="button" onclick="bonusAll('all')">Todos</button><button class="btn ghost sm" type="button" onclick="bonusAll('none')">Ninguno</button></span></div>
+  <p class="small muted" style="margin:0">Marca los que le das. Los verá en su app, en Recursos › 🎁 Tus bonus, y podrá leerlos dentro de la app o descargarlos en PDF.</p>
+  <div class="blist2">${L.map(row).join('')}</div></div>`}
+function bonusToggle(id,v){const a=new Set(FICHA.bonus||[]);v?a.add(id):a.delete(id);FICHA.bonus=(window.BONUS||[]).map(b=>b.id).filter(x=>a.has(x));save();renderCoach()}
+function bonusAll(m){FICHA.bonus=(window.BONUS||[]).filter(b=>m==='all'||(m==='main'&&b.main)).map(b=>b.id);save();renderCoach();toast(m==='none'?'Sin bonus':'Bonus actualizados')}
+
+// ---- ¿Ya está cocinado? Equivalencia crudo → cocinado (factores aproximados; los mismos que el Kit de Arranque)
+const COOK=[['Arroz blanco o integral',2.8],['Pasta normal o integral',2.3],['Quinoa / cuscús',3],['Lentejas secas',2.7],['Garbanzos o alubias secos',2.4],['Patata cocida',1],['Patata o boniato al horno / airfryer',.75],['Pollo o pavo',.75],['Ternera, cerdo o carne picada',.7],['Pescado blanco o salmón',.8]];
+let CK={i:0,g:''};
+function cookedRes(){const f=COOK[CK.i][1];const g=parseFloat(String(CK.g).replace(',','.'));return g>0?`<div class="ckres">Pesa <b>${Math.round(g*f/5)*5||Math.round(g*f)} g</b> ya cocinado</div>`:'<div class="ckres muted">Escribe los gramos en crudo de tu plan</div>'}
+function openCooked(){const sh=document.getElementById('sheet');
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Crudo a cocinado"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>🔥 ¿Ya está cocinado?</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
+  <p class="small muted" style="margin:0">Tu plan va en <b style="color:var(--fg)">crudo</b>. Si ya lo tienes hecho (táper, sobras, comida de casa), te digo cuánto pesar.</p>
+  <div class="field"><label for="ckF">Alimento</label><select id="ckF" onchange="CK.i=+this.value;document.getElementById('ckR').innerHTML=cookedRes()">${COOK.map(([n,f],i)=>`<option value="${i}" ${i===CK.i?'selected':''}>${esc(n)} (× ${String(f).replace('.',',')})</option>`).join('')}</select></div>
+  <div class="field"><label for="ckG">Gramos en crudo que pone tu plan</label><input id="ckG" type="number" inputmode="decimal" placeholder="Ej.: 60" value="${esc(CK.g)}" oninput="CK.g=this.value;document.getElementById('ckR').innerHTML=cookedRes()"></div>
+  <div id="ckR">${cookedRes()}</div>
+  <div class="note"><b class="y">Para el táper de toda la semana · </b>pesa todo en crudo antes de cocinar, pésalo otra vez ya hecho y divide (hecho ÷ crudo). Ese es tu número exacto: tu ración cocinada = tu ración en crudo × ese número.</div>
+  <p class="small muted" style="margin:0">Huevos, avena, pan y legumbre de bote se pesan tal cual. Las cifras son aproximadas: dependen del tiempo de cocción y de si escurres.</p></div></div>`;
+  sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 
 // ================= PANEL ENTRENADOR =================
 // ---- lista de clientes del entrenador (datos reales)
@@ -1017,7 +1065,7 @@ const FT={
  nutri:[['alimActual','Alimentación actual','Muy Saludable|Equilibrada|Desordenada|Ultraprocesados'],['comidasDia','Comidas al día','t'],['horarios','Horarios regulares','Sí|A veces|No'],['dietaActual','Dieta que sigue','Ninguna|Vegetariana|Vegana|Paleo|Keto|Ayuno Intermitente'],['fuera','Comidas fuera de casa por semana','t'],['cocina','Quién cocina','Yo|Pareja|Mixto|Familia|Siempre Fuera'],['tiempoCocina','Tiempo para cocinar al día','10 min|20 min|30 - 45 min|1h+'],['sabeCocinar','Nivel de cocina','t'],['prefs','Alimentos que le gustan','a'],['evitar','Alimentos que no quiere','a'],['agua','Agua (litros/día)','n'],['cafe','Café (tazas/día)','n']],
  entreno:[['haceEj','¿Entrena actualmente?','Sí|No'],['tipoEntreno','Qué hace y cuántas veces','t'],['entPrevio','Ha trabajado con entrenador','Sí|No|Tal vez'],['resultadoPrevio','Resultado que tuvo','t'],['alDejar','Al dejar dieta/entreno…','No recuperaba el peso|Recuperaba un poco|Recuperaba todo|Recuperaba Extra'],['disfruta','Ejercicio que disfruta','t'],['musculos','Músculos que quiere mejorar','t'],['deportePasado','Deporte serio en el pasado','Sí|No'],['tiempoSesion','Tiempo por sesión','30 min|45 min|60 min|90 min'],['franja','Franja horaria','t'],['donde','Dónde entrena','Gimnasio|Casa|Mixto|Aire Libre'],['gimnasio','Gimnasio y distancia','t'],['material','Material disponible','t']],
  obj:[['objPrincipal','Objetivo principal','t'],['objLargo','Meta específica','a'],['plazo','Plazo que se marca','t'],['porque','Por qué ahora','a'],['obstaculos','Obstáculos que prevé','a'],['frustra','Lo que más le frustra','a'],['primero','Lo primero que haría al conseguirlo','a'],['compromiso','Compromiso mínimo 3 meses','Sí|No estoy seguro|No'],['espera','Qué espera de ti','a'],['entender','Lo que necesita que entiendas','a'],['preguntas','Preguntas para ti','a']]};
-const FTAB=[['valor','📊 Valoración'],['datos','👤 Datos'],['salud','🩺 Salud'],['nutri','🍽 Nutrición'],['psico','🧠 Relación con la comida'],['entreno','🏋️ Entreno'],['obj','🎯 Objetivos'],['subs','💳 Suscripción'],['form','📋 Formulario']];
+const FTAB=[['valor','📊 Valoración'],['datos','👤 Datos'],['salud','🩺 Salud'],['nutri','🍽 Nutrición'],['psico','🧠 Relación con la comida'],['entreno','🏋️ Entreno'],['obj','🎯 Objetivos'],['subs','💳 Suscripción'],['bonus','🎁 Bonus'],['form','📋 Formulario']];
 function cFicha(){
   setTimeout(()=>{if(CUR)db.pushCount(CUR.id).then(n=>{const e=document.getElementById('pushCnt');if(e)e.textContent=`Dispositivos con avisos activados: ${n}${n?'':' · el cliente tiene que activarlos en su app'}`}).catch(()=>{})});
   const f=FICHA;const ren=nextRenewal(f);const dleft=ren?Math.round((new Date(ren+'T12:00')-new Date())/864e5):null;
@@ -1056,6 +1104,7 @@ function cFicha(){
    subs:()=>`<div class="panel"><span class="lbl">💳 Suscripción y cheatmeals</span>${grid(sel('estado','Estado',EST)+inp('alta','Fecha de alta','date')+sel('tipo','Tipo de suscripción',[['','—']].concat(SUBT))+inp('renov','Fecha de renovación (vacío = automática)','date')+inp('pago','Pago actual (€)','n')+inp('cheat','Cheatmeals / semana','n')+inp('pausa','Fecha de pausa (si aplica)','date')+inp('baja','Fecha de baja (si aplica)','date')+ta('notasCom','Notas comerciales / historial'))}
       <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div><div id="payBox">${payList()}</div></div>
      <div class="panel" style="border-color:rgba(255,107,91,.35)"><span class="lbl" style="color:var(--bad)">Zona peligrosa</span><p class="small muted" style="margin:0">Borra al cliente y todos sus datos de la app (ficha, pesos, check-ins, entrenos y dieta). No se puede deshacer. Si solo ha terminado el programa, mejor cambia su estado a «Baja».</p><button class="btn ghost sm" type="button" style="color:var(--bad);border-color:var(--bad)" onclick="delClient()">Eliminar cliente</button></div>`,
+   bonus:()=>bonusPanel(),
    form:()=>formPanel()};
   return head+(T[fichaTab]||T.valor)();
 }
