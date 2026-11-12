@@ -6,8 +6,13 @@ const css=fs.readFileSync(R+'/bonus/bonus.css','utf8');
 // PDF originales de Yaron (no se regeneran): la página de la app sí sale de bonus/<id>.html
 const KEEP=['eventos'];
 const ids=process.argv.slice(2).length?process.argv.slice(2):fs.readdirSync(R+'/bonus').filter(f=>/\.html$/.test(f)).map(f=>f.replace('.html','')).filter(id=>!KEEP.includes(id));
+if(!process.argv.slice(2).length&&!ids.includes('cadenas'))ids.push('cadenas');
+// Bonus que son una página completa (no un fragmento): se imprime la página tal cual
+const PAGES={cadenas:'bonus/cadenas-guia.html'};
 (async()=>{const b=await chromium.launch();const p=await b.newPage();
-  for(const id of ids){const body=fs.readFileSync(R+'/bonus/'+id+'.html','utf8');
+  for(const id of ids.filter(i=>PAGES[i])){await p.emulateMedia({colorScheme:'light'});await p.goto('file://'+R+'/'+PAGES[id],{waitUntil:'load'});await p.waitForTimeout(800);
+    await p.pdf({path:R+'/bonus/pdf/'+id+'.pdf',format:'A4',printBackground:true,margin:{top:'10mm',bottom:'12mm',left:'8mm',right:'8mm'}});console.log('PDF',id,fs.statSync(R+'/bonus/pdf/'+id+'.pdf').size)}
+  for(const id of ids.filter(i=>!PAGES[i])){const body=fs.readFileSync(R+'/bonus/'+id+'.html','utf8');
     const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><base href="file://${R}/"><style>${css}
       @page{size:A4;margin:16mm 14mm 16mm 16mm}
       html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0}

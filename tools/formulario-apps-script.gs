@@ -22,14 +22,23 @@ function probarConexion() {
 }
 
 // Se ejecuta sola cada vez que alguien envía el formulario
-function enviarRespuesta(e) { enviar_([fila_(e.response)]); }
+function enviarRespuesta(e) { try { enviar_([fila_(e.response)]); } catch (err) { Logger.log('Error: ' + err); enviarRecientes(); } }
 
-// 2) Ejecuta después esta UNA vez: activa el envío automático
+// Red de seguridad: cada hora manda las respuestas de los últimos 3 días (las repetidas se ignoran en la app)
+function enviarRecientes() {
+  const desde = new Date(Date.now() - 3 * 864e5);
+  const L = form_().getResponses(desde).map(fila_);
+  if (L.length) enviar_(L);
+}
+
+// 2) Ejecuta después esta UNA vez: activa el envío automático (al enviar el formulario + revisión cada hora)
 function instalar() {
   const f = form_();
-  ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() === 'enviarRespuesta') ScriptApp.deleteTrigger(t); });
+  ScriptApp.getProjectTriggers().forEach(t => { if (['enviarRespuesta', 'enviarRecientes'].includes(t.getHandlerFunction())) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('enviarRespuesta').forForm(f).onFormSubmit().create();
-  Logger.log('✅ Listo: cada respuesta nueva de «' + f.getTitle() + '» llegará a la app.');
+  ScriptApp.newTrigger('enviarRecientes').timeBased().everyHours(1).create();
+  enviarTodasLasRespuestas();
+  Logger.log('✅ Listo: cada respuesta nueva de «' + f.getTitle() + '» llegará a la app (al momento y, por si acaso, revisión cada hora).');
 }
 
 // 3) Opcional: manda a la app TODAS las respuestas que ya tienes (las repetidas se ignoran)
