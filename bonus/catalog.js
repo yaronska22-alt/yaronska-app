@@ -6,7 +6,7 @@ window.BONUS=[
     d:'Qué va a pasar las dos primeras semanas, cómo pesar (también lo ya cocinado) y las dudas que tiene todo el mundo al empezar.',
     videos:[{t:'Lo que va a pasar tus primeras 2 semanas',yt:'https://youtu.be/3ya87N-8hSo'},{t:'Crudo o cocinado: cómo pesar sin volverte loco',yt:'https://youtube.com/shorts/E83Bxf_YwuA'},{t:'Me he saltado el plan: ¿y ahora qué?',yt:'https://youtube.com/shorts/ZKs48e5i1Fo'}]},
   {id:'finde',t:'Fin de Semana Sin Culpa',s:'Sal, cena y disfruta sin romper la semana',ic:'🍻',main:1,rel:['cadenas','carta'],
-    docs:[{id:'finde',t:'Fin de Semana Sin Culpa',s:'El sistema para cada finde'},{id:'eventos',t:'Guía de Eventos Sociales',s:'Bodas, comuniones, familia, quedadas y fiesta'}],
+    docs:[{id:'finde',t:'Fin de Semana Sin Culpa',s:'El sistema para cada finde'},{id:'eventos',t:'Guía de Eventos Sociales',s:'Bodas, comuniones, familia, quedadas y fiesta',g:'eventos',n:7}],
     d:'Cómo salir, cenar fuera y tomarte algo sin tirar la semana, y qué hacer el lunes. Incluye la Guía de Eventos Sociales y un aviso cada viernes.',
     videos:[{t:'Por qué compensar te hace engordar',yt:'https://youtu.be/aincHVz8h6o'},{t:'Cómo pedir en un restaurante',yt:'https://youtube.com/shorts/uyTs6g7iRxU'},{t:'Alcohol sin culpa',yt:'https://youtu.be/HCLTL18CSHE'},{t:'Me he pasado el finde: qué hago el lunes',yt:'https://youtube.com/shorts/xZwyTKVZ24E'}]},
   {id:'libertad',t:'Libertad de por Vida',s:'Mantener sin plan y sin rebote',ic:'🗝️',main:1,d:'Cómo pasar del plan a comer a ojo, mantener tu peso y qué hacer si sube.',videos:[]},

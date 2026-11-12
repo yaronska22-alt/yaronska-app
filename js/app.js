@@ -764,7 +764,7 @@ function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)retur
 function bonusDoc(b,d){BDSEL[b]=d;render();const el=document.getElementById('bread');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:''};
 function vBonus(){const b=(window.BONUS||[]).find(x=>x.id===BSEL);if(!b){BSEL=null;return vRes()}
-  const V=(b.videos||[]).filter(v=>ytId(v.yt));const D=b.docs||[];const cur=D.find(d=>d.id===BDSEL[b.id])||D[0];if(cur&&!cur.page)loadDoc(cur.id);
+  const V=(b.videos||[]).filter(v=>ytId(v.yt));const D=b.docs||[];const cur=D.find(d=>d.id===BDSEL[b.id])||D[0];if(cur&&!cur.page&&!cur.g)loadDoc(cur.id);
   const rel=(b.rel||[]).map(id=>myBonus().find(x=>x.id===id)).filter(Boolean);
   return `<button class="btn ghost sm" type="button" onclick="BSEL=null;render()">‹ Volver a Recursos</button>
   <div class="hello"><span class="lbl">${b.ic} Bonus</span><h1>${esc(b.t)}</h1><p class="small muted" style="margin:0">${esc(b.s)}</p></div>
@@ -774,7 +774,7 @@ function vBonus(){const b=(window.BONUS||[]).find(x=>x.id===BSEL);if(!b){BSEL=nu
   ${V.length?`<section class="sec-h"><h2>🎬 Vídeos</h2></section><div class="vlist">${V.map(v=>`<div class="vbox"><b>${esc(v.t)}</b><div class="vfr${/\/shorts\//.test(v.yt)?' vert':''}"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(v.yt)}?rel=0" title="${esc(v.t)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div></div>`).join('')}</div>`:''}
   ${D.length?`<section class="sec-h"><h2>📄 Documento${D.length>1?'s':''}</h2></section>
   <div class="blist">${D.map(d=>`<div class="bitem doc ${cur&&d.id===cur.id?'main':''}"><span class="ic">📄</span><div><b>${esc(d.t)}</b>${d.s?`<small>${esc(d.s)}</small>`:''}</div><span class="row" style="gap:6px;flex:none">${D.length>1?`<button class="btn ghost sm" type="button" onclick="bonusDoc('${b.id}','${d.id}')">${cur&&d.id===cur.id?'Leyendo':'Leer'}</button>`:''}<a class="btn sm" href="bonus/pdf/${d.id}.pdf" download="${esc(d.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ PDF</a></span></div>`).join('')}</div>
-  ${cur.page?`<div class="bframe" id="bread"><iframe src="${cur.page}" title="${esc(cur.t)}" loading="lazy"></iframe><a class="btn ghost sm" href="${cur.page}" target="_blank" rel="noopener">Abrir a pantalla completa ↗</a></div>`:`<div class="bread" id="bread">${BDOC[cur.id]||''}</div>`}`:''}
+  ${cur.g?`<div class="gpages" id="bread">${Array.from({length:cur.n},(_,i)=>`<img src="bonus/guias/${cur.g}/${i+1}.jpg" alt="${esc(cur.t)} · página ${i+1}" loading="${i<2?'eager':'lazy'}">`).join('')}</div>`:cur.page?`<div class="bframe" id="bread"><iframe src="${cur.page}" title="${esc(cur.t)}" loading="lazy"></iframe><a class="btn ghost sm" href="${cur.page}" target="_blank" rel="noopener">Abrir a pantalla completa ↗</a></div>`:`<div class="bread" id="bread">${BDOC[cur.id]||''}</div>`}`:''}
   ${rel.length?`<section class="sec-h"><h2>También te sirve</h2></section><div class="blist">${rel.map(x=>`<button type="button" class="bitem" onclick="openBonus('${x.id}')"><span class="ic">${x.ic}</span><div><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}`}
 // chuleta del finde (se abre desde el bonus y desde el aviso de los viernes)
 function openFindeCard(){const sh=document.getElementById('sheet');
