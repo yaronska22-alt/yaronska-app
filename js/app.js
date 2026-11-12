@@ -85,7 +85,7 @@ const MEAS=[['peso','Peso','kg'],['hs','Horas de sueño','h'],['cuello','Cuello'
 const pad2=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return d};
-const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nFinde:true,nTrain:true,hora:'21:30',unid:'kg',consent:false};
+const PROFILE_DEF={foto:'',nCheck:true,nDaily:true,nFinde:true,nObj:true,nTrain:true,hora:'21:30',unid:'kg',consent:false};
 const emptyS=()=>({weights:[],checkins:[],hist:{},daily:{},routine:[],kcal:1800,restOn:true,planOn:false,next:{},phase:0,week:1,weeksPhase:4,ficha:clone(FICHA_DEF),profile:clone(PROFILE_DEF)});
 let S=emptyS();FICHA=S.ficha;
 let ME=null;        // {id,email,role,clientId}
@@ -125,7 +125,7 @@ function fromDb(d){
 }
 async function loadClient(id){
   const d=await db.loadClient(id,ME.role==='coach');fromDb(d);
-  dayIdx=0;DRAFT=null;DRAFT_FOR=null;today={};ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
+  dayIdx=0;DRAFT=null;DRAFT_FOR=null;today={};OWK=null;ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
 }
 
 async function sync(){
@@ -376,7 +376,7 @@ function vPerfil(){
   <section class="pcard"><span class="lbl">Face ID / huella</span><div id="pkBox"><p class="small muted" style="margin:0">Cargando…</p></div></section>
   <section class="pcard"><span class="lbl">Recordatorios</span>
     <div id="pushBox">${pushStatusHTML()}</div>
-    ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}${myBonus().some(x=>x.id==='finde')?sw('nFinde','Chuleta del finde','Los viernes por la tarde, tus reglas para el fin de semana'):''}
+    ${sw('nCheck','Revisión semanal','La víspera y la mañana del '+CLIENT.checkDay.toLowerCase())}${sw('nDaily','Registro diario','Si no has apuntado tu día, te lo recuerdo')}${myBonus().some(x=>x.id==='finde')?sw('nFinde','Chuleta del finde','Los viernes por la tarde, tus reglas para el fin de semana'):''}${objList(objWk(iso(new Date()))).L.length?sw('nObj','Objetivos de la semana','El primer día de tu semana y el día de cierre'):''}
     <div class="field"><label for="ph">Hora del recordatorio diario</label><input id="ph" type="time" value="${esc(p.hora||'21:30')}" onchange="pSet('hora',this.value)"></div></section>
   <section class="pcard"><span class="lbl">Preferencias</span>
     <div class="field"><label for="pu">Unidades de peso</label><select id="pu" onchange="pSet('unid',this.value)" style="background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:10px;color:var(--fg)"><option value="kg" ${p.unid==='kg'?'selected':''}>Kilos (kg)</option><option value="lb" ${p.unid==='lb'?'selected':''}>Libras (lb)</option></select></div></section>
@@ -401,6 +401,7 @@ function vHome(){
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
   ${streakCard()}
+  ${objCard()}
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
     <div class="phase-top"><span class="lbl">${PROG().w} ${Math.min(S.phase,PH().length-1)+1} de ${PH().length}</span><span class="small muted">Semana ${S.week} de ${S.weeksPhase}</span></div>
@@ -410,9 +411,9 @@ function vHome(){
   <a class="wa-btn" href="https://wa.me/${WA}?text=${encodeURIComponent('¡Hola Yaron! Tengo una duda: ')}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.1.3.6 1 1.4 1.7 1 .9 1.8 1.1 2.1 1.3.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l2 .9c.3.1.4.2.5.3.1.2.1.8-.2 1.5z"/></svg><span>¿Dudas? Escríbeme por WhatsApp<small>Sin horarios · te respondo lo antes posible</small></span></a>`;
 }
 function vDaily(){
-  const k=dKey(),isT=!DSEL;const dt=new Date(k+'T12:00');const d=S.daily[k]||{};const t=Object.assign({steps:'',diet:null,train:null,stepsOk:null,estres:0,energia:0,animo:0},d,today);
+  const k=dKey(),isT=!DSEL;const dt=new Date(k+'T12:00');const d=S.daily[k]||{};const t=Object.assign({steps:'',diet:null,train:null,stepsOk:null,estres:0,energia:0,animo:0,hambre:0,sueno:0},d,today);
   const isTrain=isTrainOn(k);const tipoSet=!!(d.tipo||d.train===true);const libre=FICHA.diasModo==='libre';
-  const week=[6,5,4,3,2,1,0].map(i=>{const dd=daysAgo(i);const v=S.daily[iso(dd)];let c='';if(v){const n=[v.diet,v.train===null?true:v.train,v.stepsOk].filter(Boolean).length;c=n===3?'full':n>0?'part':''}const kk=iso(dd);return `<button type="button" class="wd ${kk===k?'sel':''}" onclick="dSel('${kk}')" aria-label="Rellenar ${dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})}">${'DLMXJVS'[dd.getDay()]}<em class="${c}">${v?(c==='full'?'✓':'·'):''}</em></button>`}).join('');
+  const TK=['diet','train','stepsOk'].filter(x=>regOn(x==='stepsOk'?'steps':x));const week=[6,5,4,3,2,1,0].map(i=>{const dd=daysAgo(i);const v=S.daily[iso(dd)];let c='';if(v){const n=TK.filter(x=>x==='train'&&v.train===null?true:v[x]).length;c=TK.length?(n===TK.length?'full':n>0?'part':''):(v.at?'full':'')}const kk=iso(dd);return `<button type="button" class="wd ${kk===k?'sel':''}" onclick="dSel('${kk}')" aria-label="Rellenar ${dd.toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})}">${'DLMXJVS'[dd.getDay()]}<em class="${c}">${v?(c==='full'?'✓':'·'):''}</em></button>`}).join('');
   const tg=(key,ico,lbl)=>`<button type="button" class="tg ${t[key]?'on':''}" onclick="today.${key}=!(${JSON.stringify(!!t[key])});render()" aria-pressed="${!!t[key]}"><i>${t[key]?'✓':ico}</i>${lbl}</button>`;
   const mini=(key,lbl)=>`<span>${lbl}</span><div class="dots">${[1,2,3,4,5].map(n=>`<button type="button" class="${t[key]===n?'on':''}" onclick="today.${key}=${n};render()" aria-label="${lbl} ${n}">${n}</button>`).join('')}</div>`;
   return `<section class="daily" aria-label="Objetivos de hoy">
@@ -420,10 +421,9 @@ function vDaily(){
     ${isT?'':`<div class="dpast">✏️ Estás rellenando un día anterior · <button type="button" onclick="dSel('${iso(new Date())}')">Volver a hoy</button></div>`}
     ${isT&&S.routine.length?`<button type="button" class="wkhome" onclick="trainTab='rutina';go('train')">${(()=>{const T=wkTrain();return `🏋️ <span>Entrenos de la semana: <b>${T.done} de ${T.target}</b></span><span class="wkdots">${Array.from({length:T.target},(_,i)=>`<i class="${i<T.done?'on':''}"></i>`).join('')}</span><small>${T.left?`Te ${T.left===1?'queda':'quedan'} ${T.left}`:'✅ Completada'}</small>`})()}</button>`:''}
     <div class="daytog"><span class="small muted">${libre&&!tipoSet?(isT?'¿Hoy entrenas?':'¿Entrenaste?'):(isT?'Hoy es':'Fue')}</span><div class="seg2"><button type="button" class="chip ${isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('T')">🏋️ Día de entreno</button><button type="button" class="chip ${!isTrain&&(tipoSet||!libre)?'on':''}" onclick="setDayTipo('R')">🏠 Descanso</button></div></div>
-    <div class="stepsrow"><div class="field"><label for="dSteps">Pasos ${isT?'de hoy':'de ese día'}${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>
-    <div class="toggles">${tg('diet','🍽','Dieta')}${tg('train','🏋',isTrain?'Entreno':'Descanso ok')}${tg('stepsOk','👟','Pasos')}</div>
-    <div class="mini">${mini('estres','Estrés')}${mini('energia','Energía')}${mini('animo','Ánimo')}</div>
-    <p class="small muted" style="margin:0">1 = muy mal · 5 = genial</p>
+    ${regOn('steps')?`<div class="stepsrow"><div class="field"><label for="dSteps">Pasos ${isT?'de hoy':'de ese día'}${CLIENT.stepsGoal?` · objetivo ${CLIENT.stepsGoal.toLocaleString('es-ES')} (${isTrain?'día de entreno':'día de descanso'})`:''}</label><input id="dSteps" inputmode="numeric" placeholder="Ej. 8.500" value="${esc(t.steps)}" oninput="today.steps=this.value.replace(/\\D/g,'');today.stepsOk=${CLIENT.stepsGoal?'(+today.steps)>='+CLIENT.stepsGoal:'(+today.steps)>0'}"></div></div>`:''}
+    ${(()=>{const T=[regOn('diet')?tg('diet','🍽','Dieta'):'',regOn('train')?tg('train','🏋',isTrain?'Entreno':'Descanso ok'):'',regOn('steps')?tg('stepsOk','👟','Pasos'):''].filter(Boolean);return T.length?`<div class="toggles" style="grid-template-columns:repeat(${T.length},1fr)">${T.join('')}</div>`:''})()}
+    ${(()=>{const M=Object.keys(REG_MINI).filter(regOn);return M.length?`<div class="mini">${M.map(x=>mini(x,REG_MINI[x])).join('')}</div><p class="small muted" style="margin:0">1 = muy mal · 5 = genial</p>`:''})()}
     <button class="btn" type="button" onclick="saveDaily()">${isT?'OK, guardar mi día':'Guardar ese día'}</button>
     <div class="week" aria-label="Últimos 7 días · toca un día para rellenarlo">${week}</div>
     <p class="small muted" style="margin:-4px 0 0;text-align:center">Toca un día para rellenarlo si se te olvidó${DMAX>7?' (usa ‹ para ir más atrás)':''}</p>
@@ -850,7 +850,7 @@ function setDescarga(v){if(v==='this')FICHA.descargaAt=monOf(iso(new Date()));el
 // ---- seguimiento del cliente de un vistazo
 function sesIn(a,b){const k=new Set();Object.values(S.hist).forEach(L=>L.forEach(h=>{if(h.date>=a&&h.date<=b&&h.sets&&h.sets.length)k.add(h.date+'|'+(h.day||''))}));return k.size}
 function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));const d7=D(7),d28=D(28),p7=Array.from({length:7},(_,i)=>iso(daysAgo(i+7)));
-  const dv=k=>S.daily[k];const filled=k=>{const v=dv(k);return !!v&&!!(v.at||v.diet||v.stepsOk||+v.steps>0||v.train||v.estres||v.energia||v.animo)};
+  const dv=k=>S.daily[k];const filled=k=>{const v=dv(k);return !!v&&!!(v.at||v.diet||v.stepsOk||+v.steps>0||v.train||v.estres||v.energia||v.animo||v.obj||v.reto)};
   const cnt=(L,f)=>L.filter(k=>dv(k)&&f(dv(k))).length;
   const f7=d7.filter(filled).length,f28=d28.filter(filled).length;
   const diet7=cnt(d7,v=>v.diet===true),step7=cnt(d7,v=>v.stepsOk===true||+v.steps>0),tr7=cnt(d7,v=>v.train===true),val7=cnt(d7,v=>v.estres||v.energia||v.animo);
@@ -870,6 +870,7 @@ function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));con
     ${kpi('👟 Media de pasos (7 días)',s7!=null?s7.toLocaleString('es-ES'):'—',`${CLIENT.stepsGoal?'Objetivo '+CLIENT.stepsGoal.toLocaleString('es-ES')+' · ':''}${sp!=null?'semana anterior '+sp.toLocaleString('es-ES'):'sin datos la semana anterior'}`,s7!=null&&CLIENT.stepsGoal?(s7>=CLIENT.stepsGoal?'good':s7>=CLIENT.stepsGoal*.8?'':'badc'):'')}
     ${kpi('⚖️ Peso',W.length>1?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:W.length?nf1(W[0].peso)+' kg':'—',dW!=null?`${sg(dW)} kg · ${fdate(W[0].date)} → ${fdate(W[W.length-1].date)}`:W.length?'Solo un peso en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin pesos en esas fechas':'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
     ${kpi('📏 Cintura',C.length>1?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:C.length?nf1(C[0].cintura)+' cm':'—',dC!=null?`${sg(dC)} cm · ${fdate(C[0].date)} → ${fdate(C[C.length-1].date)}`:C.length?'Solo una medida en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin cintura en esas fechas':'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
+    ${objKpi()}
     ${checklistKpi()}
     ${kpi('🍽️ Última dieta enviada',pf?fdate(pf):'—',pf?(daysSince(pf)?'Hace '+daysSince(pf)+' días':'Hoy'):'Aún no le has enviado plan',pf&&daysSince(pf)>=28?'badc':'')}
   </div></div>`}
@@ -1038,10 +1039,11 @@ function cEj0(coach=true){const rr=coach?'renderCoach()':'render()';
 function cDiario(){
   const rows=Object.keys(S.daily).sort().reverse().slice(0,14);
   const c=v=>v===null||v===undefined?'<span class="muted">—</span>':`<span class="ok-chip ${v?'y':'n'}">${v?'✓':'✗'}</span>`;
+  const has=k=>regOn(k)||rows.some(r=>{const d=S.daily[r];return k==='steps'?(+d.steps>0||d.stepsOk!=null):d[k]!=null&&d[k]!==0});const MC=Object.keys(REG_MINI).filter(has);const OB=rows.some(r=>objList(objWk(r)).L.length);
   const n=rows.length;const pct=k=>n?Math.round(rows.filter(r=>S.daily[r][k]).length/rows.filter(r=>S.daily[r][k]!==null&&S.daily[r][k]!==undefined).length*100)||0:0;
   return `<div class="kpis"><div class="kpi"><small>Dieta cumplida</small><b>${pct('diet')} %</b></div><div class="kpi"><small>Entrenos cumplidos</small><b>${pct('train')} %</b></div><div class="kpi"><small>Días con pasos</small><b>${pct('stepsOk')} %</b></div><div class="kpi"><small>Pasos medios</small><b>${n?Math.round(rows.reduce((a,r)=>a+(+S.daily[r].steps||0),0)/n).toLocaleString('es-ES'):'—'}</b></div></div>
-  <div class="panel"><span class="lbl">Últimos ${n} días</span><div class="tbl-w"><table><thead><tr><th>Día</th><th>Dieta</th><th>Entreno</th><th>Pasos</th><th>Estrés</th><th>Energía</th><th>Ánimo</th><th>Rellenado</th></tr></thead><tbody>
-  ${rows.map(r=>{const d=S.daily[r];return `<tr><td>${new Date(r+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</td><td>${c(d.diet)}</td><td>${c(d.train)}</td><td>${(+d.steps||0).toLocaleString('es-ES')} ${c(d.stepsOk)}</td><td>${d.estres||'—'}</td><td>${d.energia||'—'}</td><td>${d.animo||'—'}</td><td>${d.at?(()=>{const t=new Date(d.at);const same=iso(t)===r;return `<span class="${same?'':'muted'}">${same?'':t.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' · '}${t.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</span>`})():'<span class="muted">—</span>'}</td></tr>`}).join('')}</tbody></table></div><p class="small muted" style="margin:0">«Rellenado»: hora a la que lo guardó. Si sale con fecha, lo rellenó otro día (días anteriores).</p></div>`;
+  <div class="panel"><span class="lbl">Últimos ${n} días</span><div class="tbl-w"><table><thead><tr><th>Día</th>${has('diet')?'<th>Dieta</th>':''}${has('train')?'<th>Entreno</th>':''}${has('steps')?'<th>Pasos</th>':''}${MC.map(x=>`<th>${REG_MINI[x]}</th>`).join('')}${OB?'<th>🎯 Objetivos</th>':''}<th>Rellenado</th></tr></thead><tbody>
+  ${rows.map(r=>{const d=S.daily[r];return `<tr><td>${new Date(r+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}</td>${has('diet')?`<td>${c(d.diet)}</td>`:''}${has('train')?`<td>${c(d.train)}</td>`:''}${has('steps')?`<td>${(+d.steps||0).toLocaleString('es-ES')} ${c(d.stepsOk)}</td>`:''}${MC.map(x=>`<td>${d[x]||'—'}</td>`).join('')}${OB?`<td class="wrap">${objDayCell(r)}</td>`:''}<td>${d.at?(()=>{const t=new Date(d.at);const same=iso(t)===r;return `<span class="${same?'':'muted'}">${same?'':t.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' · '}${t.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</span>`})():'<span class="muted">—</span>'}</td></tr>`}).join('')}</tbody></table></div><p class="small muted" style="margin:0">«Rellenado»: hora a la que lo guardó. Si sale con fecha, lo rellenó otro día (días anteriores).</p></div>`;
 }
 function cChecks(){
   const cks=S.checkins.slice().reverse();
@@ -1109,7 +1111,7 @@ const FT={
  nutri:[['alimActual','Alimentación actual','Muy Saludable|Equilibrada|Desordenada|Ultraprocesados'],['comidasDia','Comidas al día','t'],['horarios','Horarios regulares','Sí|A veces|No'],['dietaActual','Dieta que sigue','Ninguna|Vegetariana|Vegana|Paleo|Keto|Ayuno Intermitente'],['fuera','Comidas fuera de casa por semana','t'],['cocina','Quién cocina','Yo|Pareja|Mixto|Familia|Siempre Fuera'],['tiempoCocina','Tiempo para cocinar al día','10 min|20 min|30 - 45 min|1h+'],['sabeCocinar','Nivel de cocina','t'],['prefs','Alimentos que le gustan','a'],['evitar','Alimentos que no quiere','a'],['agua','Agua (litros/día)','n'],['cafe','Café (tazas/día)','n']],
  entreno:[['haceEj','¿Entrena actualmente?','Sí|No'],['tipoEntreno','Qué hace y cuántas veces','t'],['entPrevio','Ha trabajado con entrenador','Sí|No|Tal vez'],['resultadoPrevio','Resultado que tuvo','t'],['alDejar','Al dejar dieta/entreno…','No recuperaba el peso|Recuperaba un poco|Recuperaba todo|Recuperaba Extra'],['disfruta','Ejercicio que disfruta','t'],['musculos','Músculos que quiere mejorar','t'],['deportePasado','Deporte serio en el pasado','Sí|No'],['tiempoSesion','Tiempo por sesión','30 min|45 min|60 min|90 min'],['franja','Franja horaria','t'],['donde','Dónde entrena','Gimnasio|Casa|Mixto|Aire Libre'],['gimnasio','Gimnasio y distancia','t'],['material','Material disponible','t']],
  obj:[['objPrincipal','Objetivo principal','t'],['objLargo','Meta específica','a'],['plazo','Plazo que se marca','t'],['porque','Por qué ahora','a'],['obstaculos','Obstáculos que prevé','a'],['frustra','Lo que más le frustra','a'],['primero','Lo primero que haría al conseguirlo','a'],['compromiso','Compromiso mínimo 3 meses','Sí|No estoy seguro|No'],['espera','Qué espera de ti','a'],['entender','Lo que necesita que entiendas','a'],['preguntas','Preguntas para ti','a']]};
-const FTAB=[['valor','📊 Valoración'],['datos','👤 Datos'],['salud','🩺 Salud'],['nutri','🍽 Nutrición'],['psico','🧠 Relación con la comida'],['entreno','🏋️ Entreno'],['obj','🎯 Objetivos'],['subs','💳 Suscripción'],['bonus','🎁 Bonus'],['form','📋 Formulario']];
+const FTAB=[['valor','📊 Valoración'],['datos','👤 Datos'],['salud','🩺 Salud'],['nutri','🍽 Nutrición'],['psico','🧠 Relación con la comida'],['entreno','🏋️ Entreno'],['obj','🎯 Objetivos'],['subs','💳 Suscripción'],['metas','✅ Hábitos y retos'],['bonus','🎁 Bonus'],['form','📋 Formulario']];
 function cFicha(){
   setTimeout(()=>{if(CUR)db.pushCount(CUR.id).then(n=>{const e=document.getElementById('pushCnt');if(e)e.textContent=`Dispositivos con avisos activados: ${n}${n?'':' · el cliente tiene que activarlos en su app'}`}).catch(()=>{})});
   const f=FICHA;const ren=nextRenewal(f);const dleft=ren?Math.round((new Date(ren+'T12:00')-new Date())/864e5):null;
@@ -1149,6 +1151,7 @@ function cFicha(){
       <div class="sec-h" style="margin-top:6px"><span class="lbl">💶 Cobros registrados</span><button class="btn sm" type="button" onclick="payForm()">+ Registrar cobro</button></div><div id="payBox">${payList()}</div></div>
      <div class="panel" style="border-color:rgba(255,107,91,.35)"><span class="lbl" style="color:var(--bad)">Zona peligrosa</span><p class="small muted" style="margin:0">Borra al cliente y todos sus datos de la app (ficha, pesos, check-ins, entrenos y dieta). No se puede deshacer. Si solo ha terminado el programa, mejor cambia su estado a «Baja».</p><button class="btn ghost sm" type="button" style="color:var(--bad);border-color:var(--bad)" onclick="delClient()">Eliminar cliente</button></div>`,
    bonus:()=>bonusPanel(),
+   metas:()=>objCoach(),
    form:()=>formPanel()};
   return head+(T[fichaTab]||T.valor)();
 }
@@ -1979,14 +1982,15 @@ function cPend(){const d=pendData();const fd=x=>new Date(x+'T12:00').toLocaleDat
   </div>`}
 
 // ================= RACHAS =================
-function dayStreak(){const ok=d=>d&&d.diet===true&&d.stepsOk===true;let n=0,i=ok(S.daily[iso(new Date())])?0:1;
+function streakKeys(){return ['diet','stepsOk'].filter(x=>regOn(x==='stepsOk'?'steps':x))}
+function dayStreak(){const K=streakKeys();const ok=d=>d&&(K.length?K.every(x=>d[x]===true):!!d.at);let n=0,i=ok(S.daily[iso(new Date())])?0:1;
   for(;i<400;i++){if(ok(S.daily[iso(daysAgo(i))]))n++;else break}
   let best=0,cur=0;Object.keys(S.daily).sort().forEach((k,j,a)=>{const prevOk=j&&((new Date(k+'T12:00')-new Date(a[j-1]+'T12:00'))/864e5===1);if(ok(S.daily[k])){cur=prevOk&&cur?cur+1:1;best=Math.max(best,cur)}else cur=0});return {n,best:Math.max(best,n)}}
 function weekStreak(){const optN=new Set(S.routine.filter(d=>d.opt).map(d=>d.d));const nReq=S.routine.filter(d=>!d.opt).length;const target=Math.max(1,+FICHA.diasSemana||nReq||1);
   const cnt=off=>{const W=volWeek(off);const ses=new Set();Object.values(S.hist).forEach(a=>a.forEach(h=>{if(h.date>=W.a&&h.date<=W.b&&h.sets&&h.sets.length&&!optN.has(h.day))ses.add(h.date+'|'+h.day)}));return ses.size};
   let n=0;const cur=cnt(0)>=target;for(let o=-1;o>-60;o--){if(cnt(o)>=target)n++;else break}return {n:n+(cur?1:0),cur}}
 function streakCard(){if(view!=='client'&&!S)return '';const D=dayStreak(),W=weekStreak();if(D.n<2&&W.n<1)return '';
-  return `<section class="streaks">${D.n>=2?`<div class="stk1"><span class="fire">🔥</span><div><b>${D.n} días seguidos</b><small>cumpliendo dieta y pasos${D.best>D.n?` · tu mejor racha: ${D.best}`:''}</small></div></div>`:''}${W.n>=1?`<div class="stk1"><span class="fire">💪</span><div><b>${W.n} semana${W.n>1?'s':''} seguida${W.n>1?'s':''}</b><small>completando todos tus entrenos</small></div></div>`:''}</section>`}
+  return `<section class="streaks">${D.n>=2?`<div class="stk1"><span class="fire">🔥</span><div><b>${D.n} días seguidos</b><small>${(()=>{const K=streakKeys();return K.length===2?'cumpliendo dieta y pasos':K[0]==='diet'?'cumpliendo la dieta':K.length?'llegando a tus pasos':'rellenando tu día'})()}${D.best>D.n?` · tu mejor racha: ${D.best}`:''}</small></div></div>`:''}${W.n>=1?`<div class="stk1"><span class="fire">💪</span><div><b>${W.n} semana${W.n>1?'s':''} seguida${W.n>1?'s':''}</b><small>completando todos tus entrenos</small></div></div>`:''}</section>`}
 
 // ================= TEMPORIZADOR DE DESCANSO =================
 function restSec(t){t=String(t||'').toLowerCase().replace(',','.');let m;
