@@ -1,0 +1,286 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Checklist del Lunes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@700;800;900&family=Onest:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna estrecha pensada para móvil, pasos con barra de progreso y resultado final. Diseño oscuro deliberado de marca Yaronska. */
+:root{
+  --negro:#000; --bg:#0A0907; --surf:#141210; --surf2:#1E1B17; --line:#2A2620;
+  --amarillo:#FFD60A; --amarillo-suave:#FFEC6E; --amarillo-osc:#CC9F00;
+  --blanco:#FFF; --gris:#A8A49C; --gris2:#6F6B63;
+  --ok:#6FD08C; --warn:#FFB547; --bad:#FF6B5B;
+  --font-display:"Jost","Futura","Century Gothic",system-ui,sans-serif;
+  --font-body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--blanco)}
+body{font-family:var(--font-body);font-size:16px;line-height:1.5;margin:0}
+.topbar{height:8px;background:var(--amarillo)}
+.wrap{max-width:640px;margin:0 auto;padding-inline:20px;padding-block:24px 120px}
+@media (max-width:480px){.wrap{padding-inline:16px}}
+.handle{font-family:var(--font-display);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--amarillo)}
+h1{font-family:var(--font-display);font-weight:900;font-size:clamp(34px,9vw,52px);line-height:.98;margin:10px 0 14px;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--amarillo)}
+h2{font-family:var(--font-display);font-weight:900;font-size:clamp(26px,6.5vw,34px);line-height:1.05;margin:6px 0 6px;text-wrap:balance}
+h3{font-family:var(--font-display);font-weight:800;font-size:20px;margin:0;line-height:1.2}
+p{margin:0}
+.lead{color:var(--gris);font-size:17px}
+.lead b{color:var(--blanco);font-weight:600}
+.eyebrow{font-family:var(--font-display);font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--amarillo)}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:18px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.btn{font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;padding:15px 20px;cursor:pointer;border:1px solid var(--line);background:var(--surf2);color:var(--blanco);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.pri{background:var(--amarillo);border-color:var(--amarillo);color:var(--negro)}
+.btn.pri:hover{background:var(--amarillo-suave)}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.block{width:100%}
+button:focus-visible,a:focus-visible,label.item:focus-within{outline:2px solid var(--amarillo-suave);outline-offset:2px}
+
+/* Intro */
+.how{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.how li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:baseline}
+.how .n{font-family:var(--font-display);font-weight:900;font-size:20px;color:var(--amarillo)}
+.areas{display:flex;flex-wrap:wrap;gap:6px}
+.areas span{font-size:13px;font-weight:500;border:1px solid var(--line);border-radius:3px;padding:5px 9px;color:var(--gris)}
+
+/* Pasos */
+.prog{display:flex;gap:4px;margin:4px 0 18px}
+.prog i{flex:1;height:5px;border-radius:2px;background:var(--surf2)}
+.prog i.on{background:var(--amarillo)}
+.stepmeta{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.stepmeta .c{font-size:13px;color:var(--gris);font-variant-numeric:tabular-nums}
+.items{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+label.item{display:grid;grid-template-columns:26px minmax(0,1fr);gap:12px;align-items:start;background:var(--surf);border:1px solid var(--line);border-radius:6px;padding:14px;cursor:pointer;transition:border-color .12s,background .12s}
+label.item:hover{border-color:var(--gris2)}
+label.item input{position:absolute;opacity:0;width:1px;height:1px}
+label.item .box{width:24px;height:24px;border:2px solid var(--gris2);border-radius:3px;display:grid;place-items:center;margin-top:1px}
+label.item .box svg{width:14px;height:14px;opacity:0}
+label.item.on{border-color:var(--amarillo);background:#1c1806}
+label.item.on .box{background:var(--amarillo);border-color:var(--amarillo)}
+label.item.on .box svg{opacity:1}
+label.item .tx{font-size:15.5px}
+label.item .why{display:block;font-size:13px;color:var(--gris2);margin-top:3px}
+label.item.on .why{color:var(--gris)}
+.nav{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:22px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.nav .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:10px}
+.none{font-size:13px;color:var(--gris2);text-align:center;margin-top:14px}
+
+/* Resultado */
+.verdict{border-left:4px solid var(--amarillo);padding-left:14px}
+.verdict .big{font-family:var(--font-display);font-weight:900;font-size:clamp(24px,6vw,30px);line-height:1.1;text-wrap:balance}
+.bars{display:flex;flex-direction:column;gap:14px}
+.bar .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.bar .nm{font-weight:600}
+.bar .lv{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.lv.ok{color:var(--ok);border:1px solid #24533a}
+.lv.warn{color:var(--warn);border:1px solid #5a4318}
+.lv.bad{color:var(--bad);border:1px solid #5a2620}
+.bar .track{height:10px;background:var(--surf2);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar .fill{height:100%;border-radius:2px}
+.bar .fill.ok{background:var(--ok)}.bar .fill.warn{background:var(--warn)}.bar .fill.bad{background:var(--bad)}
+.bar .pc{font-size:12px;color:var(--gris2);margin-top:3px;font-variant-numeric:tabular-nums}
+.cycle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.cycle div{border:1px dashed var(--line);border-radius:6px;padding:10px;font-size:14px;color:var(--gris2)}
+.cycle div b{display:block;font-family:var(--font-display);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.cycle div.on{border:1px solid var(--bad);color:var(--blanco);background:#1f1210}
+.cycle div.on b{color:var(--bad)}
+.pillars{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pillars li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.pillars li:first-child{border-top:0}
+.pillars .n{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--amarillo);line-height:1.1}
+.pillars .st{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.pillars p{font-size:14px;color:var(--gris);margin-top:2px}
+.fails{margin:8px 0 0;padding-left:18px;color:var(--gris);font-size:14px}
+.fails li{margin:4px 0}
+.cta{background:var(--amarillo);color:var(--negro);border-radius:8px;padding:20px}
+.cta h3{font-size:24px;font-weight:900}
+.cta p{margin-top:6px;font-size:15px}
+.cta .kw{font-family:var(--font-display);font-weight:900;font-size:34px;letter-spacing:.04em;margin:10px 0 4px}
+.cta .btn{background:var(--negro);color:var(--amarillo);border-color:var(--negro);margin-top:12px}
+.small{font-size:13px;color:var(--gris2)}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--blanco);color:var(--negro);font-weight:600;padding:10px 16px;border-radius:3px;z-index:20;font-size:14px}
+@media (prefers-reduced-motion:reduce){label.item{transition:none}}
+</style>
+
+<div class="topbar"></div>
+<main class="wrap" id="app"></main>
+<div class="nav" id="nav" hidden><div class="in"><button class="btn ghost" id="back" type="button">Atrás</button><button class="btn pri" id="next" type="button">Siguiente</button></div></div>
+
+<script>
+const code=()=>AREAS.map(a=>(S.sel[a.id]||[]).slice().sort((x,y)=>x-y).join("-")).join(".");
+const AREAS=[
+ {id:"semana",n:"Entre semana",sub:"De lunes a viernes, en el día a día",pilar:3,items:[
+  ["Te saltas el desayuno o comes casi nada hasta mediodía \"para ahorrar calorías\".","Llegas a la noche con un hambre que no hay quien la pare.",2],
+  ["Comes lo primero que pillas en el curro: máquina, bar, bollería.","Sin plan, decide el hambre por ti.",2],
+  ["Cenas \"ligero\" (ensalada, yogur…) y a las dos horas estás picando.","Lo que te ahorras en la cena te lo comes en el sofá.",2],
+  ["Picas por la noche delante de la tele o el móvil.","El picoteo nocturno suma más que muchas cenas de finde.",3],
+  ["Tus comidas casi no llevan proteína (carne, pescado, huevos, lácteos, legumbre).","Poca proteína = más hambre y peor cuerpo aunque bajes peso.",2],
+  ["Te prohíbes cosas (pan, pasta, dulce) y acabas comiéndolas a lo bestia.","Lo rígido se rompe. Siempre.",3],
+  ["No sabes qué vas a comer hasta que tienes hambre.","Improvisar con hambre casi nunca sale bien.",2],
+  ["Bebes refrescos o zumos casi a diario.","Calorías que no te quitan nada de hambre.",1]
+ ]},
+ {id:"finde",n:"Fin de semana",sub:"De viernes por la tarde a domingo",pilar:4,items:[
+  ["El viernes piensas \"bah, ya el lunes empiezo\".","Le das permiso al finde para ser un descontrol.",3],
+  ["No comes antes de una comida o cena fuera \"para guardar hueco\".","Llegas con hambre de lobo y pides de todo.",3],
+  ["Comes fuera sin criterio: pan, entrante, principal, postre y lo que caiga.","El problema no es comer fuera, es no tener plan.",2],
+  ["Bebes 4 o más cervezas o copas a lo largo del finde.","El alcohol suma y además te abre el hambre.",2],
+  ["El \"cheat meal\" se convierte en \"cheat weekend\" de viernes a domingo.","Una comida no estropea nada. Tres días, sí.",3],
+  ["Picoteo constante: patatas, frutos secos, aperitivos con el fútbol o con amigos.","Lo que no cuentas, también cuenta.",2],
+  ["Resaca = comida basura al día siguiente.","El domingo pagas el sábado dos veces.",2],
+  ["El sábado y el domingo apenas te mueves: sofá, coche, terraza.","De 9.000 pasos entre semana a 2.000 el finde.",1]
+ ]},
+ {id:"lunes",n:"El lunes",sub:"Lo que haces después del finde",pilar:1,items:[
+  ["Te pesas el lunes y la báscula te hunde el día.","Lo del lunes es sobre todo agua, sal e hidratos, no grasa.",2],
+  ["Comes mucho menos para \"compensar\".","Más hambre el miércoles y otro finde descontrolado.",3],
+  ["Metes cardio extra o entrenas a lo bestia para \"quemar\" lo del finde.","Castigarte con ejercicio no arregla nada y te quema la cabeza.",2],
+  ["Empiezas una dieta nueva o más estricta.","Cada lunes desde cero es el bucle perfecto.",3],
+  ["Te sientes culpable o te hablas fatal por lo que comiste.","La culpa no quema grasa. Dispara ansiedad.",2],
+  ["Para el miércoles o el jueves ya vas con hambre y ansiedad.","Y el viernes vuelve a empezar todo.",3]
+ ]},
+ {id:"mov",n:"Movimiento y entreno",sub:"Lo que mueves de verdad",pilar:3,items:[
+  ["La mayoría de días haces menos de 6.000 pasos.","El gasto del día a día pesa más que el gimnasio.",2],
+  ["No entrenas fuerza, o vas al gimnasio sin plan a hacer lo que te apetece.","Sin fuerza, pierdes peso pero no cambias el cuerpo.",2],
+  ["Entrenas a rachas: dos semanas a tope y luego tres sin ir.","La constancia gana a la intensidad.",3],
+  ["Usas el entreno para \"quemar\" lo que comes.","El entreno es para construir, no para pagar deudas.",2],
+  ["Pasas 8 horas o más sentado sin apenas levantarte.","Lo sé bien: 12 horas de vigilante me pusieron en 100 kg.",1],
+  ["Solo haces cardio porque \"es lo que adelgaza\".","Cardio sin fuerza es perder músculo con la grasa.",1]
+ ]},
+ {id:"cabeza",n:"Descanso y cabeza",sub:"Sueño, estrés y cómo te lo tomas",pilar:3,items:[
+  ["Duermes menos de 6-7 horas la mayoría de noches.","Dormir poco te da más hambre y más antojos al día siguiente.",2],
+  ["Te acuestas con el móvil y tardas en dormirte.","Peor sueño, peores decisiones con la comida.",1],
+  ["Cuando estás estresado, cansado o aburrido, comes.","No es hambre, es gestión de emociones con comida.",3],
+  ["Vas a todo o nada: o dieta perfecta o a la mierda.","Da el 70%, no el 100%. El 70% se mantiene.",3],
+  ["Cuando fallas un día, das la semana por perdida.","Un mal día no es una mala semana… salvo que tú lo decidas.",3],
+  ["Solo miras la báscula: ni fotos, ni cintura, ni cómo te queda la ropa.","La báscula sola te miente a menudo.",1]
+ ]}
+];
+const PILLARS=[
+ {n:"No compensar el lunes",d:"Empezar la semana normal, sin castigo. Así no disparas la ansiedad y el hambre que te llevan al siguiente finde.",area:"lunes"},
+ {n:"Entender qué ha pasado de verdad",d:"Dejar de culpar a la comida del sábado y ver dónde se rompe la semana. Esto es lo que acabas de hacer.",area:null},
+ {n:"Una semana que no te deje con hambre",d:"Comida con proteína y sin prohibiciones, moverte en el día a día, dormir y gestionar el estrés. Si la semana te deja hambriento, el finde explota.",area:["semana","mov","cabeza"]},
+ {n:"Un finde con plan, no con prohibiciones",d:"Saber qué pedir, cuánto beber y cómo llegar a la comida sin hambre. Disfrutar sin tirar la semana.",area:"finde"}
+];
+const FIRST={
+ semana:"Mete proteína en cada comida y deja de saltarte el desayuno o \"cenar ligero\" para ahorrar. Si la semana te deja con hambre, el finde explota.",
+ finde:"Antes de comer fuera, come normal durante el día y elige un solo capricho de verdad (o el postre, o las cervezas, o la pizza), no todo.",
+ lunes:"Este lunes come exactamente igual que un martes normal. Nada de compensar, nada de cardio de castigo, nada de dieta nueva.",
+ mov:"Ponte un mínimo de pasos diarios que puedas cumplir siempre (por ejemplo, 7.000) antes de pensar en entrenar más.",
+ cabeza:"Elige una noche de esta semana para dormir 7 horas sin móvil en la cama, y cuando falles una comida, sigue con la siguiente como si nada."
+};
+
+const S={step:0,sel:{}};
+try{const v=JSON.parse(localStorage.getItem("cl_lunes")||"null");if(v&&v.sel)Object.assign(S,v)}catch(e){}
+const save=()=>{try{localStorage.setItem("cl_lunes",JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=s=>document.querySelector(s);
+const TOTAL=AREAS.length;
+const CHECK='<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3.2 3L12 3.5" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="square"/></svg>';
+
+function render(){
+  const app=$("#app"),nav=$("#nav");
+  if(S.step===0){nav.hidden=true;app.innerHTML=intro();$("#start").onclick=()=>{S.step=1;save();render();scrollTo(0,0)};return}
+  if(S.step>TOTAL){nav.hidden=true;app.innerHTML=result();wireResult();return}
+  nav.hidden=false;
+  const a=AREAS[S.step-1];
+  const sel=S.sel[a.id]||[];
+  app.innerHTML=`
+   <div class="prog">${AREAS.map((_,i)=>`<i class="${i<S.step?"on":""}"></i>`).join("")}</div>
+   <div class="stepmeta"><span class="eyebrow">Bloque ${S.step} de ${TOTAL}</span><span class="c" id="cnt">${sel.length} marcadas</span></div>
+   <h2>${esc(a.n)}</h2>
+   <p class="lead">${esc(a.sub)}. Marca <b>todo lo que te pase a menudo</b>. Sé sincero: nadie lo ve más que tú.</p>
+   <div class="items" id="items">${a.items.map((it,i)=>`<label class="item ${sel.includes(i)?"on":""}"><input type="checkbox" id="c-${a.id}-${i}" data-i="${i}" ${sel.includes(i)?"checked":""}><span class="box">${CHECK}</span><span class="tx">${esc(it[0])}<span class="why">${esc(it[1])}</span></span></label>`).join("")}</div>
+   <p class="none">¿No te pasa ninguna? Perfecto, dale a Siguiente.</p>`;
+  $("#items").onchange=e=>{const c=e.target.closest("input");if(!c)return;const i=+c.dataset.i;let l=S.sel[a.id]||[];l=c.checked?[...new Set([...l,i])]:l.filter(x=>x!==i);S.sel[a.id]=l;c.closest("label").classList.toggle("on",c.checked);$("#cnt").textContent=l.length+" marcadas";save()};
+  $("#back").textContent=S.step===1?"Inicio":"Atrás";
+  $("#next").textContent=S.step===TOTAL?"Ver mi diagnóstico":"Siguiente";
+}
+$("#back").onclick=()=>{S.step=Math.max(0,S.step-1);save();render();scrollTo(0,0)};
+$("#next").onclick=()=>{S.step=S.step+1;save();render();scrollTo(0,0)};
+
+function intro(){
+  return `<div class="stack">
+   <span class="handle">@Yaronska_Fit · Revisión de hábitos</span>
+   <h1>¿Dónde fallas <em>de verdad</em>?</h1>
+   <p class="lead">Si el finde te destroza la semana y el lunes compensas comiendo menos y moviéndote más, este checklist es para ti. En 3 minutos vas a ver si el problema es <b>la comida del finde</b>… o <b>todo lo que pasa alrededor</b>.</p>
+   <div class="card"><div class="eyebrow" style="margin-bottom:10px">Cómo funciona</div>
+    <ol class="how"><li><span class="n">1</span><span>Pasas por 5 bloques de tu semana.</span></li><li><span class="n">2</span><span>Marcas lo que te pasa a menudo. Sin pensarlo mucho.</span></li><li><span class="n">3</span><span>Te sale tu diagnóstico: en qué áreas pierdes el progreso y por dónde empezar.</span></li></ol></div>
+   <div><div class="eyebrow" style="margin-bottom:8px">Lo que vamos a revisar</div><div class="areas">${AREAS.map(a=>`<span>${esc(a.n)}</span>`).join("")}</div></div>
+   <button class="btn pri block" id="start" type="button">${Object.values(S.sel).some(l=>l.length)?"Continuar mi checklist":"Empezar el checklist"}</button>
+   <p class="small">Al terminar podrás enviarle el resultado a Yaron.</p>
+  </div>`;
+}
+
+function calc(){
+  return AREAS.map(a=>{const sel=S.sel[a.id]||[];const max=a.items.reduce((s,i)=>s+i[2],0);const got=sel.reduce((s,i)=>s+a.items[i][2],0);const pc=Math.round(got/max*100);const lv=pc>=50?"bad":pc>=25?"warn":"ok";return {...a,sel,pc,lv}});
+}
+const LV={ok:"Controlado",warn:"Fuga",bad:"Agujero"};
+function result(){
+  const R=calc();
+  const fails=R.filter(r=>r.lv!=="ok");
+  const nonFinde=fails.filter(r=>r.id!=="finde");
+  const finde=R.find(r=>r.id==="finde");
+  const worst=[...R].sort((a,b)=>b.pc-a.pc)[0];
+  const marked=R.reduce((s,r)=>s+r.sel.length,0);
+  let big,txt;
+  if(marked===0){big="No has marcado nada.";txt="O lo tienes muy controlado o te ha dado pereza ser sincero. Si el finde te sigue destrozando la semana, vuelve y márcalo de verdad."}
+  else if(nonFinde.length>=2){big=finde.lv!=="ok"?`El finde no es tu único problema. Fallas en ${fails.length} de 5 áreas.`:`El finde no es tu problema. Fallas en ${fails.length} de 5 áreas.`;txt="La comida del sábado es solo donde se nota. Lo que te tira la semana viene de antes y de después: "+nonFinde.map(r=>r.n.toLowerCase()).join(", ")+"."}
+  else if(nonFinde.length===1&&finde.lv!=="ok"){big="El finde pesa, pero no va solo.";txt=`Además del finde, tienes una fuga clara en ${nonFinde[0].n.toLowerCase()}. Si solo arreglas el sábado, el problema vuelve.`}
+  else if(nonFinde.length===1){big=`Tu fuga principal no es el finde: es ${nonFinde[0].n.toLowerCase()}.`;txt="Seguramente llevas tiempo culpando a la comida del sábado de algo que está pasando en otro sitio."}
+  else if(finde.lv!=="ok"){big="Tu semana va bien. El finde necesita un plan.";txt="No hace falta prohibirte nada: hace falta saber cómo llegar, qué pedir y cuánto beber."}
+  else{big="Lo tienes bastante controlado.";txt="Pocas fugas y ninguna grande. Si aun así no avanzas, toca revisar cantidades y estrategia con alguien que lo vea desde fuera."}
+
+  /* Círculo vicioso */
+  const has=(id,idx)=>(S.sel[id]||[]).some(i=>idx.includes(i));
+  const cyc=[
+   ["Restringes entre semana","Desayuno saltado, cenas ligeras, prohibiciones",has("semana",[0,2,5])||has("cabeza",[3])],
+   ["Llegas al finde con hambre y ganas","\"Ya el lunes empiezo\", sin comer antes",has("finde",[0,1])],
+   ["Te pasas","Cheat weekend, alcohol, picoteo",has("finde",[2,3,4,5,6])],
+   ["Compensas el lunes","Comer menos, cardio de castigo, dieta nueva",has("lunes",[1,2,3])]
+  ];
+  const cycOn=cyc.filter(c=>c[2]).length;
+
+  const pstate=p=>{if(!p.area)return ["Hecho hoy","ok"];const ids=[].concat(p.area);const rs=R.filter(r=>ids.includes(r.id));const w=rs.some(r=>r.lv==="bad")?"bad":rs.some(r=>r.lv==="warn")?"warn":"ok";return [w==="ok"?"Bien":w==="warn"?"A revisar":"Aquí fallas",w]};
+
+  return `<div class="stack">
+   <div class="prog">${AREAS.map(()=>`<i class="on"></i>`).join("")}</div>
+   <span class="eyebrow">Tu diagnóstico</span>
+   <div class="verdict"><div class="big">${esc(big)}</div><p class="lead" style="margin-top:8px">${esc(txt)}</p></div>
+
+   <div class="card"><div class="eyebrow" style="margin-bottom:12px">Dónde pierdes el progreso</div>
+    <div class="bars">${R.map(r=>`<div class="bar"><div class="top"><span class="nm">${esc(r.n)}</span><span class="lv ${r.lv}">${LV[r.lv]}</span></div><div class="track"><div class="fill ${r.lv}" style="width:${Math.max(r.pc,2)}%"></div></div><div class="pc">${r.sel.length} de ${r.items.length} marcadas</div></div>`).join("")}</div></div>
+
+   ${cycOn>=3?`<div class="card"><h3>Estás dentro del bucle del lunes</h3><p class="lead" style="font-size:15px;margin-top:6px">Tienes ${cycOn} de los 4 pasos del círculo. Cada pieza alimenta a la siguiente, por eso empezar de cero cada lunes nunca funciona.</p>
+    <div class="cycle">${cyc.map((c,i)=>`<div class="${c[2]?"on":""}"><b>${i+1}. ${esc(c[0])}</b>${esc(c[1])}</div>`).join("")}</div></div>`:""}
+
+   <div class="card"><div class="eyebrow" style="margin-bottom:6px">Los 4 pilares para dejar de machacarte los lunes</div>
+    <ol class="pillars">${PILLARS.map((p,i)=>{const [t,w]=pstate(p);return `<li><span class="n">${i+1}</span><div><div class="row" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3 style="font-size:17px">${esc(p.n)}</h3><span class="st lv ${w}" style="padding:2px 7px;border-radius:2px">${t}</span></div><p>${esc(p.d)}</p></div></li>`}).join("")}</ol></div>
+
+   ${marked?`<div class="card"><div class="eyebrow">Tu primer paso esta semana</div><h3 style="margin-top:6px">Empieza por: ${esc(worst.n.toLowerCase())}</h3><p class="lead" style="font-size:15px;margin-top:6px">${esc(FIRST[worst.id])}</p>
+    ${worst.sel.length?`<ul class="fails">${worst.sel.map(i=>`<li>${esc(worst.items[i][0])}</li>`).join("")}</ul>`:""}</div>`:""}
+
+   <div class="cta"><h3>Envíaselo a Yaron</h3>
+    <p>Le llega tu diagnóstico completo para que te ayude a corregir justo lo que te está frenando.</p>
+    <button class="btn block" id="sendY" type="button">📤 Enviar mi resultado a Yaron</button>
+   </div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="copy" type="button">Copiar mi resultado</button><button class="btn ghost" id="redo" type="button">Repetir checklist</button></div>
+   <p class="small">Hazlo cuando sientas que la semana se te escapa: así vemos dónde está la fuga.</p>
+  </div>`;
+}
+function wireResult(){
+  const sy=$("#sendY");if(sy)sy.onclick=()=>{const R=calc();const res=R.map(r=>({id:r.id,n:r.n,lv:r.lv,pc:r.pc,c:r.sel.length,t:r.items.length,items:r.sel.map(i=>r.items[i][0])}));
+    if(window.parent!==window){parent.postMessage({ys:true,type:'checklist',res},location.origin);sy.textContent='✅ Enviado a Yaron';sy.disabled=true}else toast('Ábrelo desde la app para enviarlo')};
+  $("#redo").onclick=()=>{S.step=0;S.sel={};save();render();scrollTo(0,0)};
+  $("#copy").onclick=async()=>{
+    const R=calc();
+    const t="LUNES — mi diagnóstico del checklist:\n"+R.map(r=>`• ${r.n}: ${LV[r.lv]} (${r.sel.length}/${r.items.length})`).join("\n");
+    try{await navigator.clipboard.writeText(t);toast("Copiado. Pégalo en el DM a @yaronska_fit")}catch(e){toast("No se ha podido copiar. Haz captura de pantalla")}
+  };
+}
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+render();
+</script>
+
+</body></html>

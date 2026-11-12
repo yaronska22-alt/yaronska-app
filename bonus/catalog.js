@@ -14,7 +14,7 @@ window.BONUS=[
   {id:'viaje',t:'Protocolo de Viaje',s:'Mantener cuando viajas',ic:'✈️',d:'Entrenos express, snacks de movimiento y cómo comer en hotel, apartamento y fuera.',videos:[]},
   {id:'caotica',t:'Protocolo Semana Caótica',s:'Cuando la semana se tuerce',ic:'⚡',d:'El mínimo que mantiene tu progreso: entreno corto, snacks de movimiento y regla del 70 %.',videos:[]},
   {id:'meal',t:'Cocina 1 Vez, Come Toda la Semana',s:'Meal prep en 90 minutos',ic:'🍱',d:'Menús semanales con lista de la compra y orden de cocinado.',videos:[]},
-  {id:'carta',t:'Carta de Restaurantes y Bares',s:'Qué pedir fuera de casa',ic:'🍽️',link:'https://drive.google.com/file/d/1MXfIbHVysfkzJxs7SZblMfunqmpVv3ax/view',d:'Elige bien en cualquier restaurante o bar.',videos:[]},
+  {id:'carta',t:'Carta de Restaurantes y Bares',s:'Qué pedir fuera de casa',ic:'🍽️',guia:'comerfuera',d:'Elige bien en cualquier restaurante o bar.',videos:[]},
   {id:'cadenas',t:'Guía de Cadenas',s:'McDonald\'s, Burger King, Telepizza, sushi…',ic:'🍔',docs:[{id:'cadenas',t:'Guía de Cadenas',s:'35 cadenas y 8 tipos de restaurante',page:'bonus/cadenas-guia.html'}],rel:['carta','finde'],d:'La mejor opción en cada cadena y cómo pedirla.',videos:[]},
   {id:'atracon',t:'Protocolo Antiatracón',s:'Cuando el hambre o la ansiedad aprietan',ic:'🧯',d:'Prevenir, qué hacer en el momento y las 24 horas siguientes, sin castigos.',videos:[]},
   {id:'turnos',t:'Protocolo Turnos y Noches',s:'Comer y entrenar a turnos',ic:'🌙',d:'Reparto de comidas, entreno y sueño según tu turno.',videos:[]},

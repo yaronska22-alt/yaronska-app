@@ -47,15 +47,20 @@ const progKey=f=>{f=f||FICHA||FICHA_DEF;return PROGS[f.programa]?f.programa:(f.o
 const PROG=f=>PROGS[progKey(f)];
 const PH=()=>PROG().ph;
 const phOf=(f,i)=>{const P=PROG(f).ph;return P[Math.min(Math.max(0,i||0),P.length-1)]};
+// Guías: se leen dentro de la app (páginas en bonus/guias/<id>/<n>.jpg) y se descargan en PDF (bonus/guias/<id>/<id>.pdf)
+const GUIAS={recetas:{t:'Libro de recetas',n:25},salsas:{t:'10 salsas fit',n:6},comerfuera:{t:'Guía para comer fuera',n:8},vacaciones:{t:'Guía de vacaciones',n:6},
+  mealprep:{t:'Guía de meal prep',n:4},medidas:{t:'Guía de medidas corporales',n:6},sueno:{t:'Guía del sueño',n:8},estres:{t:'Guía del estrés',n:11}};
 const RESOURCES=[
-  {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan (y casi 1.000 más en Comidas › Recetas)',u:'https://drive.google.com/file/d/13-43KrZG8mGIQNXs5WoVIqhy_aCev0g0/view',k:'PDF'},
-  {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',u:'https://drive.google.com/file/d/1Y9CGkn-OOomIIntNeOplIA3wenQGfiab/view',k:'PDF'},
-  {t:'Guía para comer fuera',d:'Restaurantes sin romper el plan',u:'https://drive.google.com/file/d/1MXfIbHVysfkzJxs7SZblMfunqmpVv3ax/view',k:'PDF'},
-  {t:'Guía de vacaciones',d:'Hotel y buffet sin agobios',u:'https://drive.google.com/file/d/1Ht_HyG8K86WqTBgYlXjionl9iWespQfG/view',k:'PDF'},
-  {t:'Guía de medidas corporales',d:'Cómo medirte para la revisión',u:'https://drive.google.com/file/d/1uOVFw6omZxpxAX2Yr-OQjf8d51xX0l3K/view',k:'PDF'},
+  {t:'¿Dónde se te escapa el progreso?',d:'Revisa tu semana en 3 minutos y envíale el resultado a Yaron',tool:'checklist',k:'🔍'},
+  {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan (y casi 1.000 más en Comidas › Recetas)',g:'recetas',k:'📖'},
+  {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',g:'salsas',k:'🥫'},
+  {t:'Guía para comer fuera',d:'Restaurantes sin romper el plan',g:'comerfuera',k:'🍽️'},
+  {t:'Guía de vacaciones',d:'Hotel y buffet sin agobios',g:'vacaciones',k:'🏖️'},
+  {t:'Guía de meal prep',d:'Cocina una vez y come toda la semana',g:'mealprep',k:'🍱'},
+  {t:'Guía de medidas corporales',d:'Cómo medirte para la revisión',g:'medidas',k:'📏'},
   {t:'Cinta métrica corporal',d:'La que necesitas para tus medidas · Amazon',u:'https://www.amazon.es/dp/B0B1JH9SFW',k:'🛒'},
-  {t:'Guía del sueño',d:'Dormir mejor para perder más',u:'https://drive.google.com/file/d/1wwzz-jrqoWbnAXLocezH5YqF-v09naml/view',k:'PDF'},
-  {t:'Guía del estrés',d:'Que la cabeza no te sabotee',u:'https://drive.google.com/file/d/1a-4JijUmsAcvmvg169n20Ub7WhSt0XXd/view',k:'PDF'}
+  {t:'Guía del sueño',d:'Dormir mejor para perder más',g:'sueno',k:'😴'},
+  {t:'Guía del estrés',d:'Que la cabeza no te sabotee',g:'estres',k:'🧘'}
 ];
 const yt=n=>'https://www.youtube.com/results?search_query='+encodeURIComponent('como hacer '+n+' tecnica');
 // Tus 18 planificaciones de Google Sheets (3. BOCETOS ENTRENOS PRO)
@@ -311,7 +316,7 @@ function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById
 // al entrar en Entreno se abre el primer día que aún no ha hecho esta semana
 function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;const dd=drDays().filter(i=>i<R.length);if(dd.length)return dd.includes(dayIdx)?dayIdx:dd[0];let T;try{T=wkTrain()}catch(e){return dayIdx}
   let i=R.findIndex(d=>!d.opt&&!T.dayDone(d));if(i<0)i=R.findIndex(d=>!T.dayDone(d));return i<0?Math.min(dayIdx,R.length-1):i}
-function go(t){if(t==='res')BSEL=null;if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
+function go(t){if(t==='res'){BSEL=null;GSEL=null;TSEL=null}if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
 function render(){if(R_BUSY)return void setTimeout(render);R_BUSY=true;try{_render()}finally{R_BUSY=false}}
 function _render(){
@@ -709,27 +714,51 @@ function seenTxt(ts){if(!ts)return {t:'Nunca ha entrado',c:'never'};const m=(Dat
 const seenBadge=ts=>{const x=seenTxt(ts);return `<span class="seen ${x.c}" title="${ts?new Date(ts).toLocaleString('es-ES'):''}">${x.c==='now'?'🟢 ':''}${esc(x.t)}</span>`};
 function shrink(file,max){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error('foto')),'image/jpeg',.85);URL.revokeObjectURL(im.src)};im.onerror=rej;im.src=URL.createObjectURL(file)})}
 function vRes(){
+  if(GSEL)return vGuide();if(TSEL)return vTool();
   if(BSEL)return vBonus();
   const MB=myBonus();
   return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>guías</em></h1></div>
   ${MB.length?`<section class="sec-h"><h2>🎁 Tus bonus</h2></section><div class="blist">${MB.map(b=>`<button type="button" class="bitem ${b.main?'main':''}" onclick="openBonus('${b.id}')"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}</b><small>${esc(b.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}
   <section class="sec-h"><h2>Guías</h2></section>
-  <div class="rlist">${RESOURCES.map(r=>`<a class="ritem" href="${r.u}" target="_blank" rel="noopener"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div></a>`).join('')}</div>
+  <div class="rlist">${RESOURCES.map(r=>r.u?`<a class="ritem" href="${r.u}" target="_blank" rel="noopener"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div></a>`
+    :`<button type="button" class="ritem ${r.tool?'tool':''}" onclick="${r.g?`openGuide('${r.g}')`:`openTool('${r.tool}')`}"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div><span class="go">›</span></button>`).join('')}</div>
   <section class="sec-h"><h2>Tu programa</h2><span class="small muted">${esc(PROG().t)}</span></section>
   <div class="rlist">${PH().map((p,i)=>`<div class="ritem ${i===S.phase?'now':''}"><span class="ic o">0${i+1}</span><div><b>${esc(p.n)}${i===S.phase?' <span class="dtag">Ahora</span>':''}</b><small>${esc(p.d)}</small></div></div>`).join('')}</div>`;
 }
 
 
+
+// ---- guías dentro de la app y herramientas (checklist de hábitos)
+let GSEL=null,TSEL=null,GBACK=null;
+function openGuide(g){if(!GUIAS[g])return;GBACK=BSEL;GSEL=g;TSEL=null;tab='res';render();window.scrollTo(0,0)}
+function openTool(t){TSEL=t;GSEL=null;tab='res';render();window.scrollTo(0,0)}
+function closeGuide(){GSEL=null;TSEL=null;BSEL=GBACK||null;GBACK=null;render();window.scrollTo(0,0)}
+function vGuide(){const G=GUIAS[GSEL];const base='bonus/guias/'+GSEL+'/';
+  return `<button class="btn ghost sm" type="button" onclick="closeGuide()">‹ Volver</button>
+  <div class="hello"><span class="lbl">Guía</span><h1>${esc(G.t)}</h1></div>
+  <a class="btn" href="${base}${GSEL}.pdf" download="${esc(G.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ Descargar PDF</a>
+  <div class="gpages">${Array.from({length:G.n},(_,i)=>`<img src="${base}${i+1}.jpg" alt="${esc(G.t)} · página ${i+1}" loading="${i<2?'eager':'lazy'}">`).join('')}</div>
+  <button class="btn ghost" type="button" onclick="closeGuide()">‹ Volver</button>`}
+function vTool(){if(TSEL==='checklist')return `<button class="btn ghost sm" type="button" onclick="closeGuide()">‹ Volver a Recursos</button>
+  <div class="tframe"><iframe id="toolFrame" src="bonus/checklist.html" title="Revisa tu semana"></iframe></div>`;TSEL=null;return vRes()}
+window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data||!e.data.ys||e.data.type!=='checklist')return;
+  const f=document.getElementById('toolFrame');if(!f||e.source!==f.contentWindow)return;
+  S.profile=S.profile||{};S.profile.checklist={at:new Date().toISOString(),res:(e.data.res||[]).slice(0,8)};save();toast('✅ Enviado a Yaron')});
+function checklistKpi(){const c=S.profile&&S.profile.checklist;if(!c||!c.res)return '';const L={ok:'🟢',warn:'🟠',bad:'🔴'};const bad=c.res.filter(r=>r.lv!=='ok');
+  return `<div class="kpi" style="grid-column:1/-1"><small>🔍 Revisión de hábitos · ${fdate(c.at.slice(0,10))}</small><b style="font-size:15px">${c.res.map(r=>`${L[r.lv]||''} ${esc(r.n)}`).join(' · ')}</b>
+  ${bad.length?`<details><summary class="small muted">Ver lo que ha marcado</summary>${bad.map(r=>`<p class="small" style="margin:6px 0 2px"><b>${esc(r.n)}</b> (${r.c}/${r.t})</p><ul class="small muted" style="margin:0;padding-left:18px">${(r.items||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`).join('')}</details>`:'<small class="muted">Sin fugas importantes</small>'}</div>`}
+
 // ================= BONUS =================
 // El entrenador elige en la Ficha qué bonus tiene cada cliente (FICHA.bonus). El cliente los lee en Recursos.
 let BSEL=null;const BDOC={};
-const bonusReady=b=>b&&((b.docs&&b.docs.length)||b.link||b.app);
+const bonusReady=b=>b&&((b.docs&&b.docs.length)||b.link||b.app||b.guia);
 function myBonus(){const ids=(FICHA&&FICHA.bonus)||[];return (window.BONUS||[]).filter(b=>ids.includes(b.id)&&bonusReady(b))}
 let BDSEL={};
 function loadDoc(id){if(BDOC[id])return;BDOC[id]='<p class="small muted">Cargando…</p>';
   fetch('bonus/'+id+'.html?v='+(window.BONUS_V||3)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL)render()})}
 function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)return;
   if(b.app==='recetas'){tab='food';foodTab='recetas';RCAT='all';render();window.scrollTo(0,0);return}
+  if(b.guia&&!b.docs){GSEL=b.guia;GBACK=null;TSEL=null;tab='res';render();window.scrollTo(0,0);return}
   if(b.link&&!b.docs){window.open(b.link,'_blank','noopener');return}
   BSEL=id;tab='res';render();window.scrollTo(0,0)}
 function bonusDoc(b,d){BDSEL[b]=d;render();const el=document.getElementById('bread');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
@@ -755,7 +784,7 @@ function openFindeCard(){const sh=document.getElementById('sheet');
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 function bonusPanel(){const L=window.BONUS||[];const on=FICHA.bonus||[];
   const row=b=>{const ok=bonusReady(b);const nv=(b.videos||[]).length,ny=(b.videos||[]).filter(v=>ytId(v.yt)).length;
-    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
+    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.guia?'✅ Guía dentro de la app':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
   return `<div class="panel"><div class="sec-h"><span class="lbl">🎁 Bonus de ${esc(FICHA.nombre||'este cliente')}</span><span class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="bonusAll('main')">Solo principales</button><button class="btn ghost sm" type="button" onclick="bonusAll('all')">Todos</button><button class="btn ghost sm" type="button" onclick="bonusAll('none')">Ninguno</button></span></div>
   <p class="small muted" style="margin:0">Marca los que le das. Los verá en su app, en Recursos › 🎁 Tus bonus, y podrá leerlos dentro de la app o descargarlos en PDF.</p>
   <div class="blist2">${L.map(row).join('')}</div></div>`}
@@ -841,6 +870,7 @@ function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));con
     ${kpi('👟 Media de pasos (7 días)',s7!=null?s7.toLocaleString('es-ES'):'—',`${CLIENT.stepsGoal?'Objetivo '+CLIENT.stepsGoal.toLocaleString('es-ES')+' · ':''}${sp!=null?'semana anterior '+sp.toLocaleString('es-ES'):'sin datos la semana anterior'}`,s7!=null&&CLIENT.stepsGoal?(s7>=CLIENT.stepsGoal?'good':s7>=CLIENT.stepsGoal*.8?'':'badc'):'')}
     ${kpi('⚖️ Peso',W.length>1?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:W.length?nf1(W[0].peso)+' kg':'—',dW!=null?`${sg(dW)} kg · ${fdate(W[0].date)} → ${fdate(W[W.length-1].date)}`:W.length?'Solo un peso en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin pesos en esas fechas':'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
     ${kpi('📏 Cintura',C.length>1?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:C.length?nf1(C[0].cintura)+' cm':'—',dC!=null?`${sg(dC)} cm · ${fdate(C[0].date)} → ${fdate(C[C.length-1].date)}`:C.length?'Solo una medida en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin cintura en esas fechas':'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
+    ${checklistKpi()}
     ${kpi('🍽️ Última dieta enviada',pf?fdate(pf):'—',pf?(daysSince(pf)?'Hace '+daysSince(pf)+' días':'Hoy'):'Aún no le has enviado plan',pf&&daysSince(pf)>=28?'badc':'')}
   </div></div>`}
 function weekPanel(){const w=liveWk(),dl=liveDl();

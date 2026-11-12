@@ -1,0 +1,31 @@
+const {chromium}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1280,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  if(p.endsWith('/'))p+='index.html';
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>{errs.push('DIALOG '+d.message().slice(0,100));d.dismiss()});const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+const ids=await p.evaluate(async()=>{const a=await db.createClient('a@t.com',{nombre:'Ana López',objetivo:'perder',sexo:'Mujer',nac:'1990-05-01',altura:165,dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(a);coachSel=a;renderCoach();return [a]});
+await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('res')});await w(300);
+console.log('recursos:',(await p.textContent('#screen')).replace(/\s+/g,' ').slice(0,400));
+await p.click('.ritem >> text=Guía del sueño');await w(800);
+console.log('guia imgs:',await p.locator('.gpages img').count(), await p.evaluate(()=>[...document.querySelectorAll('.gpages img')].slice(0,2).map(i=>i.naturalWidth)));
+await p.screenshot({path:OUT+'/gu1.png'});
+await p.click('text=‹ Volver >> nth=0');await w(300);
+await p.click('.ritem >> text=Dónde se te escapa');await w(1500);await p.evaluate(()=>document.querySelector('.tframe').scrollIntoView({block:'end'}));
+const fr=p.frame({url:/checklist/});await fr.click('#start');await w(200);await fr.click('label.item >> nth=0');await fr.click('label.item >> nth=3');
+for(let i=0;i<5;i++){await fr.click('#next');await w(150)}
+await w(300);await p.screenshot({path:OUT+'/gu2.png'});
+await fr.click('#sendY');await w(800);
+console.log('guardado:',await p.evaluate(()=>JSON.stringify(S.profile.checklist&&S.profile.checklist.res.map(r=>r.n+':'+r.lv))));
+await p.setViewportSize({width:1280,height:900});await p.evaluate(()=>{setView('coach');coachTab='ficha';renderCoach()});await w(500);
+console.log('coach kpi:',(await p.textContent('#coachView')).includes('Revisión de hábitos'));
+console.log('ERR',errs);await b.close()})();
