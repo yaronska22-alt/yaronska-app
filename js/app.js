@@ -52,16 +52,8 @@ const GUIAS={recetas:{t:'Libro de recetas',n:25},salsas:{t:'10 salsas fit',n:6},
   mealprep:{t:'Guía de meal prep',n:4},medidas:{t:'Guía de medidas corporales',n:6},sueno:{t:'Guía del sueño',n:8},estres:{t:'Guía del estrés',n:11}};
 const RESOURCES=[
   {t:'¿Dónde se te escapa el progreso?',d:'Revisa tu semana en 3 minutos y envíale el resultado a Yaron',tool:'checklist',k:'🔍'},
-  {t:'Libro de recetas',d:'49 recetas con las cantidades de tu plan (y casi 1.000 más en Comidas › Recetas)',g:'recetas',k:'📖'},
-  {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',g:'salsas',k:'🥫'},
-  {t:'Guía para comer fuera',d:'Restaurantes sin romper el plan',g:'comerfuera',k:'🍽️'},
-  {t:'Guía de vacaciones',d:'Hotel y buffet sin agobios',g:'vacaciones',k:'🏖️'},
-  {t:'Guía de meal prep',d:'Cocina una vez y come toda la semana',g:'mealprep',k:'🍱'},
-  {t:'Guía de medidas corporales',d:'Cómo medirte para la revisión',g:'medidas',k:'📏'},
-  {t:'Cinta métrica corporal',d:'La que necesitas para tus medidas · Amazon',u:'https://www.amazon.es/dp/B0B1JH9SFW',k:'🛒'},
-  {t:'Guía del sueño',d:'Dormir mejor para perder más',g:'sueno',k:'😴'},
-  {t:'Guía del estrés',d:'Que la cabeza no te sabotee',g:'estres',k:'🧘'}
-];
+  {t:'10 salsas fit',d:'Mucho sabor, pocas calorías',g:'salsas',k:'🥫'}
+]; // las demás guías van dentro de su bonus (solo las tiene quien tiene ese bonus); medidas y cinta métrica, en Check-in
 const yt=n=>'https://www.youtube.com/results?search_query='+encodeURIComponent('como hacer '+n+' tecnica');
 // Tus 18 planificaciones de Google Sheets (3. BOCETOS ENTRENOS PRO)
 let TEMPLATES=[];
@@ -244,7 +236,7 @@ async function enter(user){
   document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
   document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
-  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:go0==='finde'?'res':'home';if(go0==='finde')setTimeout(openFindeCard,400);if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
+  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:go0==='finde'||go0==='findeplan'?'res':'home';if(go0==='finde')setTimeout(openFindeCard,400);if(go0==='findeplan')setTimeout(openFindePlan,400);if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
   if(ME.role==='client'){pushSilent();seenStart()}
   if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
@@ -316,7 +308,7 @@ function setView(v){view=v;if(v==='coach')PREV_FROM=null;document.getElementById
 // al entrar en Entreno se abre el primer día que aún no ha hecho esta semana
 function nextDayIdx(){const R=S.routine||[];if(!R.length)return 0;const dd=drDays().filter(i=>i<R.length);if(dd.length)return dd.includes(dayIdx)?dayIdx:dd[0];let T;try{T=wkTrain()}catch(e){return dayIdx}
   let i=R.findIndex(d=>!d.opt&&!T.dayDone(d));if(i<0)i=R.findIndex(d=>!T.dayDone(d));return i<0?Math.min(dayIdx,R.length-1):i}
-function go(t){if(t==='res'){BSEL=null;GSEL=null;TSEL=null}if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
+function go(t){if(t==='res'||GTAB){BSEL=t==='res'?null:BSEL;GSEL=null;TSEL=null;GTAB=null}if(t==='train'&&t!==tab&&view==='client'&&!PREV_FROM)dayIdx=nextDayIdx();tab=t;render();window.scrollTo(0,0)}
 let R_BUSY=false;
 function render(){if(R_BUSY)return void setTimeout(render);R_BUSY=true;try{_render()}finally{R_BUSY=false}}
 function _render(){
@@ -401,6 +393,7 @@ function vHome(){
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
   ${streakCard()}
+  ${planBBanner()}
   ${objCard()}
   ${vDaily()}
   <section class="phase" aria-label="Fase actual">
@@ -666,12 +659,13 @@ function doneSheet(d,PRS){const T=wkTrain();const sh=document.getElementById('sh
     <p style="margin:0;font-size:16px"><b>${T.done} de ${T.target}</b> esta semana${T.opt?` · + ${T.opt} opcional`:''}</p><p style="margin:0">${msg}</p>${prHTML(PRS)}
     <button class="btn" type="button" onclick="closeSheet();window.scrollTo({top:0,behavior:'smooth'})">Genial</button></div></div>`;
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
-function vCheck(){
+function vCheck(){if(GSEL&&GTAB==='check')return vGuide();
   return `<div class="hello"><span class="lbl">Revisión semanal · ${esc(CLIENT.checkDay)}</span><h1>Tu <em>check-in</em></h1></div>
   <form class="form" onsubmit="sendCheck(event)">
     <span class="lbl">Peso y medidas</span>
     <div class="mgrid">${MEAS.map(([k,l,u])=>`<div class="field"><label for="m-${k}">${l} (${u})</label><input id="m-${k}" inputmode="decimal" ${k==='peso'?'required':''}></div>`).join('')}</div>
-    <p class="small muted" style="margin:-4px 0 0">Mídete siempre igual: en ayunas, mismo día y misma hora. Si tienes dudas, mira la Guía de medidas en Recursos.</p>
+    <p class="small muted" style="margin:-4px 0 0">Mídete siempre igual: en ayunas, mismo día y misma hora.</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn ghost sm" type="button" onclick="openGuide('medidas','check')">📏 ¿Cómo me mido?</button><a class="btn ghost sm" href="https://www.amazon.es/dp/B0B1JH9SFW" target="_blank" rel="noopener">🛒 La cinta métrica que uso</a></div>
     <span class="lbl">Cómo ha ido la semana</span>
     ${SCALES.map(s=>{const v=ck[s.k];return `<div class="sel ${v?'done':''}"><label for="s-${s.k}">${s.t}</label><select id="s-${s.k}" onchange="ck.${s.k}=+this.value;this.closest('.sel').classList.add('done');this.nextElementSibling.textContent=SCALES.find(x=>x.k==='${s.k}').o[this.value-1]"><option value="">Elige del 1 al 5…</option>${s.o.map((o,i)=>`<option value="${i+1}" ${v===i+1?'selected':''}>${i+1} · ${esc(o.split(/[:.]/)[0])}</option>`).join('')}</select><p>${v?esc(s.o[v-1]):'1 = peor · 5 = mejor. Al elegir verás la descripción completa.'}</p></div>`}).join('')}
     <div class="sel ${ck.orina?'done':''}"><label>Hidratación · color de tu orina</label>
@@ -716,23 +710,30 @@ function shrink(file,max){return new Promise((res,rej)=>{const im=new Image();im
 function vRes(){
   if(GSEL)return vGuide();if(TSEL)return vTool();
   if(BSEL)return vBonus();
-  const MB=myBonus();
-  return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>guías</em></h1></div>
-  ${MB.length?`<section class="sec-h"><h2>🎁 Tus bonus</h2></section><div class="blist">${MB.map(b=>`<button type="button" class="bitem ${b.main?'main':''}" onclick="openBonus('${b.id}')"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}</b><small>${esc(b.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}
-  <section class="sec-h"><h2>Guías</h2></section>
-  <div class="rlist">${RESOURCES.map(r=>r.u?`<a class="ritem" href="${r.u}" target="_blank" rel="noopener"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div></a>`
-    :`<button type="button" class="ritem ${r.tool?'tool':''}" onclick="${r.g?`openGuide('${r.g}')`:`openTool('${r.tool}')`}"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div><span class="go">›</span></button>`).join('')}</div>
-  <section class="sec-h"><h2>Tu programa</h2><span class="small muted">${esc(PROG().t)}</span></section>
-  <div class="rlist">${PH().map((p,i)=>`<div class="ritem ${i===S.phase?'now':''}"><span class="ic o">0${i+1}</span><div><b>${esc(p.n)}${i===S.phase?' <span class="dtag">Ahora</span>':''}</b><small>${esc(p.d)}</small></div></div>`).join('')}</div>`;
+  const MB=myBonus();const item=b=>`<button type="button" class="bitem ${b.main?'main':''}" onclick="openBonus('${b.id}')"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}</b><small>${esc(b.s)}</small></div><span class="go">›</span></button>`;
+  const M=MB.filter(b=>b.main),P=MB.filter(b=>!b.main&&!b.app&&b.id!=='cadenas'),F=MB.filter(b=>b.id==='cadenas'),A=MB.filter(b=>b.app==='recetas');const sos=MB.find(b=>b.app==='sos');
+  const T=myTools();
+  return `<div class="hello"><span class="lbl">Recursos</span><h1>Tus <em>recursos</em></h1></div>
+  ${planBBanner()}
+  ${M.length?`<section class="sec-h"><h2>🎁 Tus bonus</h2></section><div class="blist">${M.map(item).join('')}</div>`:''}
+  ${P.length?`<section class="sec-h"><h2>🛡️ Protocolos</h2></section><div class="blist">${P.map(item).join('')}</div>`:''}
+  ${F.length?`<section class="sec-h"><h2>🍽️ Comer fuera</h2></section><div class="blist">${F.map(item).join('')}</div>`:''}
+  <section class="sec-h"><h2>🧰 Herramientas</h2></section>
+  <div class="rlist">${RESOURCES.filter(r=>r.tool).map(r=>`<button type="button" class="ritem tool" onclick="openTool('${r.tool}')"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div><span class="go">›</span></button>`).join('')}
+  ${T.map(k=>{const t=TOOLS[k];return `<button type="button" class="ritem" onclick="${t.f}"><span class="ic">${t.ic}</span><div><b>${esc(t.t)}</b><small>${esc(t.s)}</small></div><span class="go">›</span></button>`}).join('')}</div>
+  <section class="sec-h"><h2>📚 Guías</h2></section>
+  <div class="rlist">${A.map(b=>`<button type="button" class="ritem" onclick="openBonus('${b.id}')"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}</b><small>${esc(b.s)}</small></div><span class="go">›</span></button>`).join('')}${RESOURCES.filter(r=>r.g).map(r=>`<button type="button" class="ritem" onclick="openGuide('${r.g}')"><span class="ic">${r.k}</span><div><b>${esc(r.t)}</b><small>${esc(r.d)}</small></div><span class="go">›</span></button>`).join('')}</div>
+  ${sos?`<button type="button" class="sosbar" onclick="openBonus('${sos.id}')">🆘 <span><b>Videollamada de emergencia</b><small>${esc(sos.s)}</small></span><span class="go">›</span></button>`:''}`;
 }
 
 
 
 // ---- guías dentro de la app y herramientas (checklist de hábitos)
 let GSEL=null,TSEL=null,GBACK=null;
-function openGuide(g){if(!GUIAS[g])return;GBACK=BSEL;GSEL=g;TSEL=null;tab='res';render();window.scrollTo(0,0)}
+let GTAB=null;
+function openGuide(g,from){if(!GUIAS[g])return;GBACK=BSEL;GTAB=from||null;GSEL=g;TSEL=null;tab=from||'res';render();window.scrollTo(0,0)}
 function openTool(t){TSEL=t;GSEL=null;tab='res';render();window.scrollTo(0,0)}
-function closeGuide(){GSEL=null;TSEL=null;BSEL=GBACK||null;GBACK=null;render();window.scrollTo(0,0)}
+function closeGuide(){GSEL=null;TSEL=null;BSEL=GBACK||null;GBACK=null;if(GTAB){tab=GTAB;GTAB=null}render();window.scrollTo(0,0)}
 function vGuide(){const G=GUIAS[GSEL];const base='bonus/guias/'+GSEL+'/';
   return `<button class="btn ghost sm" type="button" onclick="closeGuide()">‹ Volver</button>
   <div class="hello"><span class="lbl">Guía</span><h1>${esc(G.t)}</h1></div>
@@ -752,7 +753,8 @@ function checklistKpi(){const c=S.profile&&S.profile.checklist;if(!c||!c.res)ret
 // El entrenador elige en la Ficha qué bonus tiene cada cliente (FICHA.bonus). El cliente los lee en Recursos.
 let BSEL=null;const BDOC={};
 const bonusReady=b=>b&&((b.docs&&b.docs.length)||b.link||b.app||b.guia);
-function myBonus(){const ids=(FICHA&&FICHA.bonus)||[];return (window.BONUS||[]).filter(b=>ids.includes(b.id)&&bonusReady(b))}
+function bonusIds(){const a=((FICHA&&FICHA.bonus)||[]).map(x=>x==='carta'?'cadenas':x);return [...new Set(a)]}
+function myBonus(){const ids=bonusIds();return (window.BONUS||[]).filter(b=>ids.includes(b.id)&&bonusReady(b))}
 let BDSEL={};
 function loadDoc(id){if(BDOC[id])return;BDOC[id]='<p class="small muted">Cargando…</p>';
   fetch('bonus/'+id+'.html?v='+(window.BONUS_V||3)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL)render()})}
@@ -760,35 +762,42 @@ function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)retur
   if(b.app==='recetas'){tab='food';foodTab='recetas';RCAT='all';render();window.scrollTo(0,0);return}
   if(b.guia&&!b.docs){GSEL=b.guia;GBACK=null;TSEL=null;tab='res';render();window.scrollTo(0,0);return}
   if(b.link&&!b.docs){window.open(b.link,'_blank','noopener');return}
-  BSEL=id;tab='res';render();window.scrollTo(0,0)}
-function bonusDoc(b,d){BDSEL[b]=d;render();const el=document.getElementById('bread');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+  bMarkOpen(id);BSEL=id;tab='res';render();window.scrollTo(0,0)}
+function bonusDoc(b,d){BDSEL[b]=d;BTAB[b]='doc';render();const el=document.getElementById('bread');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 const ytId=u=>{const m=String(u||'').match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:''};
+let BTAB={};
 function vBonus(){const b=(window.BONUS||[]).find(x=>x.id===BSEL);if(!b){BSEL=null;return vRes()}
   const V=(b.videos||[]).filter(v=>ytId(v.yt));const D=b.docs||[];const cur=D.find(d=>d.id===BDSEL[b.id])||D[0];if(cur&&!cur.page&&!cur.g)loadDoc(cur.id);
   const rel=(b.rel||[]).map(id=>myBonus().find(x=>x.id===id)).filter(Boolean);
+  const tabs=V.length&&D.length;const tb=tabs?(BTAB[b.id]||'vid'):(V.length?'vid':'doc');
+  const nSeen=V.filter(v=>bVidOn(b.id,ytId(v.yt))).length;
+  const sosUsed=b.app==='sos'&&(FICHA.sosUsed||[]).includes(S.phase);
+  const docHTML=cur?(cur.g?`<div class="gpages" id="bread">${Array.from({length:cur.n},(_,i)=>`<img src="bonus/guias/${cur.g}/${i+1}.jpg" alt="${esc(cur.t)} · página ${i+1}" loading="${i<2?'eager':'lazy'}">`).join('')}</div>`:cur.page?`<div class="bframe" id="bread"><iframe src="${cur.page}" title="${esc(cur.t)}" loading="lazy"></iframe><a class="btn ghost sm" href="${cur.page}" target="_blank" rel="noopener">Abrir a pantalla completa ↗</a></div>`:`<div class="bread" id="bread">${cur.id==='turnos'?turnosMark(BDOC[cur.id]||''):(BDOC[cur.id]||'')}</div>`):'';
   return `<button class="btn ghost sm" type="button" onclick="BSEL=null;render()">‹ Volver a Recursos</button>
   <div class="hello"><span class="lbl">${b.ic} Bonus</span><h1>${esc(b.t)}</h1><p class="small muted" style="margin:0">${esc(b.s)}</p></div>
-  ${b.app==='sos'?`<div class="panel"><p style="margin:0 0 10px">${esc(b.d)}</p><button class="btn" type="button" onclick="window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola Yaron, quiero pedir mi videollamada de emergencia.'),'_blank')">Pedir mi videollamada</button></div>`:''}
-  ${b.id==='kit'?`<button class="cookbtn" type="button" onclick="openCooked()">🔥 Calculadora crudo → cocinado <span>Cuánto pesar si ya está hecho</span></button>`:''}
-  ${b.id==='finde'?`<button class="cookbtn" type="button" onclick="openFindeCard()">🍻 Chuleta del finde <span>Tus reglas en 1 pantalla</span></button>`:''}
-  ${V.length?`<section class="sec-h"><h2>🎬 Vídeos</h2></section><div class="vlist">${V.map(v=>`<div class="vbox"><b>${esc(v.t)}</b><div class="vfr${/\/shorts\//.test(v.yt)?' vert':''}"><iframe src="https://www.youtube-nocookie.com/embed/${ytId(v.yt)}?rel=0" title="${esc(v.t)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div></div>`).join('')}</div>`:''}
-  ${D.length?`<section class="sec-h"><h2>📄 Documento${D.length>1?'s':''}</h2></section>
+  ${b.app==='sos'?`<div class="panel"><p style="margin:0 0 10px">${esc(b.d)}</p>${sosUsed?`<p class="small" style="margin:0 0 10px;color:var(--warn)">Ya has usado la de esta fase. Si la necesitas igualmente, escríbeme y lo vemos.</p>`:''}<button class="btn" type="button" onclick="window.open('https://wa.me/'+WA+'?text='+encodeURIComponent('Hola Yaron, quiero pedir mi videollamada de emergencia.'),'_blank')">Pedir mi videollamada</button></div>`:''}
+  ${(b.tools||[]).length?`<div class="btools">${b.tools.map(toolBtn).join('')}</div>`:''}
+  ${tabs?`<div class="tabs btabs" role="tablist"><button type="button" role="tab" class="${tb==='vid'?'on':''}" aria-selected="${tb==='vid'}" onclick="BTAB['${b.id}']='vid';render()">🎬 Vídeos <small>${nSeen}/${V.length}</small></button><button type="button" role="tab" class="${tb==='doc'?'on':''}" aria-selected="${tb==='doc'}" onclick="BTAB['${b.id}']='doc';render()">📄 Documento${D.length>1?'s':''} <small>${D.length}</small></button></div>`:''}
+  ${V.length&&tb==='vid'?`${tabs?'':'<section class="sec-h"><h2>🎬 Vídeos</h2></section>'}<div class="vlist">${V.map(v=>{const y=ytId(v.yt),on=bVidOn(b.id,y);return `<div class="vbox"><b>${esc(v.t)}</b><div class="vfr${/\/shorts\//.test(v.yt)?' vert':''}"><iframe src="https://www.youtube-nocookie.com/embed/${y}?rel=0" title="${esc(v.t)}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div><button type="button" class="vseen ${on?'on':''}" onclick="bVid('${b.id}','${y}')" aria-pressed="${on}">${on?'✓ Visto':'Marcar como visto'}</button></div>`}).join('')}</div>${tabs?`<button class="btn ghost" type="button" onclick="BTAB['${b.id}']='doc';render();window.scrollTo(0,0)">Ir al documento ›</button>`:''}`:''}
+  ${D.length&&tb==='doc'?`${tabs?'':`<section class="sec-h"><h2>📄 Documento${D.length>1?'s':''}</h2></section>`}
   <div class="blist">${D.map(d=>`<div class="bitem doc ${cur&&d.id===cur.id?'main':''}"><span class="ic">📄</span><div><b>${esc(d.t)}</b>${d.s?`<small>${esc(d.s)}</small>`:''}</div><span class="row" style="gap:6px;flex:none">${D.length>1?`<button class="btn ghost sm" type="button" onclick="bonusDoc('${b.id}','${d.id}')">${cur&&d.id===cur.id?'Leyendo':'Leer'}</button>`:''}<a class="btn sm" href="${d.g?`bonus/guias/${d.g}/${d.g}.pdf`:`bonus/pdf/${d.id}.pdf`}" download="${esc(d.t)} - Yaronska_Fit.pdf" target="_blank" rel="noopener">⬇️ PDF</a></span></div>`).join('')}</div>
-  ${cur.g?`<div class="gpages" id="bread">${Array.from({length:cur.n},(_,i)=>`<img src="bonus/guias/${cur.g}/${i+1}.jpg" alt="${esc(cur.t)} · página ${i+1}" loading="${i<2?'eager':'lazy'}">`).join('')}</div>`:cur.page?`<div class="bframe" id="bread"><iframe src="${cur.page}" title="${esc(cur.t)}" loading="lazy"></iframe><a class="btn ghost sm" href="${cur.page}" target="_blank" rel="noopener">Abrir a pantalla completa ↗</a></div>`:`<div class="bread" id="bread">${BDOC[cur.id]||''}</div>`}`:''}
+  ${docHTML}`:''}
   ${rel.length?`<section class="sec-h"><h2>También te sirve</h2></section><div class="blist">${rel.map(x=>`<button type="button" class="bitem" onclick="openBonus('${x.id}')"><span class="ic">${x.ic}</span><div><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div><span class="go">›</span></button>`).join('')}</div>`:''}`}
 // chuleta del finde (se abre desde el bonus y desde el aviso de los viernes)
 function openFindeCard(){const sh=document.getElementById('sheet');
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="Chuleta del finde"><div class="sheet-b"><div class="row" style="justify-content:space-between"><h2>🍻 Tu finde, sin culpa</h2><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div>
   <ol class="fcard"><li><b>No llegues con hambre.</b> Haz tus comidas normales hoy.</li><li><b>Proteína + verdura + un solo hidrato.</b> Salsas aparte.</li><li><b>Un agua entre copas</b> y tu límite decidido antes de salir.</li><li><b>Nada de compensar.</b> Ni ayuno, ni cardio de castigo.</li><li><b>El lunes, plan normal</b> desde el desayuno. Si la báscula sube 1-2 kg, es agua.</li></ol>
-  ${myBonus().some(x=>x.id==='finde')?`<button class="btn ghost" type="button" onclick="closeSheet();openBonus('finde')">Ver el bonus completo</button>`:''}</div></div>`;
+  ${myBonus().some(x=>x.id==='finde')?`<button class="btn" type="button" onclick="openFindePlan()">🗓️ ${findePlanNow()?'Ver mi plan del finde':'Hacer mi plan del finde'}</button><button class="btn ghost" type="button" onclick="closeSheet();openBonus('finde')">Ver el bonus completo</button>`:''}</div></div>`;
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
-function bonusPanel(){const L=window.BONUS||[];const on=FICHA.bonus||[];
+function bonusPanel(){const L=window.BONUS||[];if((FICHA.bonus||[]).includes('carta')){FICHA.bonus=bonusIds();save()}const on=FICHA.bonus||[];
   const row=b=>{const ok=bonusReady(b);const nv=(b.videos||[]).length,ny=(b.videos||[]).filter(v=>ytId(v.yt)).length;
-    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.guia?'✅ Guía dentro de la app':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small></div></label>`};
+    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.guia?'✅ Guía dentro de la app':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small>${on.includes(b.id)&&ok&&!b.app?`<small class="muted" style="display:block">${bSeenTxt(b)}</small>`:''}${(b.obj||[]).length?`<small class="muted" style="display:block">🎯 Al dárselo, añade ${b.obj.length} objetivo${b.obj.length>1?'s':''} a su semana</small>`:''}</div></label>${b.app==='sos'&&on.includes(b.id)?`<label class="small row" style="gap:6px;margin:-2px 0 6px 44px"><input type="checkbox" ${(FICHA.sosUsed||[]).includes(S.phase)?'checked':''} onchange="sosUsed(this.checked)"> Ya la ha usado en esta fase (${esc(PH()[Math.min(S.phase,PH().length-1)].n)})</label>`:''}`};
   return `<div class="panel"><div class="sec-h"><span class="lbl">🎁 Bonus de ${esc(FICHA.nombre||'este cliente')}</span><span class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="bonusAll('main')">Solo principales</button><button class="btn ghost sm" type="button" onclick="bonusAll('all')">Todos</button><button class="btn ghost sm" type="button" onclick="bonusAll('none')">Ninguno</button></span></div>
   <p class="small muted" style="margin:0">Marca los que le das. Los verá en su app, en Recursos › 🎁 Tus bonus, y podrá leerlos dentro de la app o descargarlos en PDF.</p>
   <div class="blist2">${L.map(row).join('')}</div></div>`}
-function bonusToggle(id,v){const a=new Set(FICHA.bonus||[]);v?a.add(id):a.delete(id);FICHA.bonus=(window.BONUS||[]).map(b=>b.id).filter(x=>a.has(x));save();renderCoach()}
+function bonusToggle(id,v){const a=new Set(bonusIds());v?a.add(id):a.delete(id);FICHA.bonus=(window.BONUS||[]).map(b=>b.id).filter(x=>a.has(x));
+  const n=v?bonusObjs((window.BONUS||[]).find(b=>b.id===id)):0;save();renderCoach();if(n)toast(`🎯 ${n} objetivo${n>1?'s':''} añadido${n>1?'s':''} a su semana (los ves en Hábitos y retos)`)}
+function sosUsed(v){const a=new Set(FICHA.sosUsed||[]);v?a.add(S.phase):a.delete(S.phase);FICHA.sosUsed=[...a];save();renderCoach()}
 function bonusAll(m){FICHA.bonus=(window.BONUS||[]).filter(b=>m==='all'||(m==='main'&&b.main)).map(b=>b.id);save();renderCoach();toast(m==='none'?'Sin bonus':'Bonus actualizados')}
 
 // ---- ¿Ya está cocinado? Equivalencia crudo → cocinado (factores aproximados; los mismos que el Kit de Arranque)
@@ -814,7 +823,7 @@ async function refreshList(){
   CL=clients.map(c=>{const a=A[c.id]||{};const f=c.ficha||{};
     return {id:c.id,email:c.email,ficha:f,adm:a,linked:!!c.user_id,name:(f.nombre||'').trim()||c.email,foto:(c.prefs||{}).foto||'',fase:c.fase,semana:c.semana,
       renov:nextRenewal({renov:a.renovacion||'',tipo:a.tipo||'',alta:a.alta||''}),estado:a.estado||'active',seen:c.last_seen||null,...statusOf(L[c.id]),
-      wk:wkState(LC[c.id]||null,a.pautado_at||null,true),planF:c.plan_fecha||null,calcAt:DC[c.id]||null}});
+      wk:wkState(LC[c.id]||null,a.pautado_at||null,true),planF:c.plan_fecha||null,calcAt:DC[c.id]||null,modo:(c.prefs||{}).modo||null}});
 }
 // Semana del cliente: ¿ha mandado revisión en los últimos 7 días? ¿la he revisado? ¿le he pautado el entreno después?
 function wkState(ck,pAt,hasRut){const lim=iso(daysAgo(7));const recent=ck&&ck.fecha>=lim?ck:null;
@@ -871,6 +880,7 @@ function segPanel(){const D=n=>Array.from({length:n},(_,i)=>iso(daysAgo(i)));con
     ${kpi('⚖️ Peso',W.length>1?`${nf1(W[0].peso)} → ${nf1(W[W.length-1].peso)} kg`:W.length?nf1(W[0].peso)+' kg':'—',dW!=null?`${sg(dW)} kg · ${fdate(W[0].date)} → ${fdate(W[W.length-1].date)}`:W.length?'Solo un peso en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin pesos en esas fechas':'Aún sin pesos',dW!=null?(goodDir(dW)?'good':'badc'):'')}
     ${kpi('📏 Cintura',C.length>1?`${nf1(C[0].cintura)} → ${nf1(C[C.length-1].cintura)} cm`:C.length?nf1(C[0].cintura)+' cm':'—',dC!=null?`${sg(dC)} cm · ${fdate(C[0].date)} → ${fdate(C[C.length-1].date)}`:C.length?'Solo una medida en esas fechas: hacen falta 2 para comparar':(sf||st)?'Sin cintura en esas fechas':'Aún sin medidas de cintura',dC!=null?(dC<0?'good':dC>0&&CLIENT.goal==='perder'?'badc':''):'')}
     ${objKpi()}
+    ${bonusKpi()}
     ${checklistKpi()}
     ${kpi('🍽️ Última dieta enviada',pf?fdate(pf):'—',pf?(daysSince(pf)?'Hace '+daysSince(pf)+' días':'Hoy'):'Aún no le has enviado plan',pf&&daysSince(pf)>=28?'badc':'')}
   </div></div>`}
@@ -892,7 +902,7 @@ function weekPanel(){const w=liveWk(),dl=liveDl();
 function coachItem(s){
   const live=CUR&&s.id===CUR.id;const name=live?CLIENT.name:s.name;const foto=live?S.profile.foto:s.foto;
   const ren=live?nextRenewal(FICHA):s.renov;const fase=live?S.phase:s.fase,sem=live?S.week:s.semana;
-  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk,live?liveDl():dlInfo((s.adm||{}).descarga_at||'',(s.adm||{}).alta||''))}${dietChip(live?(S.planCalc&&S.planCalc.fecha)||s.planF:s.planF,s.calcAt)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':esc(s.t)}</span></button>`;
+  return `<button type="button" class="citem ${s.id===coachSel?'on':''}" onclick="selectClient('${s.id}')"><span class="av">${foto?`<img src="${foto}" alt="">`:esc((name[0]||'?').toUpperCase())}</span><div><b>${esc(name)}</b><small>${esc(phOf(live?FICHA:s.ficha,fase).n)} · sem ${sem}</small>${ren?`<small style="display:block">Renueva: ${new Date(ren+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</small>`:''}${s.linked?`<small style="display:block" id="seen-${s.id}">${seenBadge(s.seen)}</small>`:''}${wkChips(live?liveWk():s.wk,live?liveDl():dlInfo((s.adm||{}).descarga_at||'',(s.adm||{}).alta||''))}${modoChip(live?S.profile:{modo:s.modo})}${dietChip(live?(S.planCalc&&S.planCalc.fecha)||s.planF:s.planF,s.calcAt)}</div><span class="st ${s.linked?s.st:'warn'}">${!s.linked?'Sin activar':s.st==='ok'?'Al día':esc(s.t)}</span></button>`;
 }
 async function selectClient(id){
   refreshItem();PDRAFT={};

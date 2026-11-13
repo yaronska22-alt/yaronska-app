@@ -1,5 +1,5 @@
 // Avisos push de Yaronska App.
-// - Lo llama pg_cron cada 15 min (cabecera x-cron-secret): víspera de la revisión, mañana de la revisión, chuleta del finde (viernes 18:00), objetivos de la semana (inicio y cierre) y registro diario.
+// - Lo llama pg_cron cada 15 min (cabecera x-cron-secret): víspera de la revisión, mañana de la revisión, plan del finde (jueves 19:00), chuleta del finde (viernes 18:00), objetivos de la semana (inicio y cierre) y registro diario.
 // - Lo llama el entrenador desde el panel (con su sesión) para enviar un aviso de prueba, de revisión revisada o de logro a un cliente.
 import { createClient } from "npm:@supabase/supabase-js@2.117.0";
 import webpush from "npm:web-push@3.6.7";
@@ -98,6 +98,10 @@ Deno.serve(async (req) => {
     // viernes por la tarde: chuleta del finde (clientes con el bonus Fin de Semana Sin Culpa)
     if (!sent && now.wd === 5 && p.nFinde !== false && Array.isArray(f.bonus) && f.bonus.includes("finde") && inWin(now.min, toMin(p.horaFinde, "18:00")) && await once(c.id, "finde", now.date)) {
       await sendTo(c.id, { title: "🍻 Llega el finde", body: `${first ? first + ", r" : "R"}ecuerda tus reglas: no llegues con hambre, proteína + verdura + un hidrato, agua entre copas y el lunes, plan normal.`, url: "/?go=finde", tag: "finde" }); sent = true; out.push(c.id + ":finde");
+    }
+    // jueves por la tarde: que haga su plan del finde (bonus Fin de Semana Sin Culpa), si no lo ha hecho ya
+    if (!sent && now.wd === 4 && p.nFinde !== false && Array.isArray(f.bonus) && f.bonus.includes("finde") && !(p.findePlan && p.findePlan.w === addDays(now.date, 1)) && inWin(now.min, toMin(p.horaFindePlan, "19:00")) && await once(c.id, "findeplan", now.date)) {
+      await sendTo(c.id, { title: "🗓️ ¿Qué planes tienes este finde?", body: `${first ? first + ", d" : "D"}ecide hoy qué te vas a dar y cuántas copas como máximo. 1 minuto y el lunes, sin sustos.`, url: "/?go=findeplan", tag: "finde" }); sent = true; out.push(c.id + ":findeplan");
     }
     // objetivos de la semana (la semana va de revisión a revisión): primer día de la semana y cierre el día de la revisión
     if (!sent && p.nObj !== false && revDay >= 0) {

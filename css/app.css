@@ -851,3 +851,26 @@ button.ritem{width:100%;text-align:left;color:var(--fg);font:inherit}
 .objnote{border:1px solid var(--line-2);border-radius:8px;padding:10px}.objnote p{margin:4px 0 0}
 details>summary{cursor:pointer;padding:6px 0}
 @media (max-width:760px){.objed{grid-template-columns:1fr auto;}.objed .objk{grid-column:1/-1;justify-self:start}.objed>span.small{grid-column:1/-1}}
+
+/* Herramientas de los bonus */
+.btools{display:flex;flex-direction:column;gap:8px}
+.cookbtn.on{background:var(--y);color:var(--on-y)}.cookbtn.on span{color:var(--on-y)}
+.btabs button small{opacity:.7;font-weight:500;margin-left:4px}
+.vseen{align-self:flex-start;border:1px solid var(--line-2);background:transparent;color:var(--muted);border-radius:16px;padding:5px 12px;font-size:12.5px;font-weight:600}
+.vseen.on{border-color:var(--ok);color:var(--ok)}
+.vbox{display:flex;flex-direction:column;gap:8px}
+.tbig{font-family:var(--display);font-weight:900;font-size:54px;text-align:center;color:var(--y);font-variant-numeric:tabular-nums;line-height:1}
+.tnow{text-align:center;font-weight:700;font-size:18px}
+.tsteps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.tsteps li{color:var(--muted);cursor:pointer}.tsteps li small{display:block;font-size:12.5px}
+.tsteps li.on{color:var(--fg)}.tsteps li.on b,.tsteps li.on{font-weight:700}.tsteps li.ok{color:var(--ok);text-decoration:line-through}
+.breath{display:grid;place-items:center;height:220px;position:relative}
+.bcirc{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,10,.55),rgba(255,214,10,.12));border:2px solid var(--y);transition:transform 4s ease-in-out}
+.bcirc.run[data-ph=in]{transform:scale(2.1);transition-duration:4s}.bcirc.run[data-ph=out]{transform:scale(1);transition-duration:6s}
+.breath b{position:absolute;bottom:4px;font-size:16px}
+@media (prefers-reduced-motion:reduce){.bcirc{transition:none!important}}
+.mlist{display:flex;flex-direction:column;gap:6px}.mlist .objr{width:100%;text-align:left;background:transparent;color:var(--fg)}
+.sosbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--bad);background:rgba(255,107,91,.08);color:var(--fg);border-radius:10px;padding:12px 14px;font-size:22px}
+.sosbar span:nth-child(1){flex:1}.sosbar b{display:block;font-size:15px}.sosbar small{font-size:12.5px;color:var(--muted)}.sosbar .go{color:var(--bad)}
+.bread tr.tmine td{background:rgba(255,214,10,.16)!important;color:var(--fg)}
+.tmine-n{margin:0 0 6px;font-size:14px}

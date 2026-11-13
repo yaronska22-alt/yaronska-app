@@ -35,7 +35,8 @@ function revDow(){const i=DOW_ES.indexOf((FICHA&&FICHA.revFis)||'Domingo');retur
 const objAdd=(k,n)=>{const d=new Date(k+'T12:00');d.setDate(d.getDate()+n);return iso(d)};
 function objWk(k){const d=new Date(k+'T12:00');const s=(revDow()+1)%7;d.setDate(d.getDate()-((d.getDay()-s+7)%7));return iso(d)}
 const objDays=w=>Array.from({length:7},(_,i)=>objAdd(w,i));
-function objList(w){const O=(FICHA&&FICHA.objs)||{};if(Array.isArray(O[w]))return {L:O[w],own:true,from:w};
+function objList(w){const M=typeof objMode==='function'&&objMode(w);if(M)return {L:M.L,own:true,from:w,mode:M.k};return objListBase(w)}
+function objListBase(w){const O=(FICHA&&FICHA.objs)||{};if(Array.isArray(O[w]))return {L:O[w],own:true,from:w};
   const prev=Object.keys(O).filter(k=>k<w&&Array.isArray(O[k])).sort().pop();return {L:prev?O[prev]:[],own:false,from:prev||null}}
 const wkLbl=w=>{const a=new Date(w+'T12:00'),b=new Date(objAdd(w,6)+'T12:00');const f=d=>d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});return `${f(a)} → ${f(b)}`};
 
@@ -57,7 +58,7 @@ function objCard(){const k=dKey();const w=objWk(k);const {L}=objList(w);
   const H=L.filter(o=>o.k==='d'),R=L.filter(o=>o.k==='s');
   const dots=o=>objDays(w).map(d=>`<i class="${S.daily[d]&&S.daily[d].obj&&S.daily[d].obj[o.id]?'on':d>todayK?'fut':''}${d===k?' cur':''}"></i>`).join('');
   return `<section class="objc" aria-label="Objetivos de la semana">
-    <div class="objc-h"><h2>🎯 Tus objetivos de la semana</h2><span class="small muted">${wkLbl(w)} · se cierra el día de tu revisión</span></div>
+    <div class="objc-h"><h2>🎯 Tus objetivos de la semana</h2>${objMode(w)?`<span class="dtag">${MODOS[objMode(w).k].ic} ${MODOS[objMode(w).k].n}</span>`:''}<span class="small muted">${wkLbl(w)} · se cierra el día de tu revisión</span></div>
     ${prevPend?`<button type="button" class="objclose warn" onclick="openObjClose('${pw}')">📝 Cierra tu semana pasada <span>Dime cómo te han ido tus objetivos</span></button>`:''}
     ${H.length?`<div class="objsec"><span class="lbl">Cada día</span>${H.map(o=>{const on=!!(S.daily[k]&&S.daily[k].obj&&S.daily[k].obj[o.id]);const n=habN(w,o.id);return `<div class="objr ${on?'on':''}"><button type="button" class="objck" onclick="objTick('${o.id}')" aria-pressed="${on}" aria-label="${esc(o.t)} · ${dayL}">${on?'✓':''}</button><div><b>${esc(o.t)}</b><span class="objdots">${dots(o)}</span></div><small class="${n>=(o.m||7)?'good':''}">${n}/${o.m||7} días</small></div>`}).join('')}<p class="small muted" style="margin:0">Marca ${DSEL?'lo que cumpliste ese día':'lo que cumples hoy'}. La meta es el número de días de la semana.</p></div>`:''}
     ${R.length?`<div class="objsec"><span class="lbl">Retos de la semana</span>${R.map(o=>{const d=retoDay(w,o.id);return `<div class="objr ${d?'on':''}"><button type="button" class="objck" onclick="objReto('${o.id}')" aria-pressed="${!!d}" aria-label="${esc(o.t)}">${d?'✓':''}</button><div><b>${esc(o.t)}</b>${d?`<small class="muted">Hecho el ${new Date(d+'T12:00').toLocaleDateString('es-ES',{weekday:'long'})}</small>`:''}</div><small>${d?'🏁':''}</small></div>`}).join('')}</div>`:''}
@@ -84,7 +85,7 @@ function saveObjClose(){const {w}=OCL;const k=OCL.day||iso(new Date());const d=S
 let OWK=null,OLIB=null,OLIB_LOAD=false;
 function objLibMine(){if(OLIB===null&&!OLIB_LOAD){OLIB_LOAD=true;db.getSetting('objLib').then(v=>{OLIB=Array.isArray(v)?v:[];renderCoach()}).catch(()=>{OLIB=[]})}return OLIB||[]}
 async function objLibSave(){try{await db.setSetting('objLib',OLIB)}catch(e){toast('No se ha podido guardar tu biblioteca')}}
-function objEdit(w){FICHA.objs=FICHA.objs||{};if(!Array.isArray(FICHA.objs[w]))FICHA.objs[w]=objList(w).L.map(o=>Object.assign({},o));return FICHA.objs[w]}
+function objEdit(w){FICHA.objs=FICHA.objs||{};if(!Array.isArray(FICHA.objs[w]))FICHA.objs[w]=objListBase(w).L.map(o=>Object.assign({},o));return FICHA.objs[w]}
 const objId=()=>'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 function objAddItem(src){const w=OWK;const L=objEdit(w);if(L.some(o=>o.t.trim().toLowerCase()===src.t.trim().toLowerCase())){toast('Ya lo tiene esta semana');return}
   L.push({id:objId(),k:src.k,t:src.t.trim(),m:src.k==='d'?(+src.m||5):0});save();renderCoach();toast('Añadido a la semana')}
@@ -96,7 +97,7 @@ function objNew(){const t=(document.getElementById('onT')||{}).value||'';const k
   if(keep){const L=objLibMine();if(!L.some(x=>x.t.toLowerCase()===t.trim().toLowerCase())){L.push({lib:'u'+Date.now().toString(36),k,t:t.trim(),m:k==='d'?+m:0});OLIB=L;objLibSave()}}
   objAddItem({k,t,m})}
 function objLibDel(id){OLIB=objLibMine().filter(x=>x.lib!==id);objLibSave();renderCoach()}
-function objCopyPrev(){const w=OWK;const prev=objList(objAdd(w,-7));FICHA.objs=FICHA.objs||{};FICHA.objs[w]=prev.L.map(o=>Object.assign({},o));save();renderCoach();toast('Copiados de la semana anterior')}
+function objCopyPrev(){const w=OWK;const prev=objListBase(objAdd(w,-7));FICHA.objs=FICHA.objs||{};FICHA.objs[w]=prev.L.map(o=>Object.assign({},o));save();renderCoach();toast('Copiados de la semana anterior')}
 
 // Sugerencias según sus datos: [id, motivo]
 function objSug(){const f=FICHA,out=[];const n=v=>{const x=parseFloat(String(v??'').replace(',','.'));return isNaN(x)?null:x};const add=(id,why)=>{if(!out.some(x=>x[0]===id))out.push([id,why])};
@@ -121,7 +122,7 @@ function objSug(){const f=FICHA,out=[];const n=v=>{const x=parseFloat(String(v??
   if((f.bonus||[]).includes('finde')&&!/^no$/i.test(f.haceEj||''))add('finde','Tiene el bonus Fin de Semana Sin Culpa');
   return out}
 
-function objCoach(){if(!OWK)OWK=objWk(iso(new Date()));const w=OWK,tw=objWk(iso(new Date()));const {L,own,from}=objList(w);const mine=objLibMine();
+function objCoach(){if(!OWK)OWK=objWk(iso(new Date()));const w=OWK,tw=objWk(iso(new Date()));const {L,own,from}=objListBase(w);const MD=objMode(w);const mine=objLibMine();
   const name=esc((FICHA.nombre||'el cliente').split(' ')[0]);const inL=t=>L.some(o=>o.t.toLowerCase()===t.toLowerCase());
   const tag=w===tw?'Esta semana':w>tw?'Próxima':'Pasada';
   const res=o=>{const a=objAuto(w,o);const c=objCierre(w);const cr=c&&c.r&&c.r[o.id];return `<span class="small">${o.k==='d'?`${habN(w,o.id)}/${o.m||7} días`:retoDay(w,o.id)?'🏁 '+fmtDM(retoDay(w,o.id)):'Sin hacer'} ${w<tw?R_IC[a]:''}${cr?` · ${name}: ${R_IC[cr]}`:''}</span>`};
@@ -133,6 +134,7 @@ function objCoach(){if(!OWK)OWK=objWk(iso(new Date()));const w=OWK,tw=objWk(iso(
     <p class="small muted" style="margin:0">El día de entreno o descanso lo sigue marcando siempre: con eso cambian sus pasos objetivo y su plan de comidas.</p></div>
   <div class="panel"><div class="sec-h"><span class="lbl">🎯 Objetivos de ${name} · ${tag}</span><div class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="OWK=objAdd(OWK,-7);renderCoach()" aria-label="Semana anterior">‹</button><span class="small">${wkLbl(w)}</span><button class="btn ghost sm" type="button" onclick="OWK=objAdd(OWK,7);renderCoach()" aria-label="Semana siguiente">›</button>${w!==tw?`<button class="btn ghost sm" type="button" onclick="OWK=null;renderCoach()">Hoy</button>`:''}</div></div>
     <p class="small muted" style="margin:0">La semana va de revisión a revisión (${esc(FICHA.revFis||'Domingo').toLowerCase()}). ${!own&&from?`Son los de la semana del ${fmtDM(from)}: si no cambias nada, se repiten. Si los tocas, el cambio vale desde esta semana.`:!L.length?'Aún no tiene objetivos. Elige de sugeridos, de la biblioteca o crea uno.':'Se repiten las semanas siguientes hasta que los cambies.'}</p>
+    ${MD?`<div class="objnote"><b>${MODOS[MD.k].ic} ${name} ha activado «${MODOS[MD.k].n}» para esta semana.</b><p class="small">Mientras dure, en su app ve estos objetivos en lugar de los tuyos: ${MD.L.map(o=>esc(o.t)).join(' · ')}.</p><button class="btn ghost sm" type="button" onclick="delete S.profile.modo;save();renderCoach()">Quitarle el modo</button></div>`:''}
     ${L.length?`<div class="objlist">${L.map((o,i)=>`<div class="objed"><span class="objk ${o.k}">${o.k==='d'?'Hábito diario':'Reto semanal'}</span><input value="${esc(o.t)}" aria-label="Texto del objetivo" onchange="objSet(${i},'t',this.value)">${o.k==='d'?`<select aria-label="Días meta" onchange="objSet(${i},'m',this.value)">${[1,2,3,4,5,6,7].map(d=>`<option value="${d}" ${(o.m||7)===d?'selected':''}>${d} de 7 días</option>`).join('')}</select>`:'<span></span>'}${res(o)}<button class="btn ghost sm" type="button" onclick="objDel(${i})" aria-label="Quitar">✕</button></div>`).join('')}</div>`:''}
     ${L.length>5?`<p class="small" style="margin:0;color:var(--warn)">Lleva ${L.length} objetivos: con más de 5 suele no cumplir ninguno.</p>`:''}
     ${!L.length&&objList(objAdd(w,-7)).L.length?`<button class="btn ghost sm" type="button" onclick="objCopyPrev()">Copiar los de la semana anterior</button>`:''}

@@ -18,7 +18,7 @@ await p.click('.ftabs >> text=Bonus');await w(300);await p.click('text=Todos');a
 console.log('en preparación:',await p.locator('.brow:has-text("En preparación")').count());
 await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('res')});await w(300);
 for(const id of ['libertad','casa','viaje','caotica','meal','atracon','turnos','descanso']){
-  await p.evaluate(i=>{BSEL=null;openBonus(i)},id);await w(700);
+  await p.evaluate(i=>{BSEL=null;BTAB[i]='doc';openBonus(i)},id);await w(700);
   const t=(await p.textContent('#bread')).replace(/\s+/g,' ');
   const hrefs=await p.$$eval('.bitem.doc a',a=>a.map(x=>x.getAttribute('href')));
   const st=await p.evaluate(h=>Promise.all(h.map(x=>fetch(x).then(r=>r.status))),hrefs);

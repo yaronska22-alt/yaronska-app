@@ -16,7 +16,7 @@ if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
 const ids=await p.evaluate(async()=>{const a=await db.createClient('a@t.com',{nombre:'Ana López',objetivo:'perder',sexo:'Mujer',nac:'1990-05-01',altura:165,dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(a);coachSel=a;renderCoach();return [a]});
 await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setView('client');go('res')});await w(300);
 console.log('recursos:',(await p.textContent('#screen')).replace(/\s+/g,' ').slice(0,400));
-await p.click('.ritem >> text=Guía del sueño');await w(800);
+await p.click('.ritem >> text=10 salsas fit');await w(800);
 console.log('guia imgs:',await p.locator('.gpages img').count(), await p.evaluate(()=>[...document.querySelectorAll('.gpages img')].slice(0,2).map(i=>i.naturalWidth)));
 await p.screenshot({path:OUT+'/gu1.png'});
 await p.click('text=‹ Volver >> nth=0');await w(300);
