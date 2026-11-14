@@ -1251,7 +1251,7 @@ function planPreview(k){
   const v=DATA.V[nearK(k)].plan;
   return `<span class="lbl">Vista previa · ${nearK(k)} kcal</span><div class="kpis"><div class="kpi"><small>Desayuno · ${esc(v.breakfast[0].name)}</small><b style="font-size:14px">${esc(v.breakfast[0].items.slice(0,2).join(' · '))}</b></div><div class="kpi"><small>Proteína comida</small><b style="font-size:14px">${esc(v.lunch.protein[0])}</b></div><div class="kpi"><small>Hidrato comida</small><b style="font-size:14px">${esc(v.lunch.carb[0])}</b></div><div class="kpi"><small>Grasa comida</small><b style="font-size:14px">${esc(v.lunch.fat[0])}</b></div></div>`;
 }
-function applyPlan(){const k=+document.getElementById('pk').value;if(!(k>=1300&&k<=3200)){toast('Pon unas kcal entre 1300 y 3200');return}S.kcal=nearK(k);S.planOn=true;S.planCalc=null;S.restOn=document.getElementById('pr').value==='1';planPrev=null;save();toast('Plan de '+S.kcal+' kcal asignado');renderCoach()}
+function applyPlan(){const k=+document.getElementById('pk').value;if(!(k>=1300&&k<=3200)){toast('Pon unas kcal entre 1300 y 3200');return}const k0=S.planCalc?null:S.kcal;S.kcal=nearK(k);try{dlRecordKcal(k0,S.kcal)}catch(e){}S.planOn=true;S.planCalc=null;S.restOn=document.getElementById('pr').value==='1';planPrev=null;save();toast('Plan de '+S.kcal+' kcal asignado');renderCoach()}
 function assignTpl(i){const t=TEMPLATES.concat(TPL_MINE)[i];S.routine=clone(t.days);dayIdx=0;save();toast('Rutina «'+t.name+'» asignada');renderCoach()}
 function saveAsTpl(){const n=TPL_MINE.length+1;TPL_MINE.push({name:'Mi plantilla '+n,desc:'Guardada desde un cliente',days:clone(S.routine)});save();toast('Guardada como «Mi plantilla '+n+'»');renderCoach()}
 boot();
@@ -1280,6 +1280,7 @@ function cDieta(){
     <p class="small muted" style="margin:0">Es tu Calculadora, igual que en el ordenador: Plan calculado, Constructor de comidas y Protocolo dietético, con lista de la compra, meal prep, impresión y libro de recetas. Se guarda sola. Cuando el protocolo esté listo, pulsa <b style="color:var(--fg)">Enviar plan a la app</b> y el cliente lo verá en «Comidas» (con días sin entreno si los tienes activados).</p>
     <p class="small muted" style="margin:0">🛒 Lista de la compra: ábrela en el Protocolo, elige periodo, modo y margen y pulsa <b style="color:var(--fg)">📲 Enviar a su app</b>. ${S.shopList?`<span class="good">Enviada el ${esc(new Date(S.shopList.at).toLocaleDateString('es-ES',{day:'numeric',month:'short'}))} · ${esc(S.shopList.periodo||'')}</span>`:'Aún no le has enviado ninguna.'}</p></div>
   ${restPanel()}
+  ${dlPanel()}
   <div id="calcSlot" class="calc-slot"><p class="muted" id="calcLoading">Cargando la Calculadora…</p></div>`;
 }
 function placeCalc(){
@@ -1325,6 +1326,7 @@ function calcSend(){
   if(mode==='td'&&!restHasCuts()){toast('Indica qué baja en los días sin entreno (o elige «Igual todos los días»)');return}
   CALC.exportCb=d=>{
     if(!d||d.error){toast(d&&d.error||'No se ha podido exportar el plan');return}
+    const prev=S.planCalc;try{dlRecord(prev,d)}catch(e){}
     S.planCalc=d;S.planOn=true;S.restOn=mode==='td'&&!!d.R;save();renderCoach();
     toast(S.restOn?'Plan enviado: el cliente ve días de entreno y de descanso / fin de semana':'Plan enviado: el cliente ve el mismo plan todos los días');
   };
