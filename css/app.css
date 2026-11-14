@@ -897,3 +897,8 @@ details>summary{cursor:pointer;padding:6px 0}
 .dl-acc{margin:6px 0;font-size:13px}.dl-acc summary{cursor:pointer;font-weight:600}
 .dl-tab{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
 .dl-tab th,.dl-tab td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line-2)}
+
+/* Comidas cumplidas (Hoy) */
+.comrow{display:flex;flex-direction:column;gap:6px}
+.comrow>span{font-size:14px}
+.comrow .dots{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;grid-template-columns:none;gap:5px}

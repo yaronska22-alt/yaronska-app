@@ -5,11 +5,16 @@
 // Cierre de semana: S.daily[día en que cierra].cierre={w,r:{id:'ok'|'mid'|'no'},nota,at}
 // FICHA.reg = lo que rellena cada día en «Hoy» (si no está, lo de siempre)
 
-const REG_ITEMS=[['diet','🍽','Dieta cumplida'],['train','🏋','Entreno / descanso'],['steps','👟','Pasos'],['estres','😮‍💨','Estrés'],['energia','⚡','Energía'],['animo','🙂','Ánimo'],['hambre','🍴','Control del hambre'],['sueno','😴','Descanso']];
+const REG_ITEMS=[['diet','🍽','Dieta cumplida'],['comidas','🥗','Comidas cumplidas'],['train','🏋','Entreno / descanso'],['steps','👟','Pasos'],['estres','😮‍💨','Estrés'],['energia','⚡','Energía'],['animo','🙂','Ánimo'],['hambre','🍴','Control del hambre'],['sueno','😴','Descanso']];
 const REG_DEF=['diet','train','steps','estres','energia','animo'];
 const REG_MINI={estres:'Estrés',energia:'Energía',animo:'Ánimo',hambre:'Hambre ok',sueno:'Descanso'};
 const regList=()=>Array.isArray(FICHA&&FICHA.reg)?FICHA.reg:REG_DEF;
 const regOn=k=>regList().includes(k);
+// Nº de comidas del plan (lo elige el entrenador): el cliente marca cuántas ha cumplido cada día
+const nComidas=()=>Math.max(1,Math.min(8,+(FICHA&&FICHA.nComidas)||4));
+function setNComidas(n){FICHA.nComidas=n;save();renderCoach()}
+// «3/4» de un día del diario (usa el nº que tenía ese día)
+function comidasTxt(d){if(!d||d.comidas==null)return null;const N=d.comidasN||nComidas();return {n:d.comidas,N,ok:d.comidas>=N}}
 function regToggle(k){const a=new Set(regList());a.has(k)?a.delete(k):a.add(k);FICHA.reg=REG_ITEMS.map(x=>x[0]).filter(x=>a.has(x));save();renderCoach()}
 
 // Biblioteca de serie. [id, tipo d/s, texto, días meta (hábitos), icono]
@@ -131,6 +136,7 @@ function objCoach(){if(!OWK)OWK=objWk(iso(new Date()));const w=OWK,tw=objWk(iso(
   return `<div class="panel"><span class="lbl">📝 Lo que rellena cada día en «Hoy»</span>
     <p class="small muted" style="margin:0">Elige qué ve ${name} en su registro diario. Lo que quites deja de aparecerle (lo que ya rellenó se queda guardado).</p>
     <div class="row" style="flex-wrap:wrap;gap:6px">${REG_ITEMS.map(([k,ic,l])=>`<button type="button" class="chip ${regOn(k)?'on':''}" onclick="regToggle('${k}')" aria-pressed="${regOn(k)}">${ic} ${l}</button>`).join('')}</div>
+    ${regOn('comidas')?`<div class="row" style="gap:6px;align-items:center;flex-wrap:wrap"><span class="small">🥗 ¿Cuántas comidas tiene ${name} al día?</span>${[2,3,4,5,6].map(n=>`<button type="button" class="chip ${nComidas()===n?'on':''}" onclick="setNComidas(${n})" aria-pressed="${nComidas()===n}">${n}${n===6?' o más':''}</button>`).join('')}${nComidas()>=6?`<select aria-label="Número exacto de comidas" onchange="setNComidas(+this.value)">${[6,7,8].map(n=>`<option value="${n}" ${nComidas()===n?'selected':''}>${n} comidas</option>`).join('')}</select>`:''}</div><p class="small muted" style="margin:0">Cada día marcará cuántas de sus ${nComidas()} comidas ha cumplido.</p>`:''}
     <p class="small muted" style="margin:0">El día de entreno o descanso lo sigue marcando siempre: con eso cambian sus pasos objetivo y su plan de comidas.</p></div>
   <div class="panel"><div class="sec-h"><span class="lbl">🎯 Objetivos de ${name} · ${tag}</span><div class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="OWK=objAdd(OWK,-7);renderCoach()" aria-label="Semana anterior">‹</button><span class="small">${wkLbl(w)}</span><button class="btn ghost sm" type="button" onclick="OWK=objAdd(OWK,7);renderCoach()" aria-label="Semana siguiente">›</button>${w!==tw?`<button class="btn ghost sm" type="button" onclick="OWK=null;renderCoach()">Hoy</button>`:''}</div></div>
     <p class="small muted" style="margin:0">La semana va de revisión a revisión (${esc(FICHA.revFis||'Domingo').toLowerCase()}). ${!own&&from?`Son los de la semana del ${fmtDM(from)}: si no cambias nada, se repiten. Si los tocas, el cambio vale desde esta semana.`:!L.length?'Aún no tiene objetivos. Elige de sugeridos, de la biblioteca o crea uno.':'Se repiten las semanas siguientes hasta que los cambies.'}</p>
