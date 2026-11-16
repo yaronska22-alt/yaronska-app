@@ -1,0 +1,33 @@
+const {chromium,devices}=require('playwright');const fs=require('fs');
+const R=require('path').resolve(__dirname,'..'),OUT=__dirname;
+(async()=>{
+const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:900}});
+await ctx.route('**/*',async r=>{const u=new URL(r.request().url());
+  if(/fonts\.g/.test(u.hostname))return r.fulfill({status:200,body:''});if(u.hostname!=='app.test')return r.abort();
+  let p=decodeURIComponent(u.pathname);if(p==='/')p='/index.html';
+  if(p==='/js/db.js')return r.fulfill({path:OUT+'/mockdb.js',contentType:'text/javascript'});
+  if(p==='/js/supabase-2.117.0.js')return r.fulfill({body:'',contentType:'text/javascript'});
+  const f=R+p;if(fs.existsSync(f))return r.fulfill({path:f});return r.fulfill({status:404,body:'nf'})});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://app.test/');await w(300);
+await p.fill('#aE','yaronska22@gmail.com');await p.fill('#aP','coachpass1');await p.click('button:text-is("Entrar")');await w(500);
+if(await p.isVisible('text=Ahora no'))await p.click('text=Ahora no');
+await p.evaluate(async()=>{const id=await db.createClient('c@t.com',{nombre:'Cli',objetivo:'perder',dias:[1,3,5]},'2026-10-01');await refreshList();await loadClient(id);coachSel=id;
+  S.routine=clone(TEMPLATES[0].days);const d0=S.routine[0];const t=iso(new Date());
+  S.hist[d0.ex[0].n]=[{date:t,day:d0.d,sets:[{kg:60,reps:8,i:0},{kg:60,reps:8,i:1}],ts:Date.now()}];
+  S.hist[d0.ex[1].n]=[{date:t,day:d0.d,sets:[],nota:'Me dolía el hombro',ts:Date.now()}];
+  save();await flushSync();coachTab='sesiones';renderCoach()});
+await w(400);
+console.log('rutina días',await p.evaluate(()=>S.routine.map(d=>d.d+' ('+d.ex.length+')').join(' | ')));
+console.log('chips:',(await p.textContent('.chips')).replace(/\s+/g,' '));
+console.log('select:',await p.$$eval('#sesS option',a=>a.map(o=>o.textContent).join(' || ')));
+console.log('estado:',(await p.textContent('.sesst')).replace(/\s+/g,' '));
+console.log('ejs:',await p.$$eval('.exst',a=>a.map(o=>o.textContent).join(' | ')));
+await p.screenshot({path:OUT+'/ses2a.png',fullPage:true});
+// sesión pendiente
+await p.click('.seswk.pend >> nth=0');await w(300);
+console.log('pend estado:',(await p.textContent('.sesst')).replace(/\s+/g,' '),'| ejs',await p.$$eval('.exst',a=>a.length),'tablas pauta',await p.$$eval('.ptbl',a=>a.length));
+await p.fill('#nsk-1-0','40');await p.fill('#nsr-1-0','10');await p.click('button:text-is("Pautar") >> nth=1');await w(300);
+console.log('next',await p.evaluate(()=>JSON.stringify(S.next[S.routine[1].ex[1].n])));
+await p.screenshot({path:OUT+'/ses2b.png'});
+console.log('ERR',errs);await b.close()})();
