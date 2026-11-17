@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
     if (prof?.role !== "coach" || !body.client_id) return json({ error: "no autorizado" }, 403);
     const msg = body.kind === "revisada"
       ? { title: "📝 Yaron ha revisado tu revisión", body: String(body.msg || "Entra en la app para ver sus comentarios.").slice(0, 140), url: "/?go=home", tag: "revisada" }
+      : body.kind === "navidad"
+      ? { title: String(body.title || "🎄 Tienes un regalo de Navidad").slice(0, 60), body: String(body.msg || "Ábrelo en la app.").slice(0, 160), url: "/?go=navidad", tag: "navidad" }
       : body.kind === "logro"
       ? { title: String(body.title || "🏆 ¡Enhorabuena!").slice(0, 60), body: String(body.msg || "").slice(0, 140), url: "/?go=home", tag: "logro" }
       : { title: "🔔 Aviso de prueba", body: "Así te llegarán los avisos de tu revisión semanal.", url: "/", tag: "prueba" };

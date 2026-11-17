@@ -236,7 +236,7 @@ async function enter(user){
   document.getElementById('auth').hidden=true;document.getElementById('app').hidden=false;
   document.querySelector('.seg').hidden=ME.role!=='coach';document.getElementById('outBtn').hidden=ME.role!=='coach';
   document.getElementById('pkBtn').hidden=ME.role!=='coach'||!db.passkeySupported;
-  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:go0==='finde'||go0==='findeplan'?'res':'home';if(go0==='finde')setTimeout(openFindeCard,400);if(go0==='findeplan')setTimeout(openFindePlan,400);if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
+  const go0=new URLSearchParams(location.search).get('go');tab=['home','food','train','check','res'].includes(go0)?go0:go0==='finde'||go0==='findeplan'?'res':'home';if(go0==='finde')setTimeout(openFindeCard,400);if(go0==='findeplan')setTimeout(openFindePlan,400);if(go0==='navidad')setTimeout(()=>openBonus('navidad'),400);if(go0)history.replaceState(null,'',location.pathname);setView(ME.role==='coach'?'coach':'client');
   if(ME.role==='client'){pushSilent();seenStart()}
   if(OFFER_PK){OFFER_PK=false;offerPasskey()}
 }
@@ -383,6 +383,7 @@ function vHome(){
   const W=clientWeights();const first=W[0]||{peso:0},last=W[W.length-1]||{peso:0};const diff=last.peso-first.peso;const ok=goodDir(diff);
   return `<div class="hello-row"><div class="hello"><span class="lbl">${esc(CLIENT.program)}</span><h1>Hola, <em>${esc(CLIENT.first)}</em></h1></div><button class="me" type="button" onclick="go('perfil')" aria-label="Perfil y ajustes">${avHTML()}</button></div>
   ${revCard()}
+  ${navCard()}
   ${vRemind()}
   ${pushCard()}
   <section class="wchart" aria-label="Tu evolución">
@@ -761,6 +762,7 @@ function loadDoc(id){if(BDOC[id])return;BDOC[id]='<p class="small muted">Cargand
   fetch('bonus/'+id+'.html?v='+(window.BONUS_V||3)).then(r=>r.ok?r.text():Promise.reject()).then(t=>{BDOC[id]=t;if(BSEL)render()}).catch(()=>{BDOC[id]='<p class="small muted">No se ha podido cargar el documento. Revisa tu conexión.</p>';if(BSEL)render()})}
 function openBonus(id){const b=(window.BONUS||[]).find(x=>x.id===id);if(!b)return;
   if(b.app==='recetas'){tab='food';foodTab='recetas';RCAT='all';render();window.scrollTo(0,0);return}
+  if(b.app==='navidad'){bMarkOpen(id);openNavidad();return}
   if(b.guia&&!b.docs){GSEL=b.guia;GBACK=null;TSEL=null;tab='res';render();window.scrollTo(0,0);return}
   if(b.link&&!b.docs){window.open(b.link,'_blank','noopener');return}
   bMarkOpen(id);BSEL=id;tab='res';render();window.scrollTo(0,0)}
@@ -792,12 +794,13 @@ function openFindeCard(){const sh=document.getElementById('sheet');
   sh.hidden=false;sh.onclick=e=>{if(e.target===sh)closeSheet()}}
 function bonusPanel(){const L=window.BONUS||[];if((FICHA.bonus||[]).includes('carta')){FICHA.bonus=bonusIds();save()}const on=FICHA.bonus||[];
   const row=b=>{const ok=bonusReady(b);const nv=(b.videos||[]).length,ny=(b.videos||[]).filter(v=>ytId(v.yt)).length;
-    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.guia?'✅ Guía dentro de la app':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small>${on.includes(b.id)&&ok&&!b.app?`<small class="muted" style="display:block">${bSeenTxt(b)}</small>`:''}${(b.obj||[]).length?`<small class="muted" style="display:block">🎯 Al dárselo, añade ${b.obj.length} objetivo${b.obj.length>1?'s':''} a su semana</small>`:''}</div></label>${b.app==='sos'&&on.includes(b.id)?`<label class="small row" style="gap:6px;margin:-2px 0 6px 44px"><input type="checkbox" ${(FICHA.sosUsed||[]).includes(S.phase)?'checked':''} onchange="sosUsed(this.checked)"> Ya la ha usado en esta fase (${esc(PH()[Math.min(S.phase,PH().length-1)].n)})</label>`:''}`};
+    return `<label class="brow ${on.includes(b.id)?'on':''}"><input type="checkbox" ${on.includes(b.id)?'checked':''} onchange="bonusToggle('${b.id}',this.checked)"><span class="ic">${b.ic}</span><div><b>${esc(b.t)}${b.main?' <span class="dtag">Principal</span>':''}</b><small>${esc(b.d)}</small><small class="${ok?'good':''}" style="display:block">${ok?(b.docs?'✅ '+(b.docs.length>1?b.docs.length+' documentos listos':'Documento listo'):b.guia?'✅ Guía dentro de la app':b.link?'✅ Enlace a tu documento':'✅ Listo')+(nv?` · 🎬 ${ny}/${nv} vídeos subidos`:''):'🛠️ En preparación: el cliente no lo verá hasta que esté listo'}</small>${on.includes(b.id)&&ok&&!b.app?`<small class="muted" style="display:block">${bSeenTxt(b)}</small>`:''}${b.app==='navidad'&&on.includes(b.id)?navCoachTxt():''}${(b.obj||[]).length?`<small class="muted" style="display:block">🎯 Al dárselo, añade ${b.obj.length} objetivo${b.obj.length>1?'s':''} a su semana</small>`:''}</div></label>${b.app==='sos'&&on.includes(b.id)?`<label class="small row" style="gap:6px;margin:-2px 0 6px 44px"><input type="checkbox" ${(FICHA.sosUsed||[]).includes(S.phase)?'checked':''} onchange="sosUsed(this.checked)"> Ya la ha usado en esta fase (${esc(PH()[Math.min(S.phase,PH().length-1)].n)})</label>`:''}`};
   return `<div class="panel"><div class="sec-h"><span class="lbl">🎁 Bonus de ${esc(FICHA.nombre||'este cliente')}</span><span class="row" style="gap:6px"><button class="btn ghost sm" type="button" onclick="bonusAll('main')">Solo principales</button><button class="btn ghost sm" type="button" onclick="bonusAll('all')">Todos</button><button class="btn ghost sm" type="button" onclick="bonusAll('none')">Ninguno</button></span></div>
   <p class="small muted" style="margin:0">Marca los que le das. Los verá en su app, en Recursos › 🎁 Tus bonus, y podrá leerlos dentro de la app o descargarlos en PDF.</p>
   <div class="blist2">${L.map(row).join('')}</div></div>`}
 function bonusToggle(id,v){const a=new Set(bonusIds());v?a.add(id):a.delete(id);FICHA.bonus=(window.BONUS||[]).map(b=>b.id).filter(x=>a.has(x));
-  const n=v?bonusObjs((window.BONUS||[]).find(b=>b.id===id)):0;save();renderCoach();if(n)toast(`🎯 ${n} objetivo${n>1?'s':''} añadido${n>1?'s':''} a su semana (los ves en Hábitos y retos)`)}
+  const n=v?bonusObjs((window.BONUS||[]).find(b=>b.id===id)):0;save();renderCoach();
+  if(v&&id==='navidad')navPush();if(n)toast(`🎯 ${n} objetivo${n>1?'s':''} añadido${n>1?'s':''} a su semana (los ves en Hábitos y retos)`)}
 function sosUsed(v){const a=new Set(FICHA.sosUsed||[]);v?a.add(S.phase):a.delete(S.phase);FICHA.sosUsed=[...a];save();renderCoach()}
 function bonusAll(m){FICHA.bonus=(window.BONUS||[]).filter(b=>m==='all'||(m==='main'&&b.main)).map(b=>b.id);save();renderCoach();toast(m==='none'?'Sin bonus':'Bonus actualizados')}
 

@@ -912,3 +912,37 @@ details>summary{cursor:pointer;padding:6px 0}
 .sesst .bad{color:var(--bad)}
 .exst{font-size:12.5px;font-weight:600;border-radius:12px;padding:3px 9px;border:1px solid var(--line-2)}
 .exst.ok{color:var(--ok);border-color:var(--ok)}.exst.nota{color:var(--warn,#f5a524);border-color:var(--warn,#f5a524)}.exst.no{color:#9a968f;border-style:dashed}
+
+/* Bonus navideño: tarjeta con nieve, ventana de aviso y plan a pantalla completa */
+.xmas{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:2px solid #C8102E;border-radius:16px;padding:16px 14px;color:#fff;cursor:pointer;
+  background:radial-gradient(120% 90% at 50% 0%,#1B5E47 0%,#0F3D2E 70%);box-shadow:inset 0 0 0 4px rgba(212,167,44,.35),0 8px 22px rgba(0,0,0,.35)}
+.xmas::before{content:"";position:absolute;inset:auto 0 0 0;height:6px;background:repeating-linear-gradient(90deg,#C8102E 0 14px,#fff 14px 28px,#1E7B4F 28px 42px)}
+.xmas .xm-ic{font-size:34px;flex:none;position:relative;z-index:1}
+.xmas .xm-t{flex:1;display:flex;flex-direction:column;gap:2px;position:relative;z-index:1}
+.xmas small{font-weight:700;font-size:10.5px;line-height:1.2;letter-spacing:.14em;text-transform:uppercase;color:#F2D27A}
+.xmas b{font-size:19px;line-height:1.15}
+.xmas.sm b{font-size:16px}
+.xmas .xm-t>span{font-size:13px;color:rgba(255,255,255,.85)}
+.xmas .xm-go{flex:none;position:relative;z-index:1;background:#FFD60A;color:#000;font-weight:800;font-size:13px;border-radius:99px;padding:8px 12px;white-space:nowrap}
+.xsnow{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.xsnow i{position:absolute;top:-10px;border-radius:50%;background:#fff;opacity:.75;animation:xfall linear infinite}
+@keyframes xfall{to{transform:translate3d(var(--dx,10px),420px,0)}}
+#navpop{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;
+  background:radial-gradient(120% 80% at 50% 0%,rgba(27,94,71,.97) 0%,rgba(11,47,35,.98) 70%)}
+#navpop .xsnow i{animation-name:xfallBig}
+@keyframes xfallBig{to{transform:translate3d(var(--dx,10px),110vh,0)}}
+#navpop .np-in{position:relative;z-index:1;max-width:380px;width:100%;text-align:center;color:#fff;background:rgba(15,61,46,.6);border:3px solid #C8102E;outline:2px solid #D4A72C;outline-offset:-9px;border-radius:22px;padding:28px 22px 20px;animation:npIn .5s ease}
+@keyframes npIn{from{transform:translateY(24px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+#navpop .np-tree{font-size:64px;line-height:1;filter:drop-shadow(0 0 12px rgba(255,214,10,.55))}
+#navpop small{display:block;margin-top:8px;font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#F2D27A}
+#navpop h2{margin:6px 0 10px;font-size:34px;line-height:1}
+#navpop h2 b{display:block;color:#FF4D5E}
+#navpop p{margin:0 0 10px;font-size:15px;color:rgba(255,255,255,.92)}
+#navpop .np-s{font-size:13.5px;color:rgba(255,255,255,.75)}
+#navpop .np-go{width:100%;margin-top:8px;border:0;border-radius:14px;background:#FFD60A;color:#000;font-weight:800;font-size:17px;padding:15px;cursor:pointer;box-shadow:0 5px 0 #B89400}
+#navpop .np-later{margin-top:10px;background:none;border:0;color:rgba(255,255,255,.75);font-size:14px;text-decoration:underline;cursor:pointer}
+#navov{position:fixed;inset:0;z-index:290;background:#0F3D2E}
+#navov iframe{width:100%;height:100%;border:0;display:block}
+#navov .navx{position:absolute;top:calc(13px + env(safe-area-inset-top,0px));right:14px;width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);background:rgba(11,47,35,.85);color:#fff;font-size:16px;cursor:pointer;z-index:2}
+@media (prefers-reduced-motion:reduce){.xsnow i{animation:none;display:none}#navpop .np-in{animation:none}}
+.xmas:not(.sm){flex-wrap:wrap}.xmas:not(.sm) .xm-t{flex:1 1 calc(100% - 64px)}.xmas:not(.sm) .xm-go{flex:1 1 100%;text-align:center;padding:12px;font-size:15px;margin-bottom:4px}
