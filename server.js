@@ -31,6 +31,7 @@ function baseHeaders(p) {
 function resolveFile(p) {
   if (p === '/' || p === '') return path.join(ROOT, 'index.html');
   if (p === '/navidad' || p === '/navidad/') return path.join(ROOT, 'bonus', 'navidad.html');   // enlace público del lead magnet de Navidad (sin login)
+  if (p === '/empezar' || p === '/empezar/') return path.join(ROOT, 'bonus', 'empezar.html');   // enlace público de la Checklist Antes de Empezar (sin login)
   const f = path.join(ROOT, p);
   if (!f.startsWith(ROOT)) return null;
   if (fs.existsSync(f) && fs.statSync(f).isFile()) return f;

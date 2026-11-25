@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checklist Antes de Empezar</title>
+<meta name="description" content="4 casillas y 2 minutos: si el plan que vas a empezar no las cumple, ya sabes por qué lo dejas.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Checklist Antes de Empezar · Yaronska_Fit">
+<meta property="og:description" content="Antes de empezar otra dieta, revisa esto. 4 casillas y 2 minutos.">
+<meta property="og:url" content="https://app.yaronskafit.com/empezar">
+<meta property="og:image" content="https://app.yaronskafit.com/img/empezar-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: 7 pantallas verticales 9:16 (móvil), fondo negro sólido, títulos Bebas en amarillo, una casilla con check grande por pantalla */
+:root{
+  --bg:#0b0b0a; --screen:#000000; --fg:#f4f1e4; --muted:#a8a596; --line:#2c2b26; --y:#FFD60A; --y-ink:#111110; --off:#3a3932; --panel:#141412;
+  --f-display:"Bebas Neue",Impact,"Arial Narrow",sans-serif;
+  --f-body:"Inter","Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);margin:0;line-height:1.5}
+.deck{display:flex;flex-direction:column;align-items:center;gap:22px;padding-inline:16px;padding-block:22px 40px}
+.s{width:100%;max-width:460px;aspect-ratio:9/16;background:var(--screen);position:relative;overflow:clip;display:flex;flex-direction:column;padding:34px 28px 26px;border:1px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;font:700 11px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+.top b{color:var(--y)}
+h1,h2{font-family:var(--f-display);font-weight:400;line-height:.9;margin:0;color:var(--y);letter-spacing:.01em}
+h2{font-size:54px;margin-bottom:16px}
+p{margin:0 0 12px;font-size:15.5px}
+.muted{color:var(--muted)}
+.foot{margin-top:auto;font:600 11px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:10px;padding-top:12px}
+
+/* check */
+.box{width:64px;height:64px;border:4px solid var(--y);display:grid;place-items:center;flex:none}
+.box svg{width:44px;height:44px}
+.box.filled{background:var(--y)}
+
+/* 1 portada */
+.cover{justify-content:space-between}
+.cover .stack{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.cover .row{display:flex;align-items:center;gap:14px;font:400 30px/1 var(--f-display);color:var(--muted);letter-spacing:.02em}
+.cover .row .box{width:44px;height:44px;border-width:3px}
+.cover .row .box svg{width:30px;height:30px}
+.cover .row.on{color:var(--fg)}
+.tag{display:inline-block;font:800 11px var(--f-body);letter-spacing:.16em;background:var(--y);color:var(--y-ink);padding:5px 9px;margin-bottom:14px}
+.cover h1{font-size:76px;color:var(--fg)}
+@media (max-width:400px){.cover h1{font-size:64px}.cover .row{font-size:26px}}
+.cover h1 em{font-style:normal;color:var(--y)}
+.cover .sub{font-size:16.5px;font-weight:600;margin:14px 0 18px}
+.cover .sub b{color:var(--y)}
+.byline{border-top:1px solid var(--line);padding-top:12px;font:700 11.5px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.byline b{color:var(--fg)}
+
+/* 2 cómo usarlo */
+.how{list-style:none;padding:0;margin:4px 0 20px;display:flex;flex-direction:column;gap:14px}
+.how li{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:center;font-size:15.5px}
+.how li span{width:40px;height:40px;background:var(--y);color:var(--y-ink);display:grid;place-items:center;font:400 26px var(--f-display)}
+.yn{display:flex;gap:10px;margin:0 0 18px}
+.yn div{flex:1;border:2px solid var(--off);padding:10px;text-align:center;font:400 30px/1 var(--f-display)}
+.yn div:first-child{border-color:var(--y);color:var(--y)}
+.quote{background:var(--y);color:var(--y-ink);padding:18px 18px 16px;margin-top:auto}
+.quote p{font:400 36px/0.98 var(--f-display);margin:0;letter-spacing:.01em}
+
+/* casillas */
+.qhead{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.qhead h2{margin:0;font-size:46px}
+.q{font-size:16px;font-weight:600;margin-bottom:16px}
+.blk{border-left:4px solid var(--off);padding:4px 0 4px 14px;margin-bottom:14px}
+.blk .k{font:800 11px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.blk p{margin:0;font-size:14.5px}
+.blk.no .k{color:var(--fg)}
+.blk.no .k i{width:18px;height:18px;border:2px solid var(--fg);display:grid;place-items:center;font:700 12px/1 var(--f-body);font-style:normal}
+.do{background:var(--panel);border:2px solid var(--y);padding:14px 16px}
+.do .k{font:800 11px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--y);margin-bottom:5px}
+.do p{margin:0;font-size:15px;font-weight:600}
+.badge{display:inline-block;font:800 10px var(--f-body);letter-spacing:.14em;background:var(--y);color:var(--y-ink);padding:3px 7px;margin-left:6px;vertical-align:middle}
+.hl{margin-top:14px;font:400 30px/1 var(--f-display);color:var(--y)}
+
+/* resultado */
+.score{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.sc{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;border:1px solid var(--off);padding:10px 12px}
+.sc .marks{display:flex;gap:4px}
+.sc .marks i{width:14px;height:14px;border:2px solid var(--off);display:block}
+.sc .marks i.on{background:var(--y);border-color:var(--y)}
+.sc b{display:block;font:400 24px/1 var(--f-display);color:var(--y);letter-spacing:.02em}
+.sc p{margin:2px 0 0;font-size:13.5px}
+.close h2{font-size:46px;margin-bottom:12px}
+.close .score{gap:7px;margin-bottom:12px}
+.close .sc{padding:7px 10px}
+.close p.txt{font-size:13px;margin-bottom:10px}
+.cta{display:block;background:var(--y);color:var(--y-ink);text-decoration:none;padding:15px 16px;text-align:center}
+.cta b{display:block;font:400 32px/0.95 var(--f-display);letter-spacing:.01em}
+.cta span{display:block;font-size:13px;font-weight:600;margin-top:4px}
+.cta:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+.handle{text-align:center;margin-top:10px;font:700 13px var(--f-body);letter-spacing:.08em;color:var(--muted)}
+.handle b{color:var(--y)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="chk" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#FFD60A" stroke-width="3.6" stroke-linecap="square"/></symbol><symbol id="chkd" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#111110" stroke-width="3.6" stroke-linecap="square"/></symbol></defs></svg>
+<main class="deck">
+
+  <!-- 1 PORTADA -->
+  <section class="s cover" aria-label="Portada">
+    <div class="stack" aria-hidden="true">
+      <div class="row on"><span class="box"><svg><use href="#chk"/></svg></span>Cabe en tu semana</div>
+      <div class="row on"><span class="box"><svg><use href="#chk"/></svg></span>Primera semana fácil</div>
+      <div class="row on"><span class="box"><svg><use href="#chk"/></svg></span>Sabes qué hacer si fallas</div>
+      <div class="row"><span class="box"></span>Lleva tu comida favorita</div>
+    </div>
+    <div>
+      <span class="tag">CHECKLIST GRATIS · 2 MIN</span>
+      <h1>Antes de empezar otra dieta, <em>revisa esto</em></h1>
+      <p class="sub"><b>4 casillas.</b> Si tu plan no las cumple, ya sabes por qué lo dejas.</p>
+      <div class="byline"><b>Yaron</b> · @Yaronska_Fit · Método Anti-Esfuerzo</div>
+    </div>
+  </section>
+
+  <!-- 2 CÓMO USARLO -->
+  <section class="s" aria-label="Cómo usarlo">
+    <div class="top"><span><b>00</b> / Cómo usarlo</span><span>@Yaronska_Fit</span></div>
+    <h2>2 minutos. Sé sincero.</h2>
+    <ol class="how">
+      <li><span>1</span>Coge el plan que estás siguiendo, o el que vas a empezar el lunes.</li>
+      <li><span>2</span>Contesta cada casilla con un sí o un no.</li>
+      <li><span>3</span>Sé sincero: nadie te está mirando.</li>
+    </ol>
+    <div class="yn" aria-hidden="true"><div>Sí</div><div>No</div></div>
+    <div class="quote"><p>El problema casi nunca eres tú. Es el plan.</p></div>
+    <div class="foot"><span>Checklist antes de empezar</span><span>2/7</span></div>
+  </section>
+
+  <!-- 3 CASILLA 1 -->
+  <section class="s" aria-label="Casilla 1">
+    <div class="top"><span><b>Casilla 1</b> / 4</span><span>@Yaronska_Fit</span></div>
+    <div class="qhead"><span class="box"><svg><use href="#chk"/></svg></span><h2>¿Cabe en tu semana real?</h2></div>
+    <p class="q">¿Puedes cumplirlo con tus turnos, tu curro, tu pareja y tus cañas del sábado? ¿En tu semana de verdad, no en la ideal?</p>
+    <div class="blk no"><div class="k"><i>✕</i>Señal de que no</div><p>Te pide entrenar 5-6 días, cocinar cosas distintas cada día o no salir el finde.</p></div>
+    <div class="do"><div class="k">Qué hacer</div><p>Quédate con lo que puedes cumplir aunque sea tu peor semana. 3 días de gym que cumples ganan a 6 que abandonas.</p></div>
+    <div class="foot"><span>Checklist antes de empezar</span><span>3/7</span></div>
+  </section>
+
+  <!-- 4 CASILLA 2 -->
+  <section class="s" aria-label="Casilla 2">
+    <div class="top"><span><b>Casilla 2</b> / 4</span><span>@Yaronska_Fit</span></div>
+    <div class="qhead"><span class="box"><svg><use href="#chk"/></svg></span><h2>¿La primera semana es fácil?</h2></div>
+    <p class="q">¿Empiezas suave, o desde el día 1 vas a dieta de culturista y gimnasio a tope?</p>
+    <div class="blk no"><div class="k"><i>✕</i>Señal de que no</div><p>El lunes cambias todo de golpe: comida, entreno, horarios, nada de lo que te gusta.</p></div>
+    <div class="do"><div class="k">Qué hacer</div><p>La primera semana cambia 2 o 3 cosas, no 20. Empezar al 100 % es la forma más rápida de dejarlo.</p></div>
+    <div class="foot"><span>Checklist antes de empezar</span><span>4/7</span></div>
+  </section>
+
+  <!-- 5 CASILLA 3 -->
+  <section class="s" aria-label="Casilla 3">
+    <div class="top"><span><b>Casilla 3</b> / 4</span><span>@Yaronska_Fit</span></div>
+    <div class="qhead"><span class="box"><svg><use href="#chk"/></svg></span><h2>¿Sabes qué hacer el día que fallas?</h2></div>
+    <p class="q">Si un día te pasas en una cena o no vas al gym, ¿sabes qué hacer al día siguiente?</p>
+    <div class="blk no"><div class="k"><i>✕</i>Señal de que no</div><p>Cuando fallas, lo compensas (no comes, cardio de castigo) o lo tiras todo con un «ya la he liado».</p></div>
+    <div class="do"><div class="k">Qué hacer</div><p>En la siguiente comida sigues con tu plan normal. Sin castigos. Salirse un poco no es romper la dieta.</p></div>
+    <div class="foot"><span>Checklist antes de empezar</span><span>5/7</span></div>
+  </section>
+
+  <!-- 6 CASILLA 4 -->
+  <section class="s" aria-label="Casilla 4">
+    <div class="top"><span><b>Casilla 4</b> / 4 <span class="badge">LA QUE ESTABA TAPADA</span></span><span>@Yaronska_Fit</span></div>
+    <div class="qhead"><span class="box filled"><svg><use href="#chkd"/></svg></span><h2>¿Lleva tu comida favorita?</h2></div>
+    <p class="q">¿Tu plan incluye lo que te gusta comer (la hamburguesa, la pizza, el pan, tu plato de siempre) en la cantidad que te toca?</p>
+    <div class="blk no"><div class="k"><i>✕</i>Señal de que no</div><p>Pollo, arroz y brócoli; una lista de prohibidos; contar los días para el cheat meal.</p></div>
+    <div class="do"><div class="k">Qué hacer</div><p>Mete tu comida favorita una vez al día, en su cantidad. Lo prohibido se acaba comiendo a lo bestia. Lo que te gusta y está en el plan, no.</p></div>
+    <p class="hl">Esta es la que hace que sigas en el mes 2.</p>
+    <div class="foot"><span>Checklist antes de empezar</span><span>6/7</span></div>
+  </section>
+
+  <!-- 7 RESULTADO -->
+  <section class="s close" aria-label="Resultado">
+    <div class="top"><span><b>Resultado</b></span><span>@Yaronska_Fit</span></div>
+    <h2>¿Cuántas has marcado?</h2>
+    <div class="score">
+      <div class="sc"><span class="marks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><div><b>4 de 4</b><p>Tu plan tiene buena pinta. Ahora toca cumplirlo.</p></div></div>
+      <div class="sc"><span class="marks"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><div><b>2 o 3</b><p>Tienes un plan con fecha de caducidad. Arregla las que fallan antes del lunes.</p></div></div>
+      <div class="sc"><span class="marks"><i class="on"></i><i></i><i></i><i></i></span><div><b>0 o 1</b><p>No es que te falte voluntad. Es que te han dado un plan que no aguanta nadie.</p></div></div>
+    </div>
+    <p class="txt">Esto es lo que hago con mis clientes en el Método Anti-Esfuerzo: un plan que cabe en tu vida, con tu comida favorita, 3-4 entrenos de menos de una hora y yo contigo cada día por WhatsApp. Si una semana se tuerce, la reconducimos juntos.</p>
+    <a class="cta" href="https://ig.me/m/yaronska_fit" target="_blank" rel="noopener"><b>Escríbeme «REVISIÓN»</b><span>por Instagram y revisamos tu caso →</span></a>
+    <div class="handle">Instagram <b>@Yaronska_Fit</b></div>
+  </section>
+
+</main>
+</body>
+</html>
