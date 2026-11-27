@@ -117,7 +117,7 @@ function fromDb(d){
 }
 async function loadClient(id){
   const d=await db.loadClient(id,ME.role==='coach');fromDb(d);
-  dayIdx=0;DRAFT=null;DRAFT_FOR=null;today={};OWK=null;ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom='';wTo='';exSel='';sesSel='';planPrev=null;
+  dayIdx=0;DRAFT=null;DRAFT_FOR=null;today={};OWK=null;ck={};dayType=isWeekend()||!isTrainToday()?'R':'T';wFrom=null;wTo=null;exSel='';sesSel='';planPrev=null;
 }
 
 async function sync(){
@@ -249,7 +249,7 @@ async function boot(){
   try{const s=await db.session();if(s)await enter(s.user);else showAuth('login')}catch(e){showAuth('login')}
 }
 let view='client',tab='home',foodTab='plan',meal='lunch',dayType=[0,6].includes(new Date().getDay())||!CLIENT.trainDays.includes(new Date().getDay())?'R':'T',dayIdx=0,F={p:null,f:null,c:null},
-  ck={},coachSel=0,coachTab='ficha',wFrom='',wTo='',exSel='',exMetric='kg',today={};
+  ck={},coachSel=0,coachTab='ficha',wFrom=null,wTo=null,exSel='',exMetric='kg',today={};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nf=(n,d=1)=>Number(n).toFixed(d).replace('.',',');
 const fdate=s=>{const d=new Date(s+'T12:00:00');return d.toLocaleDateString('es-ES',{day:'numeric',month:'short'})};
@@ -388,9 +388,9 @@ function vHome(){
   ${pushCard()}
   <section class="wchart" aria-label="Tu evolución">
     <div class="sec-h"><span class="lbl">Tu evolución · peso${FICHA.showFat?' y % graso':''}</span><span class="small muted">Objetivo: ${CLIENT.goal==='perder'?'perder grasa':'ganar músculo'}</span></div>
-    ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>${FICHA.wFrom?'Desde '+fdate(first.date):'Inicio'}</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
+    ${!W.length?`<p class="small muted" style="margin:0">Aquí verás tu evolución en cuanto envíes tu primer check-in con tu peso.</p>`:`<div class="wstats"><div><small>${FICHA.wFrom?'Desde el '+fdate(FICHA.wFrom):'Inicio'}</small><b>${nf(first.peso)} kg</b></div><div><small>Ahora</small><b>${nf(last.peso)} kg</b></div><div><small>Cambio</small><b class="${ok?'good':'badc'}">${diff>0?'+':''}${nf(diff)} kg</b></div></div>
     ${(()=>{const a=FICHA.wFrom||'',b=FICHA.wTo||'';const F=FICHA.showFat?fatSeries().filter(x=>(!a||x.date>=a)&&(!b||x.date<=b)):[];const P=W.map(w=>({d:w.date,v:w.peso}));
-      return F.length?`${fatStats(F,FICHA.wFrom?'Desde '+fdate(F[0].date):'Inicio')}${dualChart(P,F.map(x=>({d:x.date,v:x.v})),{color:ok?'#7CE38B':'#FFD60A'})}`:lineChart(P,{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})})()}
+      return F.length?`${fatStats(F,FICHA.wFrom?'Desde el '+fdate(FICHA.wFrom):'Inicio')}${dualChart(P,F.map(x=>({d:x.date,v:x.v})),{color:ok?'#7CE38B':'#FFD60A'})}`:lineChart(P,{u:' kg',label:'Evolución del peso',color:ok?'#7CE38B':'#FFD60A'})})()}
     <div class="verdict ${ok?'':'no'}">${ok?`Vas en la dirección correcta: ${nf(Math.abs(diff))} kg ${diff<0?'menos':'más'} desde que empezaste.`:'Esta semana toca ajustar: lo vemos en la revisión.'}</div>`}
   </section>
   ${streakCard()}
@@ -987,12 +987,12 @@ async function viewPhotos(paths){
   catch(e){sh.innerHTML='<div class="sheet-in"><div class="sheet-b"><p>No se han podido cargar las fotos.</p><button class="btn ghost sm" type="button" onclick="closeSheet()">Cerrar</button></div></div>'}
 }
 function cPeso(){
-  const W=allWeights();if(!W.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no hay pesos. Llegarán con sus check-ins.</p></div>';const from=wFrom||W[0].date,to=wTo||W[W.length-1].date;
+  const W=allWeights();if(!W.length)return '<div class="panel"><p class="small muted" style="margin:0">Aún no hay pesos. Llegarán con sus check-ins.</p></div>';if(wFrom===null)wFrom=FICHA.wFrom||'';if(wTo===null)wTo=FICHA.wTo||'';const from=wFrom||W[0].date,to=wTo||W[W.length-1].date;
   const R=W.filter(w=>w.date>=from&&w.date<=to);
   const f=R[0],l=R[R.length-1];const diff=R.length?l.peso-f.peso:0;const ok=goodDir(diff);
   return `<div class="panel"><div class="range">
-      <div class="field"><label for="wF">Desde</label><input type="date" id="wF" value="${from}" onchange="wFrom=this.value;renderCoach()"></div>
-      <div class="field"><label for="wT">Hasta</label><input type="date" id="wT" value="${to}" onchange="wTo=this.value;renderCoach()"></div>
+      <div class="field"><label for="wF">Desde</label><input type="date" id="wF" value="${from}" min="${W[0].date}" max="${W[W.length-1].date}" onchange="wPick('f',this)" onblur="wDone(this)"></div>
+      <div class="field"><label for="wT">Hasta</label><input type="date" id="wT" value="${to}" min="${W[0].date}" max="${W[W.length-1].date}" onchange="wPick('t',this)" onblur="wDone(this)"></div>
       <button class="btn ghost sm" type="button" onclick="wFrom='';wTo='';renderCoach()">Ver todo</button></div>
     <div class="pinbar"><div><small class="muted">El cliente ve en su gráfica:</small> <b>${FICHA.wFrom||FICHA.wTo?`${FICHA.wFrom?'desde el '+fdate(FICHA.wFrom):'desde el inicio'} ${FICHA.wTo?'hasta el '+fdate(FICHA.wTo):'hasta hoy (se va actualizando)'}`:'todo, desde el inicio hasta hoy'}</b></div>
       <div class="row"><button class="btn sm" type="button" onclick="pinRange()">📌 Que vea solo este rango</button>${FICHA.wFrom||FICHA.wTo?`<button class="btn ghost sm" type="button" onclick="FICHA.wFrom='';FICHA.wTo='';save();renderCoach()">Que lo vea todo</button>`:''}</div></div>
@@ -1424,7 +1424,11 @@ async function delClient(){
   catch(e){toast('No se ha podido eliminar: '+authMsg(e))}
 }
 
-function pinRange(){const W=allWeights();if(!W.length)return;const last=W[W.length-1].date;const a=wFrom||'',b=wTo||'';
+// Fechas del panel de pesos: se guardan al elegirlas, pero la pantalla se redibuja al salir de la casilla
+// (si se redibuja a cada cambio, el selector se reinicia a medio escribir la fecha).
+function wPick(k,el){const v=el.value||'';if(k==='f')wFrom=v;else wTo=v;el.dataset.ch='1';if(document.activeElement!==el)setTimeout(renderCoach,0)}
+function wDone(el){if(el.dataset.ch)setTimeout(()=>{if(!document.activeElement||!/^w[FT]$/.test(document.activeElement.id))renderCoach()},250)}
+function pinRange(){const W=allWeights();if(!W.length)return;const last=W[W.length-1].date;const iF=document.getElementById('wF'),iT=document.getElementById('wT');if(iF)wFrom=iF.value||'';if(iT)wTo=iT.value||'';if(wFrom&&wTo&&wFrom>wTo){toast('La fecha «desde» va después de «hasta»: revísalas');return}const a=wFrom||'',b=wTo||'';
   FICHA.wFrom=a&&a>W[0].date?a:'';FICHA.wTo=b&&b<last?b:'';save();toast(FICHA.wFrom||FICHA.wTo?'Listo: el cliente solo ve ese rango':'El rango era todo: el cliente lo ve completo');renderCoach()}
 
 // Calentamientos del día (varios). Compatibilidad con el formato antiguo de uno solo (d.warm)
