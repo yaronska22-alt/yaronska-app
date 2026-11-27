@@ -34,6 +34,7 @@ function resolveFile(p) {
   if (p === '/empezar' || p === '/empezar/') return path.join(ROOT, 'bonus', 'empezar.html');   // enlace público de la Checklist Antes de Empezar (sin login)
   if (p === '/finde' || p === '/finde/') return path.join(ROOT, 'bonus', 'guia-eventos.html');   // enlace público de la Guía de Eventos Sociales (palabra FINDE, sin login)
   if (p === '/barriga' || p === '/barriga/') return path.join(ROOT, 'bonus', 'barriga.html');   // enlace público de la calculadora «¿Cuánto tardas en bajar la barriga?» (palabra BARRIGA, sin login)
+  if (p === '/kcal' || p === '/kcal/') return path.join(ROOT, 'bonus', 'kcal.html');   // enlace público de la calculadora de calorías diarias (palabra KCAL, sin login)
   const f = path.join(ROOT, p);
   if (!f.startsWith(ROOT)) return null;
   if (fs.existsSync(f) && fs.statSync(f).isFile()) return f;
