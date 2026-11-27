@@ -534,6 +534,8 @@ const isFail=v=>/^\s*f/i.test(String(v||''));
   document.addEventListener('focusin',e=>{const t=e.target;if(!(t&&t.id&&/^ri-\d+-\d+-\d+$/.test(t.id)))return;if(!chip)mk();clearTimeout(hideT);cur=t;place()});
   document.addEventListener('focusout',e=>{if(e.target===cur)hideT=setTimeout(()=>{if(chip)chip.hidden=true;cur=null},120)});
   addEventListener('scroll',()=>{if(cur)place()},{passive:true});})();
+// rutina vista por el cliente: si Yaron pautó «desde el lunes», hasta ese día sigue viendo los valores de antes (e.ant)
+function exView(e){if(!e||!e.ant||view!=='client')return e;if((PREV_FROM||iso(new Date()))>=e.ant.hasta)return e;const o=Object.assign({},e,{s:e.ant.s,sets:e.ant.sets,kg:e.ant.kg,r:e.ant.r,rir:e.ant.rir});delete o.ant;return o}
 function exSets(e){const a=[];for(let i=0;i<e.s;i++){const x=(e.sets||[])[i]||{};a.push({t:x.t||'',kg:x.kg||e.kg||'',reps:x.reps||e.r,rpe:x.rpe||e.rir,rest:x.rest||e.rest,nota:x.nota||''})}return a}
 const detailed=e=>{const a=exSets(e);return a.some(x=>x.t||x.nota)||new Set(a.map(x=>x.kg+'|'+x.reps+'|'+x.rpe+'|'+x.rest)).size>1};
 function blocksOf(ex){const out=[];let cur=null;ex.forEach((e,ei)=>{if(e.blk&&cur&&cur.letter===e.blk)cur.items.push({e,ei});else{cur={letter:e.blk||'',type:e.blkT||'',items:[{e,ei}]};out.push(cur)}});
@@ -567,7 +569,7 @@ function subList(){const box=document.getElementById('subL');if(!box||!SUBTO)ret
   box.innerHTML=L.length?L.map(({x})=>`<button type="button" class="subi" onclick='subPick(${esc(JSON.stringify(x.n))},${esc(JSON.stringify(x.i))})'><img src="${EJ}${esc(x.i)}.jpg" alt="" loading="lazy"><span><b>${esc(x.n)}</b><small>${esc(x.g||'')}</small></span></button>`).join(''):'<p class="small muted">No hay resultados. Escríbelo abajo.</p>'}
 function subPick(n,vid){if(!n||!SUBTO)return;subSet(SUBTO[0],SUBTO[1],{n,vid:vid||''});closeSheet();render();toast('Cambiado solo para hoy: '+n)}
 function subUndo(di,ei){subSet(di,ei,null);render()}
-function exCard(e0,ei,label){const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,vid:SB.vid||'',v:''}):e0;
+function exCard(e1,ei,label){const e0=exView(e1);const SB=subOf(dayIdx,ei);const e=SB?Object.assign({},e0,{n:SB.n,vid:SB.vid||'',v:''}):e0;
   const h=S.hist[e.n]||[];const last=h[h.length-1];const lastS=[...h].reverse().find(x=>x.sets&&x.sets.length);const det=detailed(e);const sg=det||e.kg?null:suggestion(e);const nx=SB?undefined:nxOf(e.n);const SS=sesSets(e,nx);
   const rk=exRank(e.n);
   return `<article class="ex"><div class="ex-h"><span class="ex-n">${esc(label)}</span><div><b>${esc(e.n)}</b><small>${esc(musOf(e0))}</small>${SB?`<small class="subtag">🔄 Hoy en lugar de ${esc(e0.n)} · <button type="button" onclick="subUndo(${dayIdx},${ei})">Deshacer</button></small>`:''}${rk?`<div style="margin-top:4px">${rankBadge(rk)}</div>`:''}</div><div class="exbtns">${e.vid&&!e.v?'':`<a class="vid" href="${esc(e.v||yt(e.n))}" target="_blank" rel="noopener">▶ Vídeo</a>`}${view==='client'&&!PREV_FROM?`<button type="button" class="vid subb" onclick="openSub(${dayIdx},${ei})" aria-label="Cambiar ejercicio">🔄 Cambiar</button>`:''}</div></div>
@@ -623,7 +625,7 @@ let SES_D=null;
 function WK_DD(){const d=S.routine[dayIdx];return d&&!PREV_FROM?wkTrain().dayDone(d):null}
 function sesDefD(){const DD=WK_DD();return DD&&DD>=iso(daysAgo(6))?DD:iso(new Date())}
 function collectDay(di,date,gv){const d=S.routine[di];let any=false;const NEW=[],PRS=[];
-  d.ex.forEach((e0,ei)=>{const SB=subOf(di,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>String(gv(id)||'').replace(',','.');let kg=parseFloat(g(`kg-${di}-${ei}-${si}`));const reps=parseInt(g(`rp-${di}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${di}-${ei}-${si}`)),fail=isFail(g(`ri-${di}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
+  d.ex.forEach((e1,ei)=>{const e0=exView(e1);const SB=subOf(di,ei);const e=SB?Object.assign({},e0,{n:SB.n,sets:e0.sets?e0.sets.map(x=>Object.assign({},x)):e0.sets}):e0;const sets=[];const NX=SB?undefined:nxOf(e.n);const SS=sesSets(e,NX);for(let si=0;si<SS.length;si++){const g=id=>String(gv(id)||'').replace(',','.');let kg=parseFloat(g(`kg-${di}-${ei}-${si}`));const reps=parseInt(g(`rp-${di}-${ei}-${si}`));if(isNaN(kg)&&reps>0)kg=0;const _r=0,rir=parseFloat(g(`ri-${di}-${ei}-${si}`)),fail=isFail(g(`ri-${di}-${ei}-${si}`));if(kg>=0&&reps>0){const o={kg,reps,rir:fail?0:isNaN(rir)?null:rir,i:si};if(fail)o.fail=true;if(SS[si].t)o.t=SS[si].t;sets.push(o)}}
     const nota=String(gv(`nt-${di}-${ei}`)||'').trim();
     if(sets.length){const pr=prCheck(e.n,sets);if(pr)PRS.push(pr)}
     const OLD=(S.hist[e.n]||[]).find(h=>h.date===date&&h.day===d.d&&(h.sub||null)===(SB?e0.n:null));
@@ -1068,11 +1070,11 @@ function cChecks(){
 }
 let openSets=new Set();
 const RX=(di,ei)=>S.routine[di].ex[ei];
-function exEdit(di,ei,k,v){const e=RX(di,ei);
+function exEdit(di,ei,k,v){const e=RX(di,ei);if(k!=='n'&&k!=='m'&&k!=='v')delete e.ant;
   if(k==='s'){const n=Math.max(1,Math.min(15,parseInt(v)||1));const a=exSets(e);while(a.length<n)a.push(Object.assign({},a[a.length-1]||{t:'',reps:e.r,rpe:e.rir,rest:e.rest,nota:''},{t:''}));e.s=n;e.sets=a.slice(0,n);save();renderCoach();return}
   if(['r','rir','rest','kg'].includes(k)){const f={r:'reps',rir:'rpe',rest:'rest',kg:'kg'}[k];const old=e[k];e.sets=exSets(e).map(x=>(!x.t&&(x[f]===old||!x[f]))?Object.assign(x,{[f]:v}):x)}
   e[k]=v;save();if(k==='m'||k==='n')renderCoach()}
-function setEdit(di,ei,si,k,v){const e=RX(di,ei);e.sets=exSets(e);e.sets[si][k]=v;save();if(k==='t')renderCoach()}
+function setEdit(di,ei,si,k,v){const e=RX(di,ei);delete e.ant;e.sets=exSets(e);e.sets[si][k]=v;save();if(k==='t')renderCoach()}
 function blkEdit(di,ei,v){const d=S.routine[di];const e=d.ex[ei];e.blk=v||'';
   if(v){const mates=d.ex.filter(x=>x.blk===v);const t=(mates.find(x=>x!==e&&x.blkT)||{}).blkT||(mates.length>=4?'circuito':mates.length===3?'triserie':'superserie');mates.forEach(x=>x.blkT=t)}else delete e.blkT;
   save();renderCoach()}
@@ -1206,11 +1208,11 @@ function cSes(){
     <div class="sesst ${se.pend?'pend':'done'}">${se.pend?`🕓 <b>${esc(se.day)}</b> · todavía no la ha hecho esta semana. Puedes pautar todos sus ejercicios igualmente.`:`✅ <b>${esc(se.day||'Entreno')}</b> · ${fd(se.date)} · <b>${nOk} de ${R.length}</b> ejercicios hechos y rellenados${R.some(r=>r.st==='no')?` · <span class="bad">${R.filter(r=>r.st==='no').length} sin hacer</span>`:''}`}</div>
     <p class="small muted" style="margin:0">Corrige lo que ha rellenado si hace falta y pauta su próximo entreno: lo verá en verde como «Pautado por Yaron». Si el ejercicio tiene series detalladas (top set, back-off…), pautas cada serie por separado.</p>
     <div class="pmode"><button class="btn ghost sm" type="button" onclick="previewNext()">👁️ Ver su próxima semana como el cliente</button><span class="small muted">Lo que pautes lo verá:</span><div class="seg2"><button type="button" class="chip ${PAUTA_MODE==='lunes'?'on':''}" onclick="setPautaMode('lunes')">Desde el lunes ${new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</button><button type="button" class="chip ${PAUTA_MODE==='ya'?'on':''}" onclick="setPautaMode('ya')">En su próximo entreno</button></div></div></div>
-  ${R.map(({n,hi,h,st,extra})=>{k++;const T=pKey(n,h);const nx=S.next[T]||{};const re=routineEx(T,h.day);const plan=re?exSets(re):[];const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
+  ${R.map(({n,hi,h,st,extra})=>{k++;const T=pKey(n,h);const nx=S.next[T]||{};const re=routineEx(T,h.day);const plan=re?exSets(re):[];const planH=re&&re.ant?exSets(Object.assign({},re,re.ant)):plan;const det=re&&detailed(re);const nm=esc(n).replace(/'/g,"\\'");
     const blk=re&&re.blk?`<span class="stag" style="background:var(--surface-2);color:var(--y)">${esc(blkName(re.blkT))} ${esc(re.blk)}</span>`:'';
-    const tOf=(st,si)=>st.t!==undefined?st.t:(plan[st.i??si]||{}).t||'';
+    const tOf=(st,si)=>st.t!==undefined?st.t:(planH[st.i??si]||{}).t||'';
     return `<div class="panel"><div class="sec-h"><b style="font-size:15px">${esc(n)} ${blk}</b><span class="exst ${st}">${st==='ok'?`✅ Hecho · ${h.sets.length} series`:st==='nota'?'⚠️ Sin series · solo nota':se.pend?'🕓 Pendiente':'⚪ No hecho'}${extra?' · fuera de su rutina':''}</span></div>${h.sub?`<div class="cnote">🔄 <b>Cambio:</b> hizo este ejercicio en lugar de <b>${esc(h.sub)}</b> (máquina ocupada u otro motivo)</div>`:''}${h.nota?`<div class="cnote">💬 <b>Nota del cliente:</b> ${esc(h.nota)}</div>`:''}
-    ${!h.sets.length?'':`<div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=plan[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${f==='rir'&&st.fail?'Fallo':String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>`}
+    ${!h.sets.length?'':`<div class="tbl-w"><table><thead><tr><th>Serie</th><th>Tipo</th><th>Pautado</th><th>Kg</th><th>Reps</th><th>RIR real</th></tr></thead><tbody>${h.sets.map((st,si)=>{const pl=planH[st.i??si]||{};return `<tr><td>${(st.i??si)+1}</td><td>${setTag(tOf(st,si))||'<span class="muted">Normal</span>'}</td><td class="small muted">${esc([pl.reps,pl.rpe].filter(Boolean).join(' · '))}</td>${['kg','reps','rir'].map(f=>`<td><input id="sx-${k}-${si}-${f}" value="${f==='rir'&&st.fail?'Fallo':String(st[f]??'').replace('.',',')}" inputmode="decimal" ${inS} onchange="editSet('${nm}',${hi},${si},'${f}',this.value)" aria-label="${f} serie ${si+1}"></td>`).join('')}</tr>`}).join('')}</tbody></table></div>`}
     <span class="lbl" style="margin-top:4px">Pautar próximo entreno${nx.ts?` <span class="pfrom">✓ pautado${nx.from?' · lo ve desde el '+new Date(nx.from+'T12:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}):' · ya visible'}</span>`:''}</span>
     ${pTargetHTML(n,h,T)}${pautaHTML(n,k,nm,plan,h,nx,re,inS)}</div>`}).join('')}`;
 }
@@ -1229,7 +1231,7 @@ function pautaHTML(n,k,nm,plan,h,nx,re,inS){const R=pRows(n,plan,h,nx);const opt
     <div class="row pextra"><button type="button" class="btn ghost sm" onclick="pAdd('${nm}',${k})">+ Añadir serie</button>
       ${day?`<label class="small muted">Bloque en su rutina <select aria-label="Agrupar con otro ejercicio" onchange="blkEdit(${loc.di},${loc.ei},this.value)"><option value="">Sin agrupar</option>${BLK_L.slice(0,6).map(l=>`<option value="${l}" ${re.blk===l?'selected':''}>${l}${(()=>{const m=day.ex.filter(x=>x.blk===l&&x!==re).map(x=>x.n);return m.length?' · con '+esc(m.join(', ')):''})()}</option>`).join('')}</select></label>
       ${re.blk?`<label class="small muted">Tipo <select aria-label="Tipo de bloque" onchange="blkType(${loc.di},'${re.blk}',this.value)">${BLK_T.map(([id,l])=>`<option value="${id}" ${re.blkT===id?'selected':''}>${l}</option>`).join('')}</select></label>`:''}`:''}</div>
-    <label class="pfix"><input type="checkbox" id="nfx-${k}" ${nx.fix!==false?'checked':''}> <span class="small">Dejar este número de series y tipos fijo en su rutina (se aplica cuando haga este entreno)</span></label>
+    <label class="pfix"><input type="checkbox" id="nfx-${k}" ${nx.fix!==false?'checked':''}> <span class="small">Guardar también en su rutina (series, kg, reps y RIR). Si pautas «desde el lunes», el cliente lo verá cambiado desde ese día</span></label>
     ${re?`<div class="field"><label for="nap-${k}">Series de aproximación <small class="muted">(se guarda al momento en su rutina)</small></label><input id="nap-${k}" value="${esc(re.aprox||'')}" placeholder="1×10 al 40 % · 1×5 al 60 % · 1×3 al 80 %" onchange="reAprox(${loc?loc.di:-1},${loc?loc.ei:-1},this.value)"></div>`:''}
     <div class="range"><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente (con esta pauta)</label><textarea id="nn-${k}" rows="2" placeholder="Top set a 100 kg y back-offs al 90 %">${esc(nx.nota||'')}</textarea></div><button class="btn sm" type="button" onclick="setNext('${nm}',${k})">Pautar</button></div>`}
 function reAprox(di,ei,v){const e=S.routine[di]&&S.routine[di].ex[ei];if(!e)return;e.aprox=v.trim();save();toast(v.trim()?'Aproximación guardada en su rutina':'Aproximación quitada')}
@@ -1258,7 +1260,13 @@ function setNext(n,k){const g=id=>{const el=document.getElementById(id);return e
   const K=PKEY[n]||n;if(K!==n&&S.next[n])delete S.next[n];
   if(!nota&&!sets.some(x=>x.kg||x.reps||x.int||x.nota)&&!sets.some(x=>x.t)){delete S.next[K]}
   else S.next[K]=Object.assign({sets,nota,ts:Date.now(),fix:fx?fx.checked:true},PAUTA_MODE==='lunes'?{from:nextMonday()}:{});
-  FICHA.pautadoAt=new Date().toISOString();save();toast(PAUTA_MODE==='lunes'?'Pautado: lo verá desde el lunes '+new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'Pautado para su próximo entreno');refreshItem();renderCoach()}
+  const RE=S.next[K]&&S.next[K].fix&&routineEx(K,(S.hist[n]||[]).length?(S.hist[n][S.hist[n].length-1]||{}).day:undefined);if(RE)pautaARutina(RE,S.next[K]);
+  FICHA.pautadoAt=new Date().toISOString();save();toast((RE?'Rutina actualizada · ':'')+(PAUTA_MODE==='lunes'?'Pautado: lo verá desde el lunes '+new Date(nextMonday()+'T12:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'Pautado para su próximo entreno'));refreshItem();renderCoach()}
+// copia la pauta a su rutina; los huecos vacíos de la pauta mantienen lo que ya tenía. Si es «desde el lunes», guarda lo de antes en e.ant para que el cliente no lo vea cambiado esta semana
+function pautaARutina(e,P){const base=exSets(e);const L=base[base.length-1]||{t:'',kg:e.kg||'',reps:e.r,rpe:e.rir,rest:e.rest,nota:''};
+  if(P.from&&iso(new Date())<P.from){if(!e.ant||e.ant.hasta<=iso(new Date()))e.ant={s:e.s,sets:e.sets?clone(e.sets):e.sets,kg:e.kg,r:e.r,rir:e.rir,hasta:P.from};else e.ant.hasta=P.from}else delete e.ant;
+  const N=P.sets.map((x,i)=>{const b=base[i]||L;return {t:x.t||'',kg:String(x.kg||b.kg||'').replace(',','.'),reps:x.reps||b.reps||'',rpe:x.int||b.rpe||'',rest:b.rest||e.rest||'',nota:x.nota!==undefined?x.nota:(b.nota||'')}});
+  e.s=N.length;e.sets=N;e.kg=N[0].kg;e.r=N[0].reps;e.rir=N[0].rpe}
 // Plan automático según kcal (tu forma de trabajar: plantilla Yaronska escalada)
 let planPrev=null;
 function cPlan(){
