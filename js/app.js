@@ -1227,9 +1227,9 @@ function editSet(n,hi,si,f,v){const x=parseFloat(String(v).replace(',','.'));con
 // ---- pauta por series: siempre serie a serie, con tipo de serie (normal, top set, back-off…) y nº de series editable
 let PDRAFT={};
 function pRows(n,plan,h,nx){if(PDRAFT[n])return PDRAFT[n];
-  if(nx.sets&&nx.sets.length)return nx.sets.map((x,i)=>({t:x.t!==undefined?x.t:((plan[i]||{}).t||''),kg:x.kg||'',reps:x.reps||'',int:x.int||'',nota:x.nota!==undefined?x.nota:((plan[i]||{}).nota||'')}));
+  if(nx.sets&&nx.sets.length)return nx.sets.map((x,i)=>({t:x.t!==undefined?x.t:((plan[i]||{}).t||''),kg:x.kg||'',reps:x.reps||'',int:x.int||(plan[i]||plan[plan.length-1]||{}).rpe||'',nota:x.nota!==undefined?x.nota:((plan[i]||{}).nota||'')}));
   const L=plan.length?plan:h.sets.map(()=>({}));const g=nx.kg||nx.reps||nx.int;
-  return (L.length?L:[{}]).map(pl=>({t:pl.t||'',kg:g?nx.kg||'':'',reps:g?nx.reps||'':'',int:g?nx.int||'':'',nota:pl.nota||''}))}
+  return (L.length?L:[{}]).map(pl=>({t:pl.t||'',kg:g?nx.kg||'':'',reps:g?nx.reps||'':'',int:(g&&nx.int)||pl.rpe||'',nota:pl.nota||''}))}
 function pautaHTML(n,k,nm,plan,h,nx,re,inS){const R=pRows(n,plan,h,nx);const opt=(v)=>SET_T.map(([id,l])=>`<option value="${id}" ${id===v?'selected':''}>${l}</option>`).join('');
   const loc=re?(()=>{for(let di=0;di<S.routine.length;di++){const ei=S.routine[di].ex.indexOf(re);if(ei>=0)return {di,ei}}return null})():null;
   const day=loc?S.routine[loc.di]:null;
@@ -1243,7 +1243,7 @@ function pautaHTML(n,k,nm,plan,h,nx,re,inS){const R=pRows(n,plan,h,nx);const opt
     <div class="range"><div class="field" style="flex:2"><label for="nn-${k}">Nota para el cliente (con esta pauta)</label><textarea id="nn-${k}" rows="2" placeholder="Top set a 100 kg y back-offs al 90 %">${esc(nx.nota||'')}</textarea></div><button class="btn sm" type="button" onclick="setNext('${nm}',${k})">Pautar</button></div>`}
 function reAprox(di,ei,v){const e=S.routine[di]&&S.routine[di].ex[ei];if(!e)return;e.aprox=v.trim();save();toast(v.trim()?'Aproximación guardada en su rutina':'Aproximación quitada')}
 function pGrab(n,k){const R=[];for(let si=0;;si++){const t=document.getElementById(`nst-${k}-${si}`);if(!t)break;const g=id=>(document.getElementById(id)||{}).value||'';R.push({t:t.value,kg:g(`nsk-${k}-${si}`).trim(),reps:g(`nsr-${k}-${si}`).trim(),int:g(`nsi-${k}-${si}`).trim(),nota:g(`nso-${k}-${si}`).trim()})}return R}
-function pAdd(n,k){const R=pGrab(n,k);const last=R[R.length-1]||{t:''};R.push({t:last.t==='top'?'backoff':last.t,kg:'',reps:'',int:'',nota:''});PDRAFT[n]=R;renderCoach()}
+function pAdd(n,k){const R=pGrab(n,k);const last=R[R.length-1]||{t:''};R.push({t:last.t==='top'?'backoff':last.t,kg:'',reps:'',int:last.int||'',nota:''});PDRAFT[n]=R;renderCoach()}
 function pDel(n,k,si){const R=pGrab(n,k);R.splice(si,1);PDRAFT[n]=R;renderCoach()}
 // pauta visible para el cliente: si es «desde el lunes», no aparece hasta ese día
 let PREV_FROM=null;// vista previa del entrenador: ver la rutina como la verá el cliente ese día
